@@ -32,7 +32,7 @@ in a [PostgreSQL database](https://www.postgresql.org/).
 ### Build
 
 ```bash
-cd powsybl-network-store
+cd powsybl-network-store-server
 mvn clean install
 ```
 
@@ -56,95 +56,6 @@ java -jar powsybl-network-store-server-1.0.0-SNAPSHOT-exec.jar
 ```
 
 Spring boot server should start and connect to the postgresql database (localhost hardcoded...)
-
-### Import a network in the database
-
-In your preferred IDE, create a project with following dependencies:
-
-```xml
-<dependency>
-    <groupId>com.powsybl</groupId>
-    <artifactId>powsybl-network-store-client</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-</dependency>
-<dependency>
-    <groupId>com.powsybl</groupId>
-    <artifactId>powsybl-iidm-test</artifactId>
-    <version>3.0.0</version>
-</dependency>
-```
-
-Run the Java code to import in IIDM store a programmatic test node/breaker network:
-
-```java
-public static void main(String[] args) throws Exception {
-    String baseUrl = "http://localhost:8080/";
-    try (NetworkStoreService service = new NetworkStoreService(baseUrl, PreloadingStrategy.NONE)) {
-    	Network network = NetworkTest1Factory.create(service.getNetworkFactory());
-    }
-}
-```
-
-### Import a network from a file in the database
-
-```java
-public static void main(String[] args) throws Exception {
-    String baseUrl = "http://localhost:8080/";
-    try (NetworkStoreService service = new NetworkStoreService(baseUrl, PreloadingStrategy.NONE)) {
-        Network network = service.importNetwork(Paths.get("/tmp/network1.xiidm"));
-    }
-}
-```
-
-### List  voltage levels from a stored network
-
-```java
-public static void main(String[] args) throws Exception {
-    String baseUrl = "http://localhost:8080/";
-    try (NetworkStoreService service = new NetworkStoreService(baseUrl, PreloadingStrategy.COLLECTION)) {
-        Network network = service.getNetwork("network1");
-        for (VoltageLevel vl : network.getVoltageLevels()) {
-            System.out.println(vl.getId());
-        }
-   }
-}
-```
-
-### Injection network store service in a Spring controller
-
-```java
-@RestController
-@RequestMapping(value = "/test")
-@ComponentScan(basePackageClasses = {NetworkStoreService.class})
-public class TestController {
-
-    @Autowired
-    private NetworkStoreService service;
-
-    @RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
-    public List<String> getSubstations(String networkId) {
-        Network network = service.getNetwork(networkId, PreloadingStrategy.COLLECTION);
-        return network.getSubstationStream().map(Identifiable::getId).collect(Collectors.toList());
-    }
-}
-```
-
-Network store service could be configured using application.yml like this:
-
-```yaml
-powsybl:
-    services:
-        network-store-server:
-            base-uri: http://localhost:8080/
-            preloading-strategy: COLLECTION
-```
-
-List of available  variables:
-
-| Variable                                                  | Description                     | Optional | Default vallue               |
-| --------------------------------------------------------- | ------------------------------- | -------- | ---------------------------- |
-| powsybl.services.network-store-server.base-uri            | URL of the network store server | Yes      | http://network-store-server/ |
-| powsybl.services.network-store-server.preloading-strategy | Preloading strategy             | Yes      | NONE                         |
 
 ### Run integration tests
 
