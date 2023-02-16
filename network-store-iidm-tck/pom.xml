@@ -70,7 +70,6 @@
         <dependency>
             <groupId>com.powsybl</groupId>
             <artifactId>powsybl-network-store-client</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
