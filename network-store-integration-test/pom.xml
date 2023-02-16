@@ -40,8 +40,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>powsybl-cgmes-model</artifactId>
-            <type>test-jar</type>
+            <artifactId>powsybl-cgmes-model-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -133,8 +132,7 @@
         </dependency>
         <dependency>
             <groupId>com.powsybl</groupId>
-            <artifactId>powsybl-tools</artifactId>
-            <type>test-jar</type>
+            <artifactId>powsybl-tools-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
