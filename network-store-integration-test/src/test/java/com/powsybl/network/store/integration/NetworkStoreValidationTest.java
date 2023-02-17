@@ -430,14 +430,6 @@ public class NetworkStoreValidationTest {
                 .getMessage().contains("r is invalid"));
         assertTrue(assertThrows(PowsyblException.class, () -> s1.newTwoWindingsTransformer().setId("2WT").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).add())
                 .getMessage().contains("x is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> s1.newTwoWindingsTransformer().setId("2WT").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).add())
-                .getMessage().contains("g is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> s1.newTwoWindingsTransformer().setId("2WT").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).setG(1).add())
-                .getMessage().contains("b is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> s1.newTwoWindingsTransformer().setId("2WT").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).setG(1).setB(1).add())
-                .getMessage().contains("rated U1 is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> s1.newTwoWindingsTransformer().setId("2WT").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).setG(1).setB(1).setRatedU1(1).add())
-                .getMessage().contains("rated U2 is invalid"));
         assertTrue(assertThrows(PowsyblException.class, () -> s1.newTwoWindingsTransformer().setId("2WT").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).setG(1).setB(1).setRatedU1(1).setRatedU2(1).setRatedS(0).add())
                 .getMessage().contains("Invalid value of rated S"));
 
@@ -456,14 +448,6 @@ public class NetworkStoreValidationTest {
                 .getMessage().contains("ratio tap changer should have at least one step"));
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newRatioTapChanger().setTapPosition(3).beginStep().endStep().add())
                 .getMessage().contains("step rho is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newRatioTapChanger().setTapPosition(3).beginStep().setRho(1.0).endStep().add())
-                .getMessage().contains("step r is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newRatioTapChanger().setTapPosition(3).beginStep().setRho(1.0).setR(1.0).endStep().add())
-                .getMessage().contains("step x is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newRatioTapChanger().setTapPosition(3).beginStep().setRho(1.0).setR(1.0).setX(1.0).endStep().add())
-                .getMessage().contains("step g is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newRatioTapChanger().setTapPosition(3).beginStep().setRho(1.0).setR(1.0).setX(1.0).setG(1.0).endStep().add())
-                .getMessage().contains("step b is not set"));
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newRatioTapChanger()
                 .setTapPosition(3)
                 .beginStep().setR(10).setX(10).setG(10).setB(10).setRho(10).endStep().add())
@@ -552,16 +536,6 @@ public class NetworkStoreValidationTest {
                 .getMessage().contains("a phase tap changer shall have at least one step"));
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().setTapPosition(3).beginStep().endStep().add())
                 .getMessage().contains("step alpha is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().setTapPosition(3).beginStep().setAlpha(1.0).endStep().add())
-                .getMessage().contains("step rho is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().setTapPosition(3).beginStep().setAlpha(1.0).setRho(1.0).endStep().add())
-                .getMessage().contains("step r is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().setTapPosition(3).beginStep().setAlpha(1.0).setRho(1.0).setR(1.0).endStep().add())
-                .getMessage().contains("step x is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().setTapPosition(3).beginStep().setAlpha(1.0).setRho(1.0).setR(1.0).setX(1.0).endStep().add())
-                .getMessage().contains("step g is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().setTapPosition(3).beginStep().setAlpha(1.0).setRho(1.0).setR(1.0).setX(1.0).setG(1.0).endStep().add())
-                .getMessage().contains("step b is not set"));
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger()
                 .setTapPosition(3)
                 .beginStep().setAlpha(1.0).setR(10).setX(10).setG(10).setB(10).setRho(10).endStep().add())
@@ -876,14 +850,6 @@ public class NetworkStoreValidationTest {
                 .getMessage().contains("r is invalid"));
         assertTrue(assertThrows(PowsyblException.class, () -> network.newLine().setId("Line").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).add())
                 .getMessage().contains("x is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newLine().setId("Line").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).add())
-                .getMessage().contains("g1 is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newLine().setId("Line").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).setG1(1).add())
-                .getMessage().contains("g2 is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newLine().setId("Line").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).setG1(1).setG2(1).add())
-                .getMessage().contains("b1 is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newLine().setId("Line").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).setG1(1).setG2(1).setB1(1).add())
-                .getMessage().contains("b2 is invalid"));
 
         Line line = network.newLine().setId("Line").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setR(1).setX(1).setG1(1).setG2(1).setB1(1).setB2(1).add();
 

@@ -12,7 +12,7 @@ import com.powsybl.network.store.tools.NetworkStoreDeleteTool;
 import com.powsybl.network.store.tools.NetworkStoreImportTool;
 import com.powsybl.network.store.tools.NetworkStoreListTool;
 import com.powsybl.network.store.tools.NetworkStoreScriptTool;
-import com.powsybl.tools.AbstractToolTest;
+import com.powsybl.tools.test.AbstractToolTest;
 import com.powsybl.tools.Tool;
 import org.junit.Before;
 import org.junit.Test;
