@@ -341,6 +341,8 @@ public class Mappings {
     private void createNetworkMappings() {
         networkMappings.addColumnMapping("uuid", new ColumnMapping<>(UUID.class, NetworkAttributes::getUuid, NetworkAttributes::setUuid));
         networkMappings.addColumnMapping("variantId", new ColumnMapping<>(String.class, NetworkAttributes::getVariantId, NetworkAttributes::setVariantId));
+        networkMappings.addColumnMapping("variantMode", new ColumnMapping<>(VariantMode.class, NetworkAttributes::getVariantMode, NetworkAttributes::setVariantMode));
+        networkMappings.addColumnMapping("srcVariantNum", new ColumnMapping<>(Integer.class, NetworkAttributes::getSrcVariantNum, NetworkAttributes::setSrcVariantNum));
         networkMappings.addColumnMapping("name", new ColumnMapping<>(String.class, NetworkAttributes::getName, NetworkAttributes::setName));
         networkMappings.addColumnMapping(FICTITIOUS, new ColumnMapping<>(Boolean.class, NetworkAttributes::isFictitious, NetworkAttributes::setFictitious));
         networkMappings.addColumnMapping(PROPERTIES, new ColumnMapping<>(Map.class, NetworkAttributes::getProperties, NetworkAttributes::setProperties));

@@ -82,6 +82,8 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                                              .uuid(NETWORK_UUID)
                                              .variantId("v")
+                                             .variantMode(VariantMode.FULL)
+                                             .srcVariantNum(0)
                                              .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
                                              .build())
                 .build();
@@ -780,6 +782,8 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                         .uuid(NETWORK_UUID)
                         .variantId(VariantManagerConstants.INITIAL_VARIANT_ID)
+                        .variantMode(VariantMode.FULL)
+                        .srcVariantNum(0)
                         .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
@@ -820,6 +824,8 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                         .uuid(NETWORK_UUID)
                         .variantId(VariantManagerConstants.INITIAL_VARIANT_ID)
+                        .variantMode(VariantMode.FULL)
+                        .srcVariantNum(0)
                         .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
@@ -854,6 +860,8 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                         .uuid(NETWORK_UUID)
                         .variantId("v2")
+                        .variantMode(VariantMode.FULL)
+                        .srcVariantNum(0)
                         .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
@@ -869,6 +877,8 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                         .uuid(NETWORK_UUID)
                         .variantId("v3")
+                        .variantMode(VariantMode.FULL)
+                        .srcVariantNum(0)
                         .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
