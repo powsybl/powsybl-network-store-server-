@@ -102,13 +102,15 @@ public class NetworkStoreRepository {
                 try (ResultSet resultSet = preparedStmt.executeQuery()) {
                     List<VariantInfos> variantsInfos = new ArrayList<>();
                     while (resultSet.next()) {
-                        variantsInfos.add(new VariantInfos(resultSet.getString(1), resultSet.getInt(2)));
+                        variantsInfos.add(new VariantInfos(resultSet.getString(1), resultSet.getInt(2), mapper.readValue(resultSet.getString(3), VariantMode.class), resultSet.getInt(4)));
                     }
                     return variantsInfos;
                 }
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -400,16 +402,18 @@ public class NetworkStoreRepository {
 
         executeWithoutAutoCommit(connection -> {
             for (VariantInfos variantInfos : variantsInfoList) {
-                Resource<NetworkAttributes> sourceNetworkAttribute = getNetwork(sourceNetworkUuid, variantInfos.getNum()).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + sourceNetworkUuid + ", variantId : " + variantInfos.getId()));
-                sourceNetworkAttribute.getAttributes().setUuid(targetNetworkUuid);
-                sourceNetworkAttribute.getAttributes().setExtensionAttributes(Collections.emptyMap());
-                sourceNetworkAttribute.setVariantNum(VariantUtils.findFistAvailableVariantNum(newNetworkVariants));
+                Resource<NetworkAttributes> sourceNetworkResource = getNetwork(sourceNetworkUuid, variantInfos.getNum()).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + sourceNetworkUuid + ", variantId : " + variantInfos.getId()));
+                sourceNetworkResource.getAttributes().setUuid(targetNetworkUuid);
+                sourceNetworkResource.setVariantNum(VariantUtils.findFistAvailableVariantNum(newNetworkVariants));
+                sourceNetworkResource.getAttributes().setExtensionAttributes(Collections.emptyMap());
+                sourceNetworkResource.setVariantNum(VariantUtils.findFistAvailableVariantNum(newNetworkVariants));
 
-                newNetworkVariants.add(new VariantInfos(sourceNetworkAttribute.getAttributes().getVariantId(), sourceNetworkAttribute.getVariantNum()));
-                variantsNotFound.remove(sourceNetworkAttribute.getAttributes().getVariantId());
+                newNetworkVariants.add(new VariantInfos(sourceNetworkResource.getAttributes().getVariantId(), sourceNetworkResource.getVariantNum(),
+                                                        sourceNetworkResource.getAttributes().getVariantMode(), sourceNetworkResource.getAttributes().getSrcVariantNum()));
+                variantsNotFound.remove(sourceNetworkResource.getAttributes().getVariantId());
 
-                createNetworks(connection, List.of(sourceNetworkAttribute));
-                cloneNetworkElements(connection, sourceNetworkUuid, targetNetworkUuid, sourceNetworkAttribute.getVariantNum(), variantInfos.getNum());
+                createNetworks(connection, List.of(sourceNetworkResource));
+                cloneNetworkElements(connection, sourceNetworkUuid, targetNetworkUuid, sourceNetworkResource.getVariantNum(), variantInfos.getNum());
             }
         });
 
@@ -419,7 +423,7 @@ public class NetworkStoreRepository {
         LOGGER.info("Network clone done in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId) {
+    public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId, VariantMode variantMode) {
         String nonNullTargetVariantId = targetVariantId == null ? "variant-" + UUID.randomUUID() : targetVariantId;
         LOGGER.info("Cloning network {} variant {} to variant {}", uuid, sourceVariantNum, targetVariantNum);
         var stopwatch = Stopwatch.createStarted();
@@ -428,14 +432,18 @@ public class NetworkStoreRepository {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
-                preparedStmt.setObject(3, uuid);
+                preparedStmt.setString(3, mapper.writeValueAsString(variantMode));
                 preparedStmt.setInt(4, sourceVariantNum);
+                preparedStmt.setObject(5, uuid);
+                preparedStmt.setInt(6, sourceVariantNum);
                 preparedStmt.execute();
             }
 
             cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
 
         stopwatch.stop();
@@ -522,7 +530,7 @@ public class NetworkStoreRepository {
         }
         int sourceVariantNum = VariantUtils.getVariantNum(sourceVariantId, variantsInfos);
         int targetVariantNum = VariantUtils.findFistAvailableVariantNum(variantsInfos);
-        cloneNetworkVariant(networkUuid, sourceVariantNum, targetVariantNum, targetVariantId);
+        cloneNetworkVariant(networkUuid, sourceVariantNum, targetVariantNum, targetVariantId, VariantMode.FULL);
     }
 
     public <T extends IdentifiableAttributes> void createIdentifiables(UUID networkUuid, List<Resource<T>> resources,

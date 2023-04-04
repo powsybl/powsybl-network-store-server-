@@ -10,6 +10,7 @@ import com.powsybl.network.store.model.Resource;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
@@ -25,6 +26,8 @@ public final class QueryCatalog {
     static final String UUID_COLUMN = "uuid";
     static final String NETWORK_UUID_COLUMN = "networkUuid";
     static final String VARIANT_NUM_COLUMN = "variantNum";
+    static final String SRC_VARIANT_NUM_COLUMN = "srcVariantNum";
+    static final String VARIANT_MODE_COLUMN = "variantMode";
     static final String ID_COLUMN = "id";
     static final String VOLTAGE_LEVEL_ID_COLUMN = "voltageLevelId";
     static final String VOLTAGE_LEVEL_ID_1_COLUMN = "voltageLevelId1";
@@ -44,6 +47,9 @@ public final class QueryCatalog {
     static final String REGULATION_MODE = "regulationMode";
     static final String SIDE_COLUMN = "side";
     static final String LIMIT_TYPE_COLUMN = "limitType";
+
+    static final Predicate<String> CLONE_PREDICATE = column -> !column.equals(UUID_COLUMN) && !column.equals(VARIANT_ID_COLUMN)
+            && !column.equals(NAME_COLUMN) && !column.equals(VARIANT_MODE_COLUMN) && !column.equals(SRC_VARIANT_NUM_COLUMN);
 
     private QueryCatalog() {
     }
@@ -154,7 +160,7 @@ public final class QueryCatalog {
     }
 
     public static String buildGetVariantsInfos() {
-        return "select " + VARIANT_ID_COLUMN + ", " + VARIANT_NUM_COLUMN +
+        return "select " + VARIANT_ID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + VARIANT_MODE_COLUMN + ", " + SRC_VARIANT_NUM_COLUMN +
                 " from " + NETWORK_TABLE +
                 " where " + UUID_COLUMN + " = ?";
     }
@@ -264,14 +270,18 @@ public final class QueryCatalog {
                 VARIANT_ID_COLUMN + ", " +
                 UUID_COLUMN + ", " +
                 ID_COLUMN + ", " +
-                columns.stream().filter(column -> !column.equals(UUID_COLUMN) && !column.equals(VARIANT_ID_COLUMN) && !column.equals(NAME_COLUMN)).collect(Collectors.joining(",")) +
+                VARIANT_MODE_COLUMN + ", " +
+                SRC_VARIANT_NUM_COLUMN + ", " +
+                columns.stream().filter(CLONE_PREDICATE).collect(Collectors.joining(",")) +
                 ") " +
                 "select" + " " +
                 "?" + ", " +
                 "?" + ", " +
                 UUID_COLUMN + ", " +
                 ID_COLUMN + ", " +
-                columns.stream().filter(column -> !column.equals(UUID_COLUMN) && !column.equals(VARIANT_ID_COLUMN) && !column.equals(NAME_COLUMN)).collect(Collectors.joining(",")) +
+                "?" + ", " +
+                "?" + ", " +
+                columns.stream().filter(CLONE_PREDICATE).collect(Collectors.joining(",")) +
                 " from network" + " " +
                 "where uuid = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
