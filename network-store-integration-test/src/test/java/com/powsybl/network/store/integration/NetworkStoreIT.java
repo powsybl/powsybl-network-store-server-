@@ -1748,7 +1748,7 @@ public class NetworkStoreIT {
 
             NetworkImpl readNetwork = (NetworkImpl) service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow());
 
-            assertEquals(250, readNetwork.getIdByAlias().size());
+            assertEquals(248, readNetwork.getIdByAlias().size());
 
             TwoWindingsTransformer twoWT = readNetwork.getTwoWindingsTransformer("7fe566b9-6bac-4cd3-8b52-8f46e9ba237d");
             assertEquals("813365c3-5be7-4ef0-a0a7-abd1ae6dc174", readNetwork.getTwoWindingsTransformer("813365c3-5be7-4ef0-a0a7-abd1ae6dc174").getId());
@@ -1772,7 +1772,7 @@ public class NetworkStoreIT {
             assertEquals(1, networkIds.size());
             NetworkImpl readNetwork = (NetworkImpl) service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow());
 
-            assertEquals(249, readNetwork.getIdByAlias().size());
+            assertEquals(247, readNetwork.getIdByAlias().size());
 
             TwoWindingsTransformer twoWT = readNetwork.getTwoWindingsTransformer("813365c3-5be7-4ef0-a0a7-abd1ae6dc174");
             assertEquals(4, twoWT.getAliases().size());
@@ -1789,7 +1789,7 @@ public class NetworkStoreIT {
             assertEquals(1, networkIds.size());
             NetworkImpl readNetwork = (NetworkImpl) service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow());
 
-            assertEquals(251, readNetwork.getIdByAlias().size());
+            assertEquals(249, readNetwork.getIdByAlias().size());
 
             ThreeWindingsTransformer threeWT = readNetwork.getThreeWindingsTransformer("5d38b7ed-73fd-405a-9cdb-78425e003773");
             assertEquals("5d38b7ed-73fd-405a-9cdb-78425e003773", readNetwork.getThreeWindingsTransformer("alias_without_type").getId());
@@ -1806,7 +1806,7 @@ public class NetworkStoreIT {
             assertEquals(1, networkIds.size());
             NetworkImpl readNetwork = (NetworkImpl) service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow());
 
-            assertEquals(250, readNetwork.getIdByAlias().size());
+            assertEquals(248, readNetwork.getIdByAlias().size());
 
             ThreeWindingsTransformer threeWT = readNetwork.getThreeWindingsTransformer("5d38b7ed-73fd-405a-9cdb-78425e003773");
             assertEquals(8, threeWT.getAliases().size());
