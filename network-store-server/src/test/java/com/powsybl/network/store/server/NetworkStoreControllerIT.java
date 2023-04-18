@@ -8,6 +8,7 @@ package com.powsybl.network.store.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.iidm.network.*;
+import com.powsybl.iidm.network.extensions.ConnectablePosition;
 import com.powsybl.network.store.model.*;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -336,8 +337,8 @@ public class NetworkStoreControllerIT {
                 .properties(new HashMap<>(Map.of("property1", "value1", "property2", "value2")))
                 .aliasesWithoutType(new HashSet<>(Set.of("alias1")))
                 .aliasByType(new HashMap<>(Map.of("aliasInt", "valueAliasInt", "aliasDouble", "valueAliasDouble")))
-                .position1(ConnectablePositionAttributes.builder().label("labPosition1").order(1).direction(ConnectableDirection.BOTTOM).build())
-                .position2(ConnectablePositionAttributes.builder().label("labPosition2").order(2).direction(ConnectableDirection.TOP).build())
+                .position1(ConnectablePositionAttributes.builder().label("labPosition1").order(1).direction(ConnectablePosition.Direction.BOTTOM).build())
+                .position2(ConnectablePositionAttributes.builder().label("labPosition2").order(2).direction(ConnectablePosition.Direction.TOP).build())
                 .mergedXnode(MergedXnodeAttributes.builder().rdp(50.).build())
                 .currentLimits1(LimitsAttributes.builder().permanentLimit(20.).build())
                 .build())
@@ -461,8 +462,8 @@ public class NetworkStoreControllerIT {
                 .properties(new HashMap<>(Map.of("property12", "value12", "property22", "value22")))
                 .aliasesWithoutType(new HashSet<>(Set.of("alias12")))
                 .aliasByType(new HashMap<>(Map.of("aliasInt2", "valueAliasInt2", "aliasDouble2", "valueAliasDouble2")))
-                .position1(ConnectablePositionAttributes.builder().label("labPosition12").order(4).direction(ConnectableDirection.BOTTOM).build())
-                .position2(ConnectablePositionAttributes.builder().label("labPosition22").order(9).direction(ConnectableDirection.TOP).build())
+                .position1(ConnectablePositionAttributes.builder().label("labPosition12").order(4).direction(ConnectablePosition.Direction.BOTTOM).build())
+                .position2(ConnectablePositionAttributes.builder().label("labPosition22").order(9).direction(ConnectablePosition.Direction.TOP).build())
                 .mergedXnode(MergedXnodeAttributes.builder().rdp(80.).build())
                 .currentLimits1(LimitsAttributes.builder().permanentLimit(30.).build())
                 .build())
