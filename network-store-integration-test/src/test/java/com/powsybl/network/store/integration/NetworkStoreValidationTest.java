@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextHierarchy({
-        @ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})
+    @ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})
 })
 public class NetworkStoreValidationTest {
 
