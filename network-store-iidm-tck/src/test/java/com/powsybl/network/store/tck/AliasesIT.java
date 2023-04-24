@@ -18,7 +18,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ContextHierarchy({
-        @ContextConfiguration(classes = {NetworkStoreApplication.class})
+    @ContextConfiguration(classes = {NetworkStoreApplication.class})
 })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
 public class AliasesIT extends AbstractAliasesTest {

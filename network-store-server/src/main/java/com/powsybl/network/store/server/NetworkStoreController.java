@@ -87,8 +87,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a network by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get network"),
-            @ApiResponse(responseCode = "404", description = "Network has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get network"),
+        @ApiResponse(responseCode = "404", description = "Network has not been found")
     })
     public ResponseEntity<TopLevelDocument<NetworkAttributes>> getNetwork(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID id,
                                                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum) {
@@ -105,8 +105,8 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a network by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete network"),
-            @ApiResponse(responseCode = "404", description = "Network has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully delete network"),
+        @ApiResponse(responseCode = "404", description = "Network has not been found")
         })
     public ResponseEntity<Void> deleteNetwork(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID id) {
         repository.deleteNetwork(id);
@@ -116,8 +116,8 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a network by id (only one variant)")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete network variant"),
-            @ApiResponse(responseCode = "404", description = "Network has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully delete network variant"),
+        @ApiResponse(responseCode = "404", description = "Network has not been found")
     })
     public ResponseEntity<Void> deleteNetwork(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID id,
                                               @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum) {
@@ -158,9 +158,9 @@ public class NetworkStoreController {
     @PutMapping(value = "/{networkId}/{sourceVariantId}/toId/{targetVariantId}")
     @Operation(summary = "Clone a network variant")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully clone the network variant"),
-            @ApiResponse(responseCode = ErrorObject.CLONE_OVER_EXISTING_STATUS, description = ErrorObject.CLONE_OVER_EXISTING_TITLE),
-            @ApiResponse(responseCode = ErrorObject.CLONE_OVER_INITIAL_FORBIDDEN_STATUS, description = ErrorObject.CLONE_OVER_INITIAL_FORBIDDEN_TITLE),
+        @ApiResponse(responseCode = "200", description = "Successfully clone the network variant"),
+        @ApiResponse(responseCode = ErrorObject.CLONE_OVER_EXISTING_STATUS, description = ErrorObject.CLONE_OVER_EXISTING_TITLE),
+        @ApiResponse(responseCode = ErrorObject.CLONE_OVER_INITIAL_FORBIDDEN_STATUS, description = ErrorObject.CLONE_OVER_INITIAL_FORBIDDEN_TITLE),
         })
     public ResponseEntity<Void> cloneNetwork(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                              @Parameter(description = "Source variant Id", required = true) @PathVariable("sourceVariantId") String sourceVariantId,
@@ -184,8 +184,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/substations/{substationId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a substation by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get substation"),
-            @ApiResponse(responseCode = "404", description = "Substation has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get substation"),
+        @ApiResponse(responseCode = "404", description = "Substation has not been found")
         })
     public ResponseEntity<TopLevelDocument<SubstationAttributes>> getSubstation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                 @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -212,7 +212,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/substations/{substationId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a substation by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete substation")
+        @ApiResponse(responseCode = "200", description = "Successfully delete substation")
     })
     public ResponseEntity<Void> deleteSubstation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                  @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -235,8 +235,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/voltage-levels/{voltageLevelId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a voltage level by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get voltage level"),
-            @ApiResponse(responseCode = "404", description = "Voltage level has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get voltage level"),
+        @ApiResponse(responseCode = "404", description = "Voltage level has not been found")
         })
     public ResponseEntity<TopLevelDocument<VoltageLevelAttributes>> getVoltageLevel(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -273,7 +273,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/voltage-levels/{voltageLevelId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a voltage level by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete voltage level")
+        @ApiResponse(responseCode = "200", description = "Successfully delete voltage level")
     })
     public ResponseEntity<Void> deleteVoltageLevel(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                    @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -430,8 +430,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/generators/{generatorId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a generator by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get generator"),
-            @ApiResponse(responseCode = "404", description = "Generator has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get generator"),
+        @ApiResponse(responseCode = "404", description = "Generator has not been found")
     })
     public ResponseEntity<TopLevelDocument<GeneratorAttributes>> getGenerator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                               @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -460,7 +460,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/generators/{generatorId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a generator by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete generator")
+        @ApiResponse(responseCode = "200", description = "Successfully delete generator")
     })
     public ResponseEntity<Void> deleteGenerator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                 @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -491,8 +491,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/batteries/{batteryId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a battery by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get battery"),
-            @ApiResponse(responseCode = "404", description = "Battery has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get battery"),
+        @ApiResponse(responseCode = "404", description = "Battery has not been found")
     })
     public ResponseEntity<TopLevelDocument<BatteryAttributes>> getBattery(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -521,7 +521,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/batteries/{batteryId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a battery by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete battery")
+        @ApiResponse(responseCode = "200", description = "Successfully delete battery")
     })
     public ResponseEntity<Void> deleteBattery(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                               @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -552,8 +552,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/loads/{loadId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a load by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get load"),
-            @ApiResponse(responseCode = "404", description = "Load has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get load"),
+        @ApiResponse(responseCode = "404", description = "Load has not been found")
         })
     public ResponseEntity<TopLevelDocument<LoadAttributes>> getLoad(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -582,7 +582,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/loads/{loadId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a load by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete load")
+        @ApiResponse(responseCode = "200", description = "Successfully delete load")
     })
     public ResponseEntity<Void> deleteLoad(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -613,8 +613,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/shunt-compensators/{shuntCompensatorId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a shunt compensator by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get shunt compensator"),
-            @ApiResponse(responseCode = "404", description = "Shunt compensator has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get shunt compensator"),
+        @ApiResponse(responseCode = "404", description = "Shunt compensator has not been found")
         })
     public ResponseEntity<TopLevelDocument<ShuntCompensatorAttributes>> getShuntCompensator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                             @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -643,7 +643,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/shunt-compensators/{shuntCompensatorId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a shunt compensator by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete shunt compensator")
+        @ApiResponse(responseCode = "200", description = "Successfully delete shunt compensator")
     })
     public ResponseEntity<Void> deleteShuntCompensator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                        @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -674,8 +674,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/vsc-converter-stations/{vscConverterStationId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a VSC converter station by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get VSC converter station"),
-            @ApiResponse(responseCode = "404", description = "VSC converter station has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get VSC converter station"),
+        @ApiResponse(responseCode = "404", description = "VSC converter station has not been found")
         })
     public ResponseEntity<TopLevelDocument<VscConverterStationAttributes>> getVscConverterStation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                                   @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -704,7 +704,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/vsc-converter-stations/{vscConverterStationId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a vsc converter station by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete vsc converter station")
+        @ApiResponse(responseCode = "200", description = "Successfully delete vsc converter station")
     })
     public ResponseEntity<Void> deleteVscConverterStation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -735,8 +735,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/lcc-converter-stations/{lccConverterStationId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a LCC converter station by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get LCC converter station"),
-            @ApiResponse(responseCode = "404", description = "LCC converter station has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get LCC converter station"),
+        @ApiResponse(responseCode = "404", description = "LCC converter station has not been found")
         })
     public ResponseEntity<TopLevelDocument<LccConverterStationAttributes>> getLccConverterStation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                                   @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -765,7 +765,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/lcc-converter-stations/{lccConverterStationId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a lcc converter station by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete lcc converter station")
+        @ApiResponse(responseCode = "200", description = "Successfully delete lcc converter station")
     })
     public ResponseEntity<Void> deleteLccConverterStation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -796,8 +796,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/static-var-compensators/{staticVarCompensatorId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a static var compensator by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get static var compensator"),
-            @ApiResponse(responseCode = "404", description = "Static var compensator has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get static var compensator"),
+        @ApiResponse(responseCode = "404", description = "Static var compensator has not been found")
         })
     public ResponseEntity<TopLevelDocument<StaticVarCompensatorAttributes>> getStaticVarCompensator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -826,7 +826,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/static-var-compensators/{staticVarCompensatorId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a static var compensator by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete static var compensator")
+        @ApiResponse(responseCode = "200", description = "Successfully delete static var compensator")
     })
     public ResponseEntity<Void> deleteStaticVarCompensator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -858,8 +858,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/busbar-sections/{busbarSectionId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a busbar section by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get busbar section"),
-            @ApiResponse(responseCode = "404", description = "Busbar section has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get busbar section"),
+        @ApiResponse(responseCode = "404", description = "Busbar section has not been found")
         })
     public ResponseEntity<TopLevelDocument<BusbarSectionAttributes>> getBusbarSection(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                       @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -870,7 +870,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/busbar-sections/{busBarSectionId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a bus bar section by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete bus bar section")
+        @ApiResponse(responseCode = "200", description = "Successfully delete bus bar section")
     })
     public ResponseEntity<Void> deleteBusBarSection(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -909,8 +909,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/switches/{switchId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a switch by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get switch"),
-            @ApiResponse(responseCode = "404", description = "Switch has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get switch"),
+        @ApiResponse(responseCode = "404", description = "Switch has not been found")
     })
     public ResponseEntity<TopLevelDocument<SwitchAttributes>> getSwitch(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                         @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -930,7 +930,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/switches/{switchId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a switch by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete switch")
+        @ApiResponse(responseCode = "200", description = "Successfully delete switch")
     })
     public ResponseEntity<Void> deleteSwitch(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                              @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -961,8 +961,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/2-windings-transformers/{twoWindingsTransformerId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a 2 windings transformer by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get 2 windings transformer"),
-            @ApiResponse(responseCode = "404", description = "2 windings transformer has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get 2 windings transformer"),
+        @ApiResponse(responseCode = "404", description = "2 windings transformer has not been found")
         })
     public ResponseEntity<TopLevelDocument<TwoWindingsTransformerAttributes>> getTwoWindingsTransformer(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                                         @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -991,7 +991,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/2-windings-transformers/{twoWindingsTransformerId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a 2 windings transformer by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete 2 windings transformer")
+        @ApiResponse(responseCode = "200", description = "Successfully delete 2 windings transformer")
     })
     public ResponseEntity<Void> deleteTwoWindingsTransformer(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                              @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1022,8 +1022,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/3-windings-transformers/{threeWindingsTransformerId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a 3 windings transformer by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get 3 windings transformer"),
-            @ApiResponse(responseCode = "404", description = "3 windings transformer has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get 3 windings transformer"),
+        @ApiResponse(responseCode = "404", description = "3 windings transformer has not been found")
         })
     public ResponseEntity<TopLevelDocument<ThreeWindingsTransformerAttributes>> getThreeWindingsTransformer(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                                             @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1052,7 +1052,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/3-windings-transformers/{threeWindingsTransformerId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a 3 windings transformer by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete 3 windings transformer")
+        @ApiResponse(responseCode = "200", description = "Successfully delete 3 windings transformer")
     })
     public ResponseEntity<Void> deleteThreeWindingsTransformer(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1083,8 +1083,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/lines/{lineId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a line by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get line"),
-            @ApiResponse(responseCode = "404", description = "line has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get line"),
+        @ApiResponse(responseCode = "404", description = "line has not been found")
         })
     public ResponseEntity<TopLevelDocument<LineAttributes>> getLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1113,7 +1113,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/lines/{lineId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a line by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete line")
+        @ApiResponse(responseCode = "200", description = "Successfully delete line")
     })
     public ResponseEntity<Void> deleteLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1144,8 +1144,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/hvdc-lines/{hvdcLineId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a hvdc line by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get hvdc line"),
-            @ApiResponse(responseCode = "404", description = "Hvdc line has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get hvdc line"),
+        @ApiResponse(responseCode = "404", description = "Hvdc line has not been found")
         })
     public ResponseEntity<TopLevelDocument<HvdcLineAttributes>> getHvdcLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                             @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1165,7 +1165,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/hvdc-lines/{hvdcLineId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a hvdc line by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete hvdc line")
+        @ApiResponse(responseCode = "200", description = "Successfully delete hvdc line")
     })
     public ResponseEntity<Void> deleteHvdcLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1196,8 +1196,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/dangling-lines/{danglingLineId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a dangling line by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get dangling line"),
-            @ApiResponse(responseCode = "404", description = "Dangling line has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get dangling line"),
+        @ApiResponse(responseCode = "404", description = "Dangling line has not been found")
         })
     public ResponseEntity<TopLevelDocument<DanglingLineAttributes>> getDanglingLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1208,7 +1208,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/dangling-lines/{danglingLineId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a dangling line by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete dangling line")
+        @ApiResponse(responseCode = "200", description = "Successfully delete dangling line")
     })
     public ResponseEntity<Void> deleteDanglingLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                    @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1257,8 +1257,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/configured-buses/{busId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a bus by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get bus"),
-            @ApiResponse(responseCode = "404", description = "bus has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get bus"),
+        @ApiResponse(responseCode = "404", description = "bus has not been found")
     })
     public ResponseEntity<TopLevelDocument<ConfiguredBusAttributes>> getBuses(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                               @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1269,8 +1269,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/voltage-levels/{voltageLevelId}/configured-buses", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a bus by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get buses"),
-            @ApiResponse(responseCode = "404", description = "bus has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get buses"),
+        @ApiResponse(responseCode = "404", description = "bus has not been found")
     })
     public ResponseEntity<TopLevelDocument<ConfiguredBusAttributes>> getVoltageLevelBuses(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1290,7 +1290,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/configured-buses/{busId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a bus by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete bus")
+        @ApiResponse(responseCode = "200", description = "Successfully delete bus")
     })
     public ResponseEntity<Void> deleteBus(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1302,8 +1302,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/identifiables/{id}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get an identifiable by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get the identifiable"),
-            @ApiResponse(responseCode = "404", description = "The identifiable has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get the identifiable"),
+        @ApiResponse(responseCode = "404", description = "The identifiable has not been found")
     })
     public ResponseEntity<TopLevelDocument<IdentifiableAttributes>> getIdentifiable(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
