@@ -27,13 +27,8 @@ import com.powsybl.network.store.client.PreloadingStrategy;
 import com.powsybl.network.store.client.RestClient;
 import com.powsybl.network.store.client.RestClientImpl;
 import com.powsybl.network.store.iidm.impl.ConfiguredBusImpl;
-import com.powsybl.network.store.iidm.impl.GeneratorImpl;
 import com.powsybl.network.store.iidm.impl.NetworkFactoryImpl;
 import com.powsybl.network.store.iidm.impl.NetworkImpl;
-import com.powsybl.network.store.iidm.impl.extensions.CgmesSshMetadataImpl;
-import com.powsybl.network.store.iidm.impl.extensions.CgmesSvMetadataImpl;
-import com.powsybl.network.store.iidm.impl.extensions.CimCharacteristicsImpl;
-import com.powsybl.network.store.iidm.impl.extensions.*;
 import com.powsybl.network.store.model.BaseVoltageSourceAttribute;
 import com.powsybl.network.store.model.CgmesSshMetadataAttributes;
 import com.powsybl.network.store.model.CgmesSvMetadataAttributes;
@@ -50,8 +45,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
@@ -1659,8 +1654,7 @@ public class NetworkStoreIT {
                 .cgmesTopologyKind(CgmesTopologyKind.BUS_BRANCH)
                 .build();
 
-            ((NetworkImpl) readNetwork).getResource().getAttributes().setCimCharacteristics(cimCharacteristicsAttributes);
-            ((NetworkImpl) readNetwork).updateResource();
+            ((NetworkImpl) readNetwork).updateResource(res -> res.getAttributes().setCimCharacteristics(cimCharacteristicsAttributes));
 
             service.flush(readNetwork);
         }
@@ -1688,25 +1682,22 @@ public class NetworkStoreIT {
             assertEquals("modelingAuthoritySetSsh", cgmesSshMetadata.getModelingAuthoritySet());
             assertEquals(0, cgmesSshMetadata.getDependencies().size());
 
-            cgmesSvMetadata = new CgmesSvMetadataImpl((NetworkImpl) readNetwork,
-                "Description2",
-                7,
-                new ArrayList<>(),
-                "modelingAuthoritySet2");
-
-            cgmesSshMetadata = new CgmesSshMetadataImpl((NetworkImpl) readNetwork,
-                "DescriptionSsh2",
-                8,
-                new ArrayList<>(),
-                "modelingAuthoritySetSsh2");
-
-            cimCharacteristics = new CimCharacteristicsImpl((NetworkImpl) readNetwork,
-                CgmesTopologyKind.NODE_BREAKER,
-                6);
-
-            readNetwork.addExtension(CgmesSvMetadata.class, cgmesSvMetadata);
-            readNetwork.addExtension(CgmesSshMetadata.class, cgmesSshMetadata);
-            readNetwork.addExtension(CimCharacteristics.class, cimCharacteristics);
+            readNetwork.newExtension(CgmesSvMetadataAdder.class)
+                    .setDescription("Description2")
+                    .setSvVersion(7)
+                    .addDependency("dep2")
+                    .setModelingAuthoritySet("modelingAuthoritySet2")
+                    .add();
+            readNetwork.newExtension(CgmesSshMetadataAdder.class)
+                    .setDescription("DescriptionSsh2")
+                    .setSshVersion(8)
+                    .addDependency("dep2")
+                    .setModelingAuthoritySet("modelingAuthoritySetSsh2")
+                    .add();
+            readNetwork.newExtension(CimCharacteristicsAdder.class)
+                    .setTopologyKind(CgmesTopologyKind.NODE_BREAKER)
+                    .setCimVersion(6)
+                    .add();
             service.flush(readNetwork);
         }
 
@@ -1727,11 +1718,11 @@ public class NetworkStoreIT {
             assertEquals("Description2", cgmesSvMetadata.getDescription());
             assertEquals(7, cgmesSvMetadata.getSvVersion());
             assertEquals("modelingAuthoritySet2", cgmesSvMetadata.getModelingAuthoritySet());
-            assertEquals(0, cgmesSvMetadata.getDependencies().size());
+            assertEquals(1, cgmesSvMetadata.getDependencies().size());
             assertEquals("DescriptionSsh2", cgmesSshMetadata.getDescription());
             assertEquals(8, cgmesSshMetadata.getSshVersion());
             assertEquals("modelingAuthoritySetSsh2", cgmesSshMetadata.getModelingAuthoritySet());
-            assertEquals(0, cgmesSshMetadata.getDependencies().size());
+            assertEquals(1, cgmesSshMetadata.getDependencies().size());
         }
     }
 
@@ -1748,7 +1739,7 @@ public class NetworkStoreIT {
 
             NetworkImpl readNetwork = (NetworkImpl) service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow());
 
-            assertEquals(250, readNetwork.getIdByAlias().size());
+            assertEquals(248, readNetwork.getIdByAlias().size());
 
             TwoWindingsTransformer twoWT = readNetwork.getTwoWindingsTransformer("7fe566b9-6bac-4cd3-8b52-8f46e9ba237d");
             assertEquals("813365c3-5be7-4ef0-a0a7-abd1ae6dc174", readNetwork.getTwoWindingsTransformer("813365c3-5be7-4ef0-a0a7-abd1ae6dc174").getId());
@@ -1772,7 +1763,7 @@ public class NetworkStoreIT {
             assertEquals(1, networkIds.size());
             NetworkImpl readNetwork = (NetworkImpl) service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow());
 
-            assertEquals(249, readNetwork.getIdByAlias().size());
+            assertEquals(247, readNetwork.getIdByAlias().size());
 
             TwoWindingsTransformer twoWT = readNetwork.getTwoWindingsTransformer("813365c3-5be7-4ef0-a0a7-abd1ae6dc174");
             assertEquals(4, twoWT.getAliases().size());
@@ -1789,7 +1780,7 @@ public class NetworkStoreIT {
             assertEquals(1, networkIds.size());
             NetworkImpl readNetwork = (NetworkImpl) service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow());
 
-            assertEquals(251, readNetwork.getIdByAlias().size());
+            assertEquals(249, readNetwork.getIdByAlias().size());
 
             ThreeWindingsTransformer threeWT = readNetwork.getThreeWindingsTransformer("5d38b7ed-73fd-405a-9cdb-78425e003773");
             assertEquals("5d38b7ed-73fd-405a-9cdb-78425e003773", readNetwork.getThreeWindingsTransformer("alias_without_type").getId());
@@ -1806,7 +1797,7 @@ public class NetworkStoreIT {
             assertEquals(1, networkIds.size());
             NetworkImpl readNetwork = (NetworkImpl) service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow());
 
-            assertEquals(250, readNetwork.getIdByAlias().size());
+            assertEquals(248, readNetwork.getIdByAlias().size());
 
             ThreeWindingsTransformer threeWT = readNetwork.getThreeWindingsTransformer("5d38b7ed-73fd-405a-9cdb-78425e003773");
             assertEquals(8, threeWT.getAliases().size());
@@ -3272,7 +3263,10 @@ public class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService()) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
-            gen.addExtension(ActivePowerControl.class, new ActivePowerControlImpl<>(gen, true, 6.3f));
+            gen.newExtension(ActivePowerControlAdder.class)
+                    .withParticipate(true)
+                    .withDroop(6.3f)
+                    .add();
             service.flush(network);
         }
 
@@ -3292,7 +3286,13 @@ public class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService()) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
-            gen.addExtension(GeneratorStartup.class, new GeneratorStartupImpl((GeneratorImpl) gen, 1.0, 2.0, 3.0, 4.0, 5.0));
+            gen.newExtension(GeneratorStartupAdder.class)
+                    .withPlannedActivePowerSetpoint(1.0)
+                    .withStartupCost(2.0)
+                    .withMarginalCost(3.0)
+                    .withPlannedOutageRate(4.0)
+                    .withForcedOutageRate(5.0)
+                    .add();
             service.flush(network);
         }
 
@@ -4294,7 +4294,10 @@ public class NetworkStoreIT {
 
             Battery battery = readNetwork.getBattery("battery");
 
-            battery.addExtension(ActivePowerControl.class, new ActivePowerControlImpl<>(battery, false, 1.0f));
+            battery.newExtension(ActivePowerControlAdder.class)
+                    .withParticipate(false)
+                    .withDroop(1.0f)
+                    .add();
             ActivePowerControl activePowerControl = battery.getExtension(ActivePowerControl.class);
             assertFalse(activePowerControl.isParticipate());
             assertEquals(1.0f, activePowerControl.getDroop(), 0.01);
@@ -4330,7 +4333,7 @@ public class NetworkStoreIT {
 
             LccConverterStation lccConverterStation = readNetwork.getLccConverterStation("LCC2");
 
-            assertThrows(UnsupportedOperationException.class, () -> lccConverterStation.addExtension(ActivePowerControl.class, new ActivePowerControlImpl<>(lccConverterStation, false, 1.0f)))
+            assertThrows(UnsupportedOperationException.class, () -> lccConverterStation.newExtension(ActivePowerControlAdder.class).withParticipate(false).withDroop(1.0f).add())
                 .getMessage().contains("Cannot set ActivePowerControl");
             assertNull(lccConverterStation.getExtension(ActivePowerControl.class));
         }
@@ -4355,7 +4358,7 @@ public class NetworkStoreIT {
 
             Load load = readNetwork.getLoad("load1");
 
-            assertThrows(UnsupportedOperationException.class, () -> load.addExtension(ActivePowerControl.class, new ActivePowerControlImpl<>(load, false, 1.0f)))
+            assertThrows(UnsupportedOperationException.class, () -> load.newExtension(ActivePowerControlAdder.class).withParticipate(false).withDroop(1.0f).add())
                 .getMessage().contains("Cannot set ActivePowerControl");
             assertNull(load.getExtension(ActivePowerControl.class));
         }
