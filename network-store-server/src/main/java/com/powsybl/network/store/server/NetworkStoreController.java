@@ -6,6 +6,7 @@
  */
 package com.powsybl.network.store.server;
 
+import com.powsybl.iidm.network.TieLine;
 import com.powsybl.network.store.model.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -466,6 +467,58 @@ public class NetworkStoreController {
                                                 @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                 @Parameter(description = "Generator ID", required = true) @PathVariable("generatorId") String generatorId) {
         repository.deleteGenerator(networkId, variantNum, generatorId);
+        return ResponseEntity.ok().build();
+    }
+
+    // tie line
+
+    @PostMapping(value = "/{networkId}/tie-lines")
+    @Operation(summary = "Create tie lines")
+    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully create tie lines"))
+    public ResponseEntity<Void> createTieLines(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                 @Parameter(description = "Tie line resources", required = true) @RequestBody List<Resource<TieLineAttributes>> tielineResources) {
+        return createAll(resource -> repository.createTieLines(networkId, resource), tielineResources);
+    }
+
+    @GetMapping(value = "/{networkId}/{variantNum}/tie-lines", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get tie lines")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get tie line list"))
+    public ResponseEntity<TopLevelDocument<TieLineAttributes>> getTieLines(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                               @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                               @Parameter(description = "Max number of tie lines to get") @RequestParam(required = false) Integer limit) {
+        return getAll(() -> repository.getTieLines(networkId, variantNum), limit);
+    }
+
+    @GetMapping(value = "/{networkId}/{variantNum}/tie-lines/{tieLineId}", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get a tie line by id")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully get tie line"),
+            @ApiResponse(responseCode = "404", description = "Tie line has not been found")
+    })
+    public ResponseEntity<TopLevelDocument<TieLineAttributes>> getTieLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                @Parameter(description = "Generator ID", required = true) @PathVariable("tieLineId") String tieLineId) {
+        return get(() -> repository.getTieLine(networkId, variantNum, tieLineId));
+    }
+
+    @PutMapping(value = "/{networkId}/tie-lines")
+    @Operation(summary = "Update generators")
+    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully update tie lines"))
+    public ResponseEntity<Void> updateTieLines(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                 @Parameter(description = "tie line resources", required = true) @RequestBody List<Resource<TieLineAttributes>> tieLineResources) {
+
+        return updateAll(resources -> repository.updateTieLines(networkId, resources), tieLineResources);
+    }
+
+    @DeleteMapping(value = "/{networkId}/{variantNum}/tie-lines/{tieLineId}", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete a generator by id")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully delete generator")
+    })
+    public ResponseEntity<Void> deleteTieLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                @Parameter(description = "Tie line ID", required = true) @PathVariable("tieLineId") String tieLineId) {
+        repository.deleteTieLine(networkId, variantNum, tieLineId);
         return ResponseEntity.ok().build();
     }
 

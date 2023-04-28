@@ -637,10 +637,10 @@ public class NetworkStoreValidationTest {
     public void testTieLine() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
-        s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
-        s1.newVoltageLevel().setId("VL2").setNominalV(225).setLowVoltageLimit(180).setHighVoltageLimit(250).setTopologyKind(TopologyKind.NODE_BREAKER).add();
+        VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
+        VoltageLevel vl2 = s1.newVoltageLevel().setId("VL2").setNominalV(225).setLowVoltageLimit(180).setHighVoltageLimit(250).setTopologyKind(TopologyKind.NODE_BREAKER).add();
 
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().add()).getMessage().contains("AC Line id is not set"));
+        /*assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().add()).getMessage().contains("AC Line id is not set"));
         assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").add())
                 .getMessage().contains("first voltage level is not set"));
         assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("1").add())
@@ -680,33 +680,16 @@ public class NetworkStoreValidationTest {
         assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().setId("h1").setR(1).setX(1).setG1(1).setB1(1).add().add())
                 .getMessage().contains("g2 is not set"));
         assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().setId("h1").setR(1).setX(1).setG1(1).setB1(1).setG2(1).add().add())
-                .getMessage().contains("b2 is not set"));
+                .getMessage().contains("b2 is not set"))*/
+
+        DanglingLine danglingLine1 = vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1).add();
+        DanglingLine danglingLine2 = vl2.newDanglingLine().setId("DL2").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1).add();
 
         network.newTieLine()
-                .setId("TL")
-                .setVoltageLevel1("VL1")
-                .setVoltageLevel2("VL2")
-                .setNode1(1)
-                .setNode2(1)
-                .setUcteXnodeCode("1")
-                .newHalfLine1()
-                .setId("h1")
-                .setR(1)
-                .setX(1)
-                .setG1(1)
-                .setB1(1)
-                .setG2(1)
-                .setB2(1)
-                .add()
-                .newHalfLine2()
-                .setId("h2")
-                .setR(1)
-                .setX(1)
-                .setG1(1)
-                .setB1(1)
-                .setG2(1)
-                .setB2(1)
-                .add()
+                .setId("NewTieLine")
+                .setName("NewTieLine")
+                .setHalf1(danglingLine1.getId())
+                .setHalf2(danglingLine2.getId())
                 .add();
     }
 

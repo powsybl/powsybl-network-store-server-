@@ -50,10 +50,12 @@ public class Mappings {
     static final String CONFIGURED_BUS_TABLE = "configuredBus";
     static final String LOAD_TABLE = "load";
     static final String LINE_TABLE = "line";
+    static final String TIE_LINE_TABLE = "tieLine";
+
 
     static final List<String> ELEMENT_TABLES = List.of(SUBSTATION_TABLE, VOLTAGE_LEVEL_TABLE, BUSBAR_SECTION_TABLE, CONFIGURED_BUS_TABLE, SWITCH_TABLE, GENERATOR_TABLE, BATTERY_TABLE, LOAD_TABLE, SHUNT_COMPENSATOR_TABLE,
             STATIC_VAR_COMPENSATOR_TABLE, VSC_CONVERTER_STATION_TABLE, LCC_CONVERTER_STATION_TABLE, TWO_WINDINGS_TRANSFORMER_TABLE,
-            THREE_WINDINGS_TRANSFORMER_TABLE, LINE_TABLE, HVDC_LINE_TABLE, DANGLING_LINE_TABLE);
+            THREE_WINDINGS_TRANSFORMER_TABLE, LINE_TABLE, HVDC_LINE_TABLE, DANGLING_LINE_TABLE, TIE_LINE_TABLE);
 
     private final TableMapping lineMappings = new TableMapping(LINE_TABLE, ResourceType.LINE, Resource::lineBuilder, LineAttributes::new, Set.of(VOLTAGE_LEVEL_ID_1_COLUMN, VOLTAGE_LEVEL_ID_2_COLUMN));
     private final TableMapping loadMappings = new TableMapping(LOAD_TABLE, ResourceType.LOAD, Resource::loadBuilder, LoadAttributes::new, Set.of(VOLTAGE_LEVEL_ID_COLUMN));
@@ -74,6 +76,7 @@ public class Mappings {
     private final TableMapping twoWindingsTransformerMappings = new TableMapping(TWO_WINDINGS_TRANSFORMER_TABLE, ResourceType.TWO_WINDINGS_TRANSFORMER, Resource::twoWindingsTransformerBuilder, TwoWindingsTransformerAttributes::new, Set.of(VOLTAGE_LEVEL_ID_1_COLUMN, VOLTAGE_LEVEL_ID_2_COLUMN));
     private final TableMapping threeWindingsTransformerMappings = new TableMapping(THREE_WINDINGS_TRANSFORMER_TABLE, ResourceType.THREE_WINDINGS_TRANSFORMER, Resource::threeWindingsTransformerBuilder, THREE_WINDINGS_TRANSFORMER_ATTRIBUTES_SUPPLIER, Set.of(VOLTAGE_LEVEL_ID_1_COLUMN, VOLTAGE_LEVEL_ID_2_COLUMN, VOLTAGE_LEVEL_ID_3_COLUMN));
 
+    private final TableMapping tieLineMappings = new TableMapping(TIE_LINE_TABLE, ResourceType.TIE_LINE, Resource::tieLineBuilder, TieLineAttributes::new, Collections.emptySet());
     private final List<TableMapping> all = List.of(lineMappings,
                                                    loadMappings,
                                                    generatorMappings,
@@ -92,7 +95,8 @@ public class Mappings {
                                                    staticVarCompensatorMappings,
                                                    hvdcLineMappings,
                                                    twoWindingsTransformerMappings,
-                                                   threeWindingsTransformerMappings);
+                                                   threeWindingsTransformerMappings,
+                                                   tieLineMappings);
 
     private final Map<String, TableMapping> mappingByTable = new LinkedHashMap<>();
 
@@ -506,6 +510,16 @@ public class Mappings {
                 }
                 attributes.getActivePowerLimits().setPermanentLimit(value);
             }));
+    }
+
+    private void createTieLineMappings() {
+        tieLineMappings.addColumnMapping("name", new ColumnMapping<>(String.class, TieLineAttributes::getName, TieLineAttributes::setName));
+        tieLineMappings.addColumnMapping("half1Id", new ColumnMapping<>(String.class, TieLineAttributes::getHalf1Id, TieLineAttributes::setHalf1Id));
+        tieLineMappings.addColumnMapping("half2Id", new ColumnMapping<>(String.class, TieLineAttributes::getHalf2Id, TieLineAttributes::setHalf2Id));
+    }
+
+    public TableMapping getTieLineMappings() {
+        return tieLineMappings;
     }
 
     public TableMapping getShuntCompensatorMappings() {
@@ -1164,6 +1178,7 @@ public class Mappings {
         createHvdcLineMappings();
         createTwoWindingsTransformerMappings();
         createThreeWindingsTransformerMappings();
+        createTieLineMappings();
         for (TableMapping tableMapping : all) {
             mappingByTable.put(tableMapping.getTable().toLowerCase(), tableMapping);
         }
