@@ -6,7 +6,6 @@
  */
 package com.powsybl.network.store.server;
 
-import com.powsybl.iidm.network.TieLine;
 import com.powsybl.network.store.model.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
