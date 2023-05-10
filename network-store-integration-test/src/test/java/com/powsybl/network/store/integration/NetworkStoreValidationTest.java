@@ -688,8 +688,8 @@ public class NetworkStoreValidationTest {
         network.newTieLine()
                 .setId("NewTieLine")
                 .setName("NewTieLine")
-                .setHalf1(danglingLine1.getId())
-                .setHalf2(danglingLine2.getId())
+                .setDanglingLine1(danglingLine1.getId())
+                .setDanglingLine2(danglingLine2.getId())
                 .add();
     }
 

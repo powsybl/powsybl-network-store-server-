@@ -2339,8 +2339,8 @@ public class NetworkStoreIT {
             TieLine tieLine2 = readNetwork.newTieLine()
                 .setId("id")
                 .setName("name")
-                .setHalf1(danglingLine1.getId())
-                .setHalf2(danglingLine2.getId())
+                .setDanglingLine1(danglingLine1.getId())
+                .setDanglingLine2(danglingLine2.getId())
                 .add();
             assertEquals("id", tieLine2.getId());
             assertEquals("test", tieLine2.getUcteXnodeCode());
@@ -2351,18 +2351,18 @@ public class NetworkStoreIT {
             assertEquals(8, tieLine2.getG2(), 0);
             assertEquals(3, tieLine2.getB1(), 0);
             assertEquals(4, tieLine2.getB2(), 0);
-            assertEquals("h1", tieLine2.getHalf1().getId());
-            assertEquals(1.5, tieLine2.getHalf1().getB(), 0);
-            assertEquals(3.5, tieLine2.getHalf1().getG(), 0);
-            assertEquals(5, tieLine2.getHalf1().getR(), ESP);
-            assertEquals(6, tieLine2.getHalf1().getX(), ESP);
-            assertEquals("h2", tieLine2.getHalf2().getId());
-            assertEquals(2, tieLine2.getHalf2().getB(), 0);
-            assertEquals(4, tieLine2.getHalf2().getG(), 0);
-            assertEquals(5.5, tieLine2.getHalf2().getR(), ESP);
-            assertEquals(6.5, tieLine2.getHalf2().getX(), ESP);
-            assertEquals("h1", tieLine2.getHalf(Branch.Side.ONE).getId());
-            assertEquals("h2", tieLine2.getHalf(Branch.Side.TWO).getId());
+            assertEquals("h1", tieLine2.getDanglingLine1().getId());
+            assertEquals(1.5, tieLine2.getDanglingLine1().getB(), 0);
+            assertEquals(3.5, tieLine2.getDanglingLine1().getG(), 0);
+            assertEquals(5, tieLine2.getDanglingLine1().getR(), ESP);
+            assertEquals(6, tieLine2.getDanglingLine1().getX(), ESP);
+            assertEquals("h2", tieLine2.getDanglingLine2().getId());
+            assertEquals(2, tieLine2.getDanglingLine2().getB(), 0);
+            assertEquals(4, tieLine2.getDanglingLine2().getG(), 0);
+            assertEquals(5.5, tieLine2.getDanglingLine2().getR(), ESP);
+            assertEquals(6.5, tieLine2.getDanglingLine2().getX(), ESP);
+            assertEquals("h1", tieLine2.getDanglingLine(Branch.Side.ONE).getId());
+            assertEquals("h2", tieLine2.getDanglingLine(Branch.Side.TWO).getId());
 
             Line regularLine = readNetwork.getLine("F_SU1_12 F_SU2_11 2");
             assertNull(regularLine.getExtension(MergedXnode.class));
@@ -2372,8 +2372,8 @@ public class NetworkStoreIT {
             assertNotNull(regularLine.getExtension(MergedXnode.class));
             assertEquals(1, regularLine.getExtension(MergedXnode.class).getRdp(), .0001);
 
-            tieLine2.getHalf1().getTerminal().setQ(200.);
-            tieLine2.getHalf2().getTerminal().setP(800.);
+            tieLine2.getDanglingLine1().getTerminal().setQ(200.);
+            tieLine2.getDanglingLine2().getTerminal().setP(800.);
 
             regularLine.getTerminal1().setP(500.);
             regularLine.getTerminal2().setQ(300.);
@@ -4567,7 +4567,7 @@ public class NetworkStoreIT {
                 .setEnergyIdentificationCodeEic("code2")
                 .setNetInterchange(800)
                 .add();
-            cgmesControlArea.add(((TieLine) network.getTieLine("b18cd1aa-7808-49b9-a7cf-605eaf07b006 + e8acf6b6-99cb-45ad-b8dc-16c7866a4ddc")).getHalf1().getBoundary());
+            cgmesControlArea.add(((TieLine) network.getTieLine("b18cd1aa-7808-49b9-a7cf-605eaf07b006 + e8acf6b6-99cb-45ad-b8dc-16c7866a4ddc")).getDanglingLine1().getBoundary());
             assertEquals(1, cgmesControlAreas.getCgmesControlAreas().size());
 
             service.flush(network);
