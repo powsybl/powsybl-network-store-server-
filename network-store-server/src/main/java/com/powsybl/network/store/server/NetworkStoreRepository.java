@@ -1538,11 +1538,12 @@ public class NetworkStoreRepository {
                             bindAttributes(resultSet, columnIndex, columnMapping, attributes);
                         });
 
-                        return Optional.of(new Resource.Builder<>(tableMapping.getResourceType())
+                        Resource<IdentifiableAttributes> resource = new Resource.Builder<>(tableMapping.getResourceType())
                                 .id(id)
                                 .variantNum(variantNum)
                                 .attributes(attributes)
-                                .build());
+                                .build();
+                        return Optional.of(completeResourceInfos(resource, networkUuid, variantNum, id));
                     }
                 }
             }
