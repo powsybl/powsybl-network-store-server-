@@ -15,7 +15,7 @@
     <parent>
         <groupId>com.powsybl</groupId>
         <artifactId>powsybl-parent-ws</artifactId>
-        <version>10</version>
+        <version>11</version>
         <relativePath/>
     </parent>
 
@@ -48,11 +48,11 @@
     </developers>
 
     <properties>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
 
         <sirocco.version>1.0</sirocco.version>
 
-        <powsybl-ws-dependencies.version>2.2.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.3.0</powsybl-ws-dependencies.version>
 
         <sonar.coverage.jacoco.xmlReportPaths>
             ../network-store-integration-test/target/site/jacoco-aggregate/jacoco.xml,
