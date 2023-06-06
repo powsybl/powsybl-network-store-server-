@@ -19,5 +19,8 @@
             <column name="half1Id" type="VARCHAR(255)"/>
             <column name="half2Id" type="VARCHAR(255)"/>
         </createTable>
+        <addColumn tableName="danglingline">
+            <column name="parentId" type="VARCHAR(255)"/>
+        </addColumn>
     </changeSet>
 </databaseChangeLog>

@@ -22,8 +22,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -643,12 +642,19 @@ public class NetworkStoreValidationTest {
         DanglingLine danglingLine1 = vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1).add();
         DanglingLine danglingLine2 = vl2.newDanglingLine().setId("DL2").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1).add();
 
-        network.newTieLine()
-                .setId("NewTieLine")
-                .setName("NewTieLine")
+        TieLine tl = network.newTieLine()
+                .setId("NewTieLineId")
                 .setDanglingLine1(danglingLine1.getId())
                 .setDanglingLine2(danglingLine2.getId())
                 .add();
+
+        assertEquals("NewTieLineId", tl.getId());
+        assertEquals("DL1", tl.getDanglingLine1().getId());
+        assertEquals("DL2", tl.getDanglingLine2().getId());
+        tl.getDanglingLine1().remove();
+        assertNull(tl.getDanglingLine1());
+        tl.getDanglingLine2().remove();
+        assertNull(tl.getDanglingLine2());
     }
 
     @Test

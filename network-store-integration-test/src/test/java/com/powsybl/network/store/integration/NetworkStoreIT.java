@@ -2291,32 +2291,25 @@ public class NetworkStoreIT {
             Map<UUID, String> networkIds = service.getNetworkIds();
             assertEquals(1, networkIds.size());
             Network readNetwork = service.getNetwork(networkIds.keySet().stream().findFirst().get());
-            assertEquals(1, readNetwork.getDanglingLineCount());
-            DanglingLine dl = readNetwork.getDanglingLineStream().findFirst().orElseThrow(AssertionError::new);
+            assertEquals(5, readNetwork.getDanglingLineCount());
+
+            //Find the one which is not paired (not part of a tie line)
+            DanglingLine dl = readNetwork.getDanglingLineStream().filter(d -> !d.isPaired()).findFirst().orElseThrow(AssertionError::new);
             assertEquals("XG__F_21", dl.getUcteXnodeCode());
-            Xnode xnode = (Xnode) dl.getExtensionByName("xnode");
-            assertEquals("XG__F_21", xnode.getCode());
-            assertEquals(1, dl.getExtensions().size());
-            Xnode sameXnode = (Xnode) dl.getExtension(Xnode.class);
-            assertEquals("XG__F_21", sameXnode.getCode());
             ConnectablePosition connectablePosition = dl.getExtension(ConnectablePosition.class);
             assertNull(connectablePosition);
             ConnectablePosition connectablePosition2 = dl.getExtensionByName("");
             assertNull(connectablePosition2);
-            assertEquals(4, readNetwork.getLineCount());
-            assertNotNull(readNetwork.getLine("XB__F_21 B_SU1_21 1 + XB__F_21 F_SU1_21 1"));
-            assertNotNull(readNetwork.getLine("XB__F_11 B_SU1_11 1 + XB__F_11 F_SU1_11 1"));
+            assertEquals(2, readNetwork.getLineCount());
+            assertNotNull(readNetwork.getTieLine("XB__F_21 B_SU1_21 1 + XB__F_21 F_SU1_21 1"));
+            assertNotNull(readNetwork.getTieLine("XB__F_11 B_SU1_11 1 + XB__F_11 F_SU1_11 1"));
             assertNotNull(readNetwork.getLine("F_SU1_12 F_SU2_11 2"));
             assertNotNull(readNetwork.getLine("F_SU1_12 F_SU2_11 1"));
-            Line line = readNetwork.getLine("XB__F_21 B_SU1_21 1 + XB__F_21 F_SU1_21 1");
-            assertTrue(line.isTieLine());
-            assertNotNull(line.getExtension(MergedXnode.class));
-            MergedXnode mergedXnode = line.getExtension(MergedXnode.class);
-            assertEquals("XB__F_21", mergedXnode.getCode());
-            assertEquals("XB__F_21 B_SU1_21 1", mergedXnode.getLine1Name());
-            assertEquals("XB__F_21 F_SU1_21 1", mergedXnode.getLine2Name());
-            assertNotNull(line.getExtensionByName("mergedXnode"));
-            assertEquals(1, line.getExtensions().size());
+            TieLine tieLine = readNetwork.getTieLine("XB__F_21 B_SU1_21 1 + XB__F_21 F_SU1_21 1");
+            assertNotNull(tieLine);
+
+            //2 Lines + 6 transformers + 2 tie lines
+            assertEquals(10, readNetwork.getBranchCount());
 
             Substation s1 = readNetwork.newSubstation()
                 .setId("S1")
@@ -2333,8 +2326,23 @@ public class NetworkStoreIT {
                 .setTopologyKind(TopologyKind.NODE_BREAKER)
                 .add();
 
-            DanglingLine danglingLine1 = vl1.newDanglingLine().setId("DL1").setNode(1).setR(5).setX(6).setG(3).setB(1).add();
-            DanglingLine danglingLine2 = vl2.newDanglingLine().setId("DL2").setNode(1).setR(5.5).setX(6.5).setG(3.5).setB(1.5).add();
+            DanglingLine danglingLine1 = vl1.newDanglingLine()
+                    .setId("DL1")
+                    .setNode(1)
+                    .setR(5)
+                    .setX(6)
+                    .setG(3)
+                    .setB(1)
+                    .setUcteXnodeCode("test")
+                    .add();
+            DanglingLine danglingLine2 = vl2.newDanglingLine()
+                    .setId("DL2")
+                    .setNode(1)
+                    .setR(5.5)
+                    .setX(6.5)
+                    .setG(3.5)
+                    .setB(1.5)
+                    .add();
 
             TieLine tieLine2 = readNetwork.newTieLine()
                 .setId("id")
@@ -2342,35 +2350,29 @@ public class NetworkStoreIT {
                 .setDanglingLine1(danglingLine1.getId())
                 .setDanglingLine2(danglingLine2.getId())
                 .add();
+
             assertEquals("id", tieLine2.getId());
             assertEquals("test", tieLine2.getUcteXnodeCode());
-            assertEquals("name", tieLine2.getName());
-            assertEquals(10.5, tieLine2.getR(), 0);
-            assertEquals(12.5, tieLine2.getX(), 0);
-            assertEquals(7, tieLine2.getG1(), 0);
-            assertEquals(8, tieLine2.getG2(), 0);
-            assertEquals(3, tieLine2.getB1(), 0);
-            assertEquals(4, tieLine2.getB2(), 0);
-            assertEquals("h1", tieLine2.getDanglingLine1().getId());
-            assertEquals(1.5, tieLine2.getDanglingLine1().getB(), 0);
-            assertEquals(3.5, tieLine2.getDanglingLine1().getG(), 0);
+            assertEquals(10.5, tieLine2.getR(), ESP);
+            assertEquals(12.5, tieLine2.getX(), ESP);
+            assertEquals(3.0, tieLine2.getG1(), ESP);
+            assertEquals(3.5, tieLine2.getG2(), ESP);
+            assertEquals(1, tieLine2.getB1(), ESP);
+            assertEquals(1.5, tieLine2.getB2(), ESP);
+            assertEquals("DL1", tieLine2.getDanglingLine1().getId());
+            assertEquals(1.0, tieLine2.getDanglingLine1().getB(), ESP);
+            assertEquals(3.0, tieLine2.getDanglingLine1().getG(), ESP);
             assertEquals(5, tieLine2.getDanglingLine1().getR(), ESP);
             assertEquals(6, tieLine2.getDanglingLine1().getX(), ESP);
-            assertEquals("h2", tieLine2.getDanglingLine2().getId());
-            assertEquals(2, tieLine2.getDanglingLine2().getB(), 0);
-            assertEquals(4, tieLine2.getDanglingLine2().getG(), 0);
+            assertEquals("DL2", tieLine2.getDanglingLine2().getId());
+            assertEquals(1.5, tieLine2.getDanglingLine2().getB(), ESP);
+            assertEquals(3.5, tieLine2.getDanglingLine2().getG(), ESP);
             assertEquals(5.5, tieLine2.getDanglingLine2().getR(), ESP);
             assertEquals(6.5, tieLine2.getDanglingLine2().getX(), ESP);
-            assertEquals("h1", tieLine2.getDanglingLine(Branch.Side.ONE).getId());
-            assertEquals("h2", tieLine2.getDanglingLine(Branch.Side.TWO).getId());
+            assertEquals("DL1", tieLine2.getDanglingLine(Branch.Side.ONE).getId());
+            assertEquals("DL2", tieLine2.getDanglingLine(Branch.Side.TWO).getId());
 
             Line regularLine = readNetwork.getLine("F_SU1_12 F_SU2_11 2");
-            assertNull(regularLine.getExtension(MergedXnode.class));
-            regularLine.addExtension(MergedXnode.class,
-                new MergedXnodeImpl(regularLine, 1, 1, 1, 1,
-                    1, 1, "", "", ""));
-            assertNotNull(regularLine.getExtension(MergedXnode.class));
-            assertEquals(1, regularLine.getExtension(MergedXnode.class).getRdp(), .0001);
 
             tieLine2.getDanglingLine1().getTerminal().setQ(200.);
             tieLine2.getDanglingLine2().getTerminal().setP(800.);
@@ -2399,7 +2401,7 @@ public class NetworkStoreIT {
             Map<UUID, String> networkIds = service.getNetworkIds();
             Network readNetwork = service.getNetwork(networkIds.keySet().stream().findFirst().get());
 
-            Line tieLine = readNetwork.getLine("id");
+            TieLine tieLine = readNetwork.getTieLine("id");
             assertNotNull(tieLine);
             assertEquals(200., tieLine.getTerminal1().getQ(), 0.);
             assertEquals(800., tieLine.getTerminal2().getP(), 0.);
@@ -2629,8 +2631,6 @@ public class NetworkStoreIT {
             assertEquals(2, Iterables.size(linesVL1));
             Iterable<TwoWindingsTransformer> t2wsVL1 = vl1.getConnectables(TwoWindingsTransformer.class);
             assertEquals(1, Iterables.size(t2wsVL1));
-            Iterable<Branch> branchesVL1 = vl1.getConnectables(Branch.class);
-            assertEquals(3, Iterables.size(branchesVL1));
 
             VscConverterStation vsc = vl1.newVscConverterStation()
                 .setId("VSC1")

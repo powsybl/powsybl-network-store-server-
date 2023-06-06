@@ -137,6 +137,8 @@ public class Mappings {
     private static final String MINQ = "minQ";
     private static final String MAXQ = "maxQ";
 
+    private static final String PARENT_ID = "parentId";
+
     public TableMapping getTableMapping(String table) {
         Objects.requireNonNull(table);
         TableMapping tableMapping = mappingByTable.get(table);
@@ -509,6 +511,7 @@ public class Mappings {
                 }
                 attributes.getActivePowerLimits().setPermanentLimit(value);
             }));
+        danglingLineMappings.addColumnMapping(PARENT_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getParentId, DanglingLineAttributes::setParentId));
     }
 
     private void createTieLineMappings() {
