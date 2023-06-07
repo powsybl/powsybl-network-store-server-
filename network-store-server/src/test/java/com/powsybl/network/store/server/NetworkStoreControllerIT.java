@@ -773,7 +773,7 @@ public class NetworkStoreControllerIT {
         // tie line creation and update
         Resource<TieLineAttributes> tieLine = Resource.tieLineBuilder()
                 .id("idTieLine")
-                .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).half1Id("half1").half2Id("half2")
+                .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
                         .build())
                 .build();
 

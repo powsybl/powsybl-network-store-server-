@@ -511,13 +511,13 @@ public class Mappings {
                 }
                 attributes.getActivePowerLimits().setPermanentLimit(value);
             }));
-        danglingLineMappings.addColumnMapping(PARENT_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getParentId, DanglingLineAttributes::setParentId));
+        danglingLineMappings.addColumnMapping(PARENT_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getTieLineId, DanglingLineAttributes::setTieLineId));
     }
 
     private void createTieLineMappings() {
         tieLineMappings.addColumnMapping("name", new ColumnMapping<>(String.class, TieLineAttributes::getName, TieLineAttributes::setName));
-        tieLineMappings.addColumnMapping("half1Id", new ColumnMapping<>(String.class, TieLineAttributes::getHalf1Id, TieLineAttributes::setHalf1Id));
-        tieLineMappings.addColumnMapping("half2Id", new ColumnMapping<>(String.class, TieLineAttributes::getHalf2Id, TieLineAttributes::setHalf2Id));
+        tieLineMappings.addColumnMapping("half1Id", new ColumnMapping<>(String.class, TieLineAttributes::getDanglingLine1Id, TieLineAttributes::setDanglingLine1Id));
+        tieLineMappings.addColumnMapping("half2Id", new ColumnMapping<>(String.class, TieLineAttributes::getDanglingLine2Id, TieLineAttributes::setDanglingLine2Id));
     }
 
     public TableMapping getTieLineMappings() {
