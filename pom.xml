@@ -113,6 +113,13 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <!-- we need to downgrade snakeyaml from 2.0 to 1.33 to avoid issue with spring boot test 2.7 -->
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>1.33</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

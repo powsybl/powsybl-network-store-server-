@@ -20,7 +20,7 @@
             <column name="danglingLine2Id" type="VARCHAR(255)"/>
         </createTable>
         <addColumn tableName="danglingline">
-            <column name="parentId" type="VARCHAR(255)"/>
+            <column name="tieLineId" type="VARCHAR(255)"/>
         </addColumn>
     </changeSet>
 </databaseChangeLog>

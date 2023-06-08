@@ -22,6 +22,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.NoSuchElementException;
+
 import static org.junit.Assert.*;
 
 /**
@@ -652,9 +654,9 @@ public class NetworkStoreValidationTest {
         assertEquals("DL1", tl.getDanglingLine1().getId());
         assertEquals("DL2", tl.getDanglingLine2().getId());
         tl.getDanglingLine1().remove();
-        assertNull(tl.getDanglingLine1());
+        assertThrows(NoSuchElementException.class, tl::getDanglingLine1);
         tl.getDanglingLine2().remove();
-        assertNull(tl.getDanglingLine2());
+        assertThrows(NoSuchElementException.class, tl::getDanglingLine2);
     }
 
     @Test

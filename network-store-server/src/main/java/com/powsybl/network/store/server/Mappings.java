@@ -136,8 +136,7 @@ public class Mappings {
     private static final String REGULATION_TERMINAL = "regulatingTerminal";
     private static final String MINQ = "minQ";
     private static final String MAXQ = "maxQ";
-
-    private static final String PARENT_ID = "parentId";
+    private static final String TIE_LINE_ID = "tieLineId";
 
     public TableMapping getTableMapping(String table) {
         Objects.requireNonNull(table);
@@ -511,7 +510,7 @@ public class Mappings {
                 }
                 attributes.getActivePowerLimits().setPermanentLimit(value);
             }));
-        danglingLineMappings.addColumnMapping(PARENT_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getTieLineId, DanglingLineAttributes::setTieLineId));
+        danglingLineMappings.addColumnMapping(TIE_LINE_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getTieLineId, DanglingLineAttributes::setTieLineId));
     }
 
     private void createTieLineMappings() {
