@@ -5182,4 +5182,20 @@ public class NetworkStoreIT {
             assertEquals(100, twt1.getTerminal2().getP(), 0);
         }
     }
+
+    @Test
+    public void testFixNpeGetIdentifiable() {
+        try (NetworkStoreService service = createNetworkStoreService()) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService()) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
+            UUID networkUuid = networkIds.keySet().stream().findFirst().orElseThrow();
+            Network network = service.getNetwork(networkUuid);
+            TwoWindingsTransformer twt2 = (TwoWindingsTransformer) network.getIdentifiable("NHV2_NLOAD");
+            assertEquals(2, twt2.getRatioTapChanger().getHighTapPosition());
+        }
+    }
 }

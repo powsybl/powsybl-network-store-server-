@@ -524,17 +524,86 @@ public class NetworkStoreRepository {
                         columnIndex.increment();
                     });
                     Resource.Builder<T> resourceBuilder = (Resource.Builder<T>) tableMapping.getResourceBuilderSupplier().get();
-                    return Optional.of(resourceBuilder
+                    Resource<T> resource = resourceBuilder
                             .id(equipmentId)
                             .variantNum(variantNum)
                             .attributes(attributes)
-                            .build());
+                            .build();
+                    return Optional.of(completeResourceInfos(resource, networkUuid, variantNum, equipmentId));
                 }
             }
             return Optional.empty();
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeResourceInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        switch (resource.getType()) {
+            case GENERATOR:
+                return completeGeneratorInfos(resource, networkUuid, variantNum, equipmentId);
+            case BATTERY:
+                return completeBatteryInfos(resource, networkUuid, variantNum, equipmentId);
+            case LINE:
+                return completeLineInfos(resource, networkUuid, variantNum, equipmentId);
+            case TWO_WINDINGS_TRANSFORMER:
+                return completeTwoWindingsTransformerInfos(resource, networkUuid, variantNum, equipmentId);
+            case THREE_WINDINGS_TRANSFORMER:
+                return completeThreeWindingsTransformerInfos(resource, networkUuid, variantNum, equipmentId);
+            case VSC_CONVERTER_STATION:
+                return completeVscConverterStationInfos(resource, networkUuid, variantNum, equipmentId);
+            case DANGLING_LINE:
+                return completeDanglingLineInfos(resource, networkUuid, variantNum, equipmentId);
+            default: return resource;
+        }
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeGeneratorInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertReactiveCapabilityCurvePointsInEquipments(networkUuid, List.of((Resource<GeneratorAttributes>) resource), reactiveCapabilityCurvePoints);
+        return resource;
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeBatteryInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertReactiveCapabilityCurvePointsInEquipments(networkUuid, List.of((Resource<BatteryAttributes>) resource), reactiveCapabilityCurvePoints);
+        return resource;
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeLineInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertTemporaryLimitsInEquipments(networkUuid, List.of((Resource<LineAttributes>) resource), temporaryLimits);
+        return resource;
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeTwoWindingsTransformerInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertTemporaryLimitsInEquipments(networkUuid, List.of((Resource<TwoWindingsTransformerAttributes>) resource), temporaryLimits);
+
+        Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertTapChangerStepsInEquipments(networkUuid, List.of((Resource<TwoWindingsTransformerAttributes>) resource), tapChangerSteps);
+        return resource;
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeThreeWindingsTransformerInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertTemporaryLimitsInEquipments(networkUuid, List.of((Resource<ThreeWindingsTransformerAttributes>) resource), temporaryLimits);
+
+        Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertTapChangerStepsInEquipments(networkUuid, List.of((Resource<ThreeWindingsTransformerAttributes>) resource), tapChangerSteps);
+        return resource;
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeVscConverterStationInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertReactiveCapabilityCurvePointsInEquipments(networkUuid, List.of((Resource<VscConverterStationAttributes>) resource), reactiveCapabilityCurvePoints);
+        return resource;
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeDanglingLineInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertTemporaryLimitsInEquipments(networkUuid, List.of((Resource<DanglingLineAttributes>) resource), temporaryLimits);
+        return resource;
     }
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInternal(int variantNum, PreparedStatement preparedStmt, TableMapping tableMapping) throws SQLException {
@@ -792,13 +861,7 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<GeneratorAttributes>> getGenerator(UUID networkUuid, int variantNum, String generatorId) {
-        Optional<Resource<GeneratorAttributes>> generator = getIdentifiable(networkUuid, variantNum, generatorId, mappings.getGeneratorMappings());
-
-        generator.ifPresent(equipment -> {
-            Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, generatorId);
-            insertReactiveCapabilityCurvePointsInEquipments(networkUuid, List.of(equipment), reactiveCapabilityCurvePoints);
-        });
-        return generator;
+        return getIdentifiable(networkUuid, variantNum, generatorId, mappings.getGeneratorMappings());
     }
 
     public List<Resource<GeneratorAttributes>> getGenerators(UUID networkUuid, int variantNum) {
@@ -852,13 +915,7 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<BatteryAttributes>> getBattery(UUID networkUuid, int variantNum, String batteryId) {
-        Optional<Resource<BatteryAttributes>> battery = getIdentifiable(networkUuid, variantNum, batteryId, mappings.getBatteryMappings());
-
-        battery.ifPresent(equipment -> {
-            Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, batteryId);
-            insertReactiveCapabilityCurvePointsInEquipments(networkUuid, List.of(equipment), reactiveCapabilityCurvePoints);
-        });
-        return battery;
+        return getIdentifiable(networkUuid, variantNum, batteryId, mappings.getBatteryMappings());
     }
 
     public List<Resource<BatteryAttributes>> getBatteries(UUID networkUuid, int variantNum) {
@@ -972,13 +1029,7 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<VscConverterStationAttributes>> getVscConverterStation(UUID networkUuid, int variantNum, String vscConverterStationId) {
-        Optional<Resource<VscConverterStationAttributes>> vscConverterStation = getIdentifiable(networkUuid, variantNum, vscConverterStationId, mappings.getVscConverterStationMappings());
-
-        vscConverterStation.ifPresent(equipment -> {
-            Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, vscConverterStationId);
-            insertReactiveCapabilityCurvePointsInEquipments(networkUuid, List.of(equipment), reactiveCapabilityCurvePoints);
-        });
-        return vscConverterStation;
+        return getIdentifiable(networkUuid, variantNum, vscConverterStationId, mappings.getVscConverterStationMappings());
     }
 
     public List<Resource<VscConverterStationAttributes>> getVscConverterStations(UUID networkUuid, int variantNum) {
@@ -1147,16 +1198,7 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<TwoWindingsTransformerAttributes>> getTwoWindingsTransformer(UUID networkUuid, int variantNum, String twoWindingsTransformerId) {
-        Optional<Resource<TwoWindingsTransformerAttributes>> twoWindingsTransformer = getIdentifiable(networkUuid, variantNum, twoWindingsTransformerId, mappings.getTwoWindingsTransformerMappings());
-
-        twoWindingsTransformer.ifPresent(equipment -> {
-            Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, twoWindingsTransformerId);
-            insertTemporaryLimitsInEquipments(networkUuid, List.of(equipment), temporaryLimits);
-
-            Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, twoWindingsTransformerId);
-            insertTapChangerStepsInEquipments(networkUuid, List.of(equipment), tapChangerSteps);
-        });
-        return twoWindingsTransformer;
+        return getIdentifiable(networkUuid, variantNum, twoWindingsTransformerId, mappings.getTwoWindingsTransformerMappings());
     }
 
     public List<Resource<TwoWindingsTransformerAttributes>> getTwoWindingsTransformers(UUID networkUuid, int variantNum) {
@@ -1221,16 +1263,7 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<ThreeWindingsTransformerAttributes>> getThreeWindingsTransformer(UUID networkUuid, int variantNum, String threeWindingsTransformerId) {
-        Optional<Resource<ThreeWindingsTransformerAttributes>> threeWindingsTransformer = getIdentifiable(networkUuid, variantNum, threeWindingsTransformerId, mappings.getThreeWindingsTransformerMappings());
-
-        threeWindingsTransformer.ifPresent(equipment -> {
-            Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, threeWindingsTransformerId);
-            insertTemporaryLimitsInEquipments(networkUuid, List.of(equipment), temporaryLimits);
-
-            Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, threeWindingsTransformerId);
-            insertTapChangerStepsInEquipments(networkUuid, List.of(equipment), tapChangerSteps);
-        });
-        return threeWindingsTransformer;
+        return getIdentifiable(networkUuid, variantNum, threeWindingsTransformerId, mappings.getThreeWindingsTransformerMappings());
     }
 
     public List<Resource<ThreeWindingsTransformerAttributes>> getThreeWindingsTransformers(UUID networkUuid, int variantNum) {
@@ -1316,13 +1349,7 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<LineAttributes>> getLine(UUID networkUuid, int variantNum, String lineId) {
-        Optional<Resource<LineAttributes>> line = getIdentifiable(networkUuid, variantNum, lineId, mappings.getLineMappings());
-
-        line.ifPresent(equipment -> {
-            Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId);
-            insertTemporaryLimitsInEquipments(networkUuid, List.of(equipment), temporaryLimits);
-        });
-        return line;
+        return getIdentifiable(networkUuid, variantNum, lineId, mappings.getLineMappings());
     }
 
     public List<Resource<LineAttributes>> getLines(UUID networkUuid, int variantNum) {
@@ -1401,13 +1428,7 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<DanglingLineAttributes>> getDanglingLine(UUID networkUuid, int variantNum, String danglingLineId) {
-        Optional<Resource<DanglingLineAttributes>> danglingLine = getIdentifiable(networkUuid, variantNum, danglingLineId, mappings.getDanglingLineMappings());
-
-        danglingLine.ifPresent(equipment -> {
-            Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, danglingLineId);
-            insertTemporaryLimitsInEquipments(networkUuid, List.of(equipment), temporaryLimits);
-        });
-        return danglingLine;
+        return getIdentifiable(networkUuid, variantNum, danglingLineId, mappings.getDanglingLineMappings());
     }
 
     public List<Resource<DanglingLineAttributes>> getVoltageLevelDanglingLines(UUID networkUuid, int variantNum, String voltageLevelId) {
@@ -1542,11 +1563,12 @@ public class NetworkStoreRepository {
                             bindAttributes(resultSet, columnIndex, columnMapping, attributes);
                         });
 
-                        return Optional.of(new Resource.Builder<>(tableMapping.getResourceType())
+                        Resource<IdentifiableAttributes> resource = new Resource.Builder<>(tableMapping.getResourceType())
                                 .id(id)
                                 .variantNum(variantNum)
                                 .attributes(attributes)
-                                .build());
+                                .build();
+                        return Optional.of(completeResourceInfos(resource, networkUuid, variantNum, id));
                     }
                 }
             }

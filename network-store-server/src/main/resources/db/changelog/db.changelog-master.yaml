@@ -1,31 +1,27 @@
 databaseChangeLog:
 
   - include:
-      file: changesets/changelog_2022-09-26T06_45_00Z.xml
+      file: changesets/changelog_20220926T064500Z.xml
       relativeToChangelogFile: true
 
   - include:
-      file: changesets/changelog_2022-09-28T11_30_00Z.xml
+      file: changesets/changelog_20220928T113000Z.xml
       relativeToChangelogFile: true
 
   - include:
-      file: changesets/changelog_2022-09-28T21_30_00Z.xml
+      file: changesets/changelog_20220928T213000Z.xml
       relativeToChangelogFile: true
 
   - include:
-      file: changesets/changelog_2022-10-04T16_04_00Z.xml
+      file: changesets/changelog_20221004T160400Z.xml
       relativeToChangelogFile: true
 
   - include:
-      file: changesets/changelog_2022-10-05T13_44_00Z.xml
+      file: changesets/changelog_20221005T134400Z.xml
       relativeToChangelogFile: true
 
   - include:
-      file: changesets/changelog_2022-12-13T21_23_00Z.xml
-      relativeToChangelogFile: true
-
-  - include:
-      file: changesets/changelog_2022-12-13T21_23_00Z.xml
+      file: changesets/changelog_20221213T212300Z.xml
       relativeToChangelogFile: true
 
   - include:
