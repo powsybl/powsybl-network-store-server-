@@ -516,8 +516,8 @@ public class Mappings {
 
     private void createTieLineMappings() {
         tieLineMappings.addColumnMapping("name", new ColumnMapping<>(String.class, TieLineAttributes::getName, TieLineAttributes::setName));
-        tieLineMappings.addColumnMapping("half1Id", new ColumnMapping<>(String.class, TieLineAttributes::getDanglingLine1Id, TieLineAttributes::setDanglingLine1Id));
-        tieLineMappings.addColumnMapping("half2Id", new ColumnMapping<>(String.class, TieLineAttributes::getDanglingLine2Id, TieLineAttributes::setDanglingLine2Id));
+        tieLineMappings.addColumnMapping("danglingLine1Id", new ColumnMapping<>(String.class, TieLineAttributes::getDanglingLine1Id, TieLineAttributes::setDanglingLine1Id));
+        tieLineMappings.addColumnMapping("danglingLine2Id", new ColumnMapping<>(String.class, TieLineAttributes::getDanglingLine2Id, TieLineAttributes::setDanglingLine2Id));
     }
 
     public TableMapping getTieLineMappings() {

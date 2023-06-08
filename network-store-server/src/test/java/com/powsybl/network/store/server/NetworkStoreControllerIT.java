@@ -786,8 +786,8 @@ public class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.half1Id").value("half1"))
-                .andExpect(jsonPath("data[0].attributes.half2Id").value("half2"));
+                .andExpect(jsonPath("data[0].attributes.danglingLine1Id").value("half1"))
+                .andExpect(jsonPath("data[0].attributes.danglingLine2Id").value("half2"));
     }
 
     @Test

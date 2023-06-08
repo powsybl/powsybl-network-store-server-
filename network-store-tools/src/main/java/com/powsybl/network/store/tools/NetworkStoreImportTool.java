@@ -92,7 +92,7 @@ public class NetworkStoreImportTool implements Tool {
 
         Properties inputParams = readProperties(line, OptionType.IMPORT, context);
 
-        DataSource dataSource = Importers.createDataSource(inputFile);
+        DataSource dataSource = DataSource.fromPath(inputFile);
 
         try (NetworkStoreService service = networkStoreServiceSupplier.get()) {
             context.getOutputStream().println("Importing file '" + inputFile + "'...");
