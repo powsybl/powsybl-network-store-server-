@@ -788,6 +788,16 @@ public class NetworkStoreControllerIT {
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
                 .andExpect(jsonPath("data[0].attributes.danglingLine1Id").value("half1"))
                 .andExpect(jsonPath("data[0].attributes.danglingLine2Id").value("half2"));
+
+        tieLine.getAttributes().setDanglingLine1Id("halfDl1");
+        mvc.perform(put("/" + VERSION + "/networks/" + NETWORK_UUID + "/tie-lines")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Collections.singleton(tieLine))))
+                .andExpect(status().isOk());
+
+        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/tie-lines/idTieLine")
+                .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test

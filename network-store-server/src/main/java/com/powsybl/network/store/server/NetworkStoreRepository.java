@@ -1472,13 +1472,11 @@ public class NetworkStoreRepository {
     // Tie lines
 
     public List<Resource<TieLineAttributes>> getTieLines(UUID networkUuid, int variantNum) {
-        List<Resource<TieLineAttributes>> tieLines = getIdentifiables(networkUuid, variantNum, mappings.getTieLineMappings());
-        return tieLines;
+        return getIdentifiables(networkUuid, variantNum, mappings.getTieLineMappings());
     }
 
     public Optional<Resource<TieLineAttributes>> getTieLine(UUID networkUuid, int variantNum, String tieLineId) {
-        Optional<Resource<TieLineAttributes>> tieLine = getIdentifiable(networkUuid, variantNum, tieLineId, mappings.getTieLineMappings());
-        return tieLine;
+        return getIdentifiable(networkUuid, variantNum, tieLineId, mappings.getTieLineMappings());
     }
 
     public void createTieLines(UUID networkUuid, List<Resource<TieLineAttributes>> resources) {

@@ -637,8 +637,10 @@ public class NetworkStoreValidationTest {
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
         VoltageLevel vl2 = s1.newVoltageLevel().setId("VL2").setNominalV(225).setLowVoltageLimit(180).setHighVoltageLimit(250).setTopologyKind(TopologyKind.NODE_BREAKER).add();
 
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().add()).getMessage().contains("Tie line id is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").add())
+        TieLineAdder adder1 = network.newTieLine();
+        TieLineAdder adder2 = network.newTieLine().setId("TL");
+        assertTrue(assertThrows(PowsyblException.class, adder1::add).getMessage().contains("Tie line id is not set"));
+        assertTrue(assertThrows(PowsyblException.class, adder2::add)
                 .getMessage().contains("Tie line 'TL': undefined dangling line"));
 
         DanglingLine danglingLine1 = vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1).add();
