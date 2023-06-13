@@ -2329,6 +2329,8 @@ public class NetworkStoreIT {
             DanglingLine danglingLine1 = vl1.newDanglingLine()
                     .setId("DL1")
                     .setNode(1)
+                    .setP0(150)
+                    .setQ0(100)
                     .setR(5)
                     .setX(6)
                     .setG(3)
@@ -2338,6 +2340,8 @@ public class NetworkStoreIT {
             DanglingLine danglingLine2 = vl2.newDanglingLine()
                     .setId("DL2")
                     .setNode(1)
+                    .setP0(150.5)
+                    .setQ0(100.5)
                     .setR(5.5)
                     .setX(6.5)
                     .setG(3.5)
@@ -2360,11 +2364,15 @@ public class NetworkStoreIT {
             assertEquals(1, tieLine2.getB1(), ESP);
             assertEquals(1.5, tieLine2.getB2(), ESP);
             assertEquals("DL1", tieLine2.getDanglingLine1().getId());
+            assertEquals(150, tieLine2.getDanglingLine1().getP0(), ESP);
+            assertEquals(100, tieLine2.getDanglingLine1().getQ0(), ESP);
             assertEquals(1.0, tieLine2.getDanglingLine1().getB(), ESP);
             assertEquals(3.0, tieLine2.getDanglingLine1().getG(), ESP);
             assertEquals(5, tieLine2.getDanglingLine1().getR(), ESP);
             assertEquals(6, tieLine2.getDanglingLine1().getX(), ESP);
             assertEquals("DL2", tieLine2.getDanglingLine2().getId());
+            assertEquals(150.5, tieLine2.getDanglingLine2().getP0(), ESP);
+            assertEquals(100.5, tieLine2.getDanglingLine2().getQ0(), ESP);
             assertEquals(1.5, tieLine2.getDanglingLine2().getB(), ESP);
             assertEquals(3.5, tieLine2.getDanglingLine2().getG(), ESP);
             assertEquals(5.5, tieLine2.getDanglingLine2().getR(), ESP);
