@@ -16,11 +16,11 @@
             <column name="properties" type="TEXT"/>
             <column name="aliaseswithouttype" type="TEXT"/>
             <column name="aliasbytype" type="TEXT"/>
-            <column name="danglingLine1Id" type="VARCHAR(255)"/>
-            <column name="danglingLine2Id" type="VARCHAR(255)"/>
+            <column name="danglingline1id" type="VARCHAR(255)"/>
+            <column name="danglingline2id" type="VARCHAR(255)"/>
         </createTable>
         <addColumn tableName="danglingline">
-            <column name="tieLineId" type="VARCHAR(255)"/>
+            <column name="tielineid" type="VARCHAR(255)"/>
         </addColumn>
     </changeSet>
 </databaseChangeLog>
