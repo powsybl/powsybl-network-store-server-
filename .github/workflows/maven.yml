@@ -20,9 +20,6 @@ jobs:
         with:
           java-version: 17
 
-      - name: Build and install powsybl-network-store with Maven
-        run: mvn --batch-mode -DskipTests=true --file ../powsybl-network-store/pom.xml install
-
       - name: Checkout sources
         uses: actions/checkout@v1
 

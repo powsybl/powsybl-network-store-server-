@@ -50,7 +50,7 @@
     <properties>
         <sirocco.version>1.0</sirocco.version>
 
-        <powsybl-ws-dependencies.version>2.3.0-SNAPSHOT</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.3.0</powsybl-ws-dependencies.version>
 
         <snakeyaml.version>1.33</snakeyaml.version>
 
