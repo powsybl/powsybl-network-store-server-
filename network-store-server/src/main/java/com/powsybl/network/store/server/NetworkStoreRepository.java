@@ -1469,6 +1469,29 @@ public class NetworkStoreRepository {
         updateInjectionsSv(networkUuid, resources, DANGLING_LINE_TABLE);
     }
 
+    // Tie lines
+
+    public List<Resource<TieLineAttributes>> getTieLines(UUID networkUuid, int variantNum) {
+        return getIdentifiables(networkUuid, variantNum, mappings.getTieLineMappings());
+    }
+
+    public Optional<Resource<TieLineAttributes>> getTieLine(UUID networkUuid, int variantNum, String tieLineId) {
+        return getIdentifiable(networkUuid, variantNum, tieLineId, mappings.getTieLineMappings());
+    }
+
+    public void createTieLines(UUID networkUuid, List<Resource<TieLineAttributes>> resources) {
+        createIdentifiables(networkUuid, resources, mappings.getTieLineMappings());
+    }
+
+    public void deleteTieLine(UUID networkUuid, int variantNum, String tieLineId) {
+        deleteIdentifiable(networkUuid, variantNum, tieLineId, TIE_LINE_TABLE);
+        deleteTemporaryLimits(networkUuid, variantNum, tieLineId);
+    }
+
+    public void updateTieLines(UUID networkUuid, List<Resource<TieLineAttributes>> resources) {
+        updateIdentifiables(networkUuid, resources, mappings.getTieLineMappings());
+    }
+
     // configured buses
 
     public void createBuses(UUID networkUuid, List<Resource<ConfiguredBusAttributes>> resources) {

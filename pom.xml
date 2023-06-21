@@ -50,7 +50,9 @@
     <properties>
         <sirocco.version>1.0</sirocco.version>
 
-        <powsybl-ws-dependencies.version>2.2.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.3.0</powsybl-ws-dependencies.version>
+
+        <snakeyaml.version>1.33</snakeyaml.version>
 
         <sonar.coverage.jacoco.xmlReportPaths>
             ../network-store-integration-test/target/site/jacoco-aggregate/jacoco.xml,
@@ -88,6 +90,13 @@
                         <artifactId>log4j</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <!-- we need to downgrade snakeyaml from 2.0 to 1.33 to avoid issue with spring boot test 2.7 -->
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${snakeyaml.version}</version>
+                <scope>runtime</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -8,7 +8,6 @@ package com.powsybl.network.store.tools;
 
 import com.google.auto.service.AutoService;
 import com.powsybl.commons.datasource.DataSource;
-import com.powsybl.iidm.network.Importers;
 import com.powsybl.network.store.client.NetworkStoreConfig;
 import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.tools.Command;
@@ -92,7 +91,7 @@ public class NetworkStoreImportTool implements Tool {
 
         Properties inputParams = readProperties(line, OptionType.IMPORT, context);
 
-        DataSource dataSource = Importers.createDataSource(inputFile);
+        DataSource dataSource = DataSource.fromPath(inputFile);
 
         try (NetworkStoreService service = networkStoreServiceSupplier.get()) {
             context.getOutputStream().println("Importing file '" + inputFile + "'...");

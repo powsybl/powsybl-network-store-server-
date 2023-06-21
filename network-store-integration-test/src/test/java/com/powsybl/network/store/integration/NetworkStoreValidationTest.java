@@ -22,8 +22,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import java.util.NoSuchElementException;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -318,10 +319,6 @@ public class NetworkStoreValidationTest {
                 .getMessage().contains("connection node and connection bus are exclusives"));
         assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").add())
                 .getMessage().contains("connectable bus is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).add())
-                .getMessage().contains("p0 is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).add())
-                .getMessage().contains("q0 is invalid"));
         assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).add())
                 .getMessage().contains("r is invalid"));
         assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).add())
@@ -637,77 +634,31 @@ public class NetworkStoreValidationTest {
     public void testTieLine() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
-        s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
-        s1.newVoltageLevel().setId("VL2").setNominalV(225).setLowVoltageLimit(180).setHighVoltageLimit(250).setTopologyKind(TopologyKind.NODE_BREAKER).add();
+        VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
+        VoltageLevel vl2 = s1.newVoltageLevel().setId("VL2").setNominalV(225).setLowVoltageLimit(180).setHighVoltageLimit(250).setTopologyKind(TopologyKind.NODE_BREAKER).add();
 
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().add()).getMessage().contains("AC Line id is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").add())
-                .getMessage().contains("first voltage level is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("1").add())
-                .getMessage().matches("(.*)first voltage level(.*)not found(.*)"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").add())
-                .getMessage().contains("second voltage level is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("2").add())
-                .getMessage().matches("(.*)second voltage level(.*)not found(.*)"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setBus1("b1").setConnectableBus1("B1").add())
-                .getMessage().contains("connection bus 1 is different to connectable bus 1"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setConnectableBus1("B1").add())
-                .getMessage().contains("connection node 1 and connection bus 1 are exclusives"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").add())
-                .getMessage().contains("connectable bus 1 is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setBus2("b2").setConnectableBus2("B2").add())
-                .getMessage().contains("connection bus 2 is different to connectable bus 2"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setConnectableBus2("B2").add())
-                .getMessage().contains("connection node 2 and connection bus 2 are exclusives"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).add())
-                .getMessage().contains("connectable bus 2 is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).add())
-                .getMessage().contains("ucteXnodeCode is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").add())
-                .getMessage().contains("half line 1 is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine1().add().add())
-                .getMessage().contains("half line 2 is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().add().add())
-                .getMessage().contains("id is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().setId("h1").add().add())
-                .getMessage().contains("r is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().setId("h1").setR(1).add().add())
-                .getMessage().contains("x is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().setId("h1").setR(1).setX(1).add().add())
-                .getMessage().contains("g1 is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().setId("h1").setR(1).setX(1).setG1(1).add().add())
-                .getMessage().contains("b1 is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().setId("h1").setR(1).setX(1).setG1(1).setB1(1).add().add())
-                .getMessage().contains("g2 is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> network.newTieLine().setId("TL").setVoltageLevel1("VL1").setVoltageLevel2("VL2").setNode1(1).setNode2(1).setUcteXnodeCode("1").newHalfLine2().add().newHalfLine1().setId("h1").setR(1).setX(1).setG1(1).setB1(1).setG2(1).add().add())
-                .getMessage().contains("b2 is not set"));
+        TieLineAdder adder1 = network.newTieLine();
+        TieLineAdder adder2 = network.newTieLine().setId("TL");
+        assertTrue(assertThrows(PowsyblException.class, adder1::add).getMessage().contains("Tie line id is not set"));
+        assertTrue(assertThrows(PowsyblException.class, adder2::add)
+                .getMessage().contains("Tie line 'TL': undefined dangling line"));
 
-        network.newTieLine()
-                .setId("TL")
-                .setVoltageLevel1("VL1")
-                .setVoltageLevel2("VL2")
-                .setNode1(1)
-                .setNode2(1)
-                .setUcteXnodeCode("1")
-                .newHalfLine1()
-                .setId("h1")
-                .setR(1)
-                .setX(1)
-                .setG1(1)
-                .setB1(1)
-                .setG2(1)
-                .setB2(1)
-                .add()
-                .newHalfLine2()
-                .setId("h2")
-                .setR(1)
-                .setX(1)
-                .setG1(1)
-                .setB1(1)
-                .setG2(1)
-                .setB2(1)
-                .add()
+        DanglingLine danglingLine1 = vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1).add();
+        DanglingLine danglingLine2 = vl2.newDanglingLine().setId("DL2").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1).add();
+
+        TieLine tl = network.newTieLine()
+                .setId("NewTieLineId")
+                .setDanglingLine1(danglingLine1.getId())
+                .setDanglingLine2(danglingLine2.getId())
                 .add();
+
+        assertEquals("NewTieLineId", tl.getId());
+        assertEquals("DL1", tl.getDanglingLine1().getId());
+        assertEquals("DL2", tl.getDanglingLine2().getId());
+        tl.getDanglingLine1().remove();
+        assertThrows(NoSuchElementException.class, tl::getDanglingLine1);
+        tl.getDanglingLine2().remove();
+        assertThrows(NoSuchElementException.class, tl::getDanglingLine2);
     }
 
     @Test
