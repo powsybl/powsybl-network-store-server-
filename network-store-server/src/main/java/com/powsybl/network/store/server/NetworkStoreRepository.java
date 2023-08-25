@@ -8,7 +8,6 @@ package com.powsybl.network.store.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.powsybl.commons.PowsyblException;
@@ -55,7 +54,6 @@ public class NetworkStoreRepository {
         this.dataSource = dataSource;
         this.mapper = mapper;
         this.mappings = mappings;
-        mapper.registerModule(new JodaModule());
     }
 
     private final DataSource dataSource;
