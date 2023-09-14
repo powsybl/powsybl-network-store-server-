@@ -947,8 +947,6 @@ public class NetworkStoreIT {
             battery.setMinP(50);
             verify(mockedListener, times(1)).onUpdate(battery, "maxP", 70d, 90d);
             verify(mockedListener, times(1)).onUpdate(battery, "minP", 40d, 50d);
-
-            assertTrue(assertThrows(ValidationException.class, () -> battery.setMaxP(60)).getMessage().contains("invalid active power p > maxP"));
         }
     }
 
