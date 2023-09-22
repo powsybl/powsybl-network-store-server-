@@ -7,10 +7,13 @@
 package com.powsybl.network.store.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.extensions.ConnectablePosition;
 import com.powsybl.network.store.model.*;
+import jakarta.servlet.ServletException;
 import org.joda.time.DateTime;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +25,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.util.NestedServletException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,6 +67,11 @@ public class NetworkStoreControllerIT {
     @Autowired
     private MockMvc mvc;
 
+    @Before
+    public void setup() {
+        this.objectMapper.registerModule(new JodaModule());
+    }
+
     @Test
     public void test() throws Exception {
         mvc.perform(get("/" + VERSION + "/networks")
@@ -91,7 +98,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(status().isCreated());
 
         //Do it again, it should error
-        assertThrows(NestedServletException.class, () -> {
+        assertThrows(ServletException.class, () -> {
             mvc.perform(post("/" + VERSION + "/networks")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Collections.singleton(foo))))

@@ -491,8 +491,8 @@ public class NetworkStoreController {
     @GetMapping(value = "/{networkId}/{variantNum}/tie-lines/{tieLineId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Get a tie line by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully get tie line"),
-            @ApiResponse(responseCode = "404", description = "Tie line has not been found")
+        @ApiResponse(responseCode = "200", description = "Successfully get tie line"),
+        @ApiResponse(responseCode = "404", description = "Tie line has not been found")
     })
     public ResponseEntity<TopLevelDocument<TieLineAttributes>> getTieLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                 @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -512,7 +512,7 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/tie-lines/{tieLineId}", produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete a generator by id")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully delete generator")
+        @ApiResponse(responseCode = "200", description = "Successfully delete generator")
     })
     public ResponseEntity<Void> deleteTieLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                 @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
