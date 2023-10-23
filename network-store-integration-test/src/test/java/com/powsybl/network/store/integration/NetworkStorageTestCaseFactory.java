@@ -52,9 +52,9 @@ public final class NetworkStorageTestCaseFactory {
                 .setNode(0)
                 .setBmin(0.0002)
                 .setBmax(0.0008)
-                .setReactivePowerSetPoint(200)
+                .setReactivePowerSetpoint(200)
                 .setRegulationMode(StaticVarCompensator.RegulationMode.VOLTAGE)
-                .setVoltageSetPoint(390)
+                .setVoltageSetpoint(390)
                 .add();
         svc.getTerminal().setP(435);
         svc.getTerminal().setQ(315);
@@ -84,7 +84,7 @@ public final class NetworkStorageTestCaseFactory {
                 .setX(44)
                 .setG(89)
                 .setB(11)
-                .setUcteXnodeCode("UCTE_DL1")
+                .setPairingKey("UCTE_DL1")
                 .newGeneration()
                 .setTargetP(100)
                 .setTargetQ(200)
@@ -125,7 +125,7 @@ public final class NetworkStorageTestCaseFactory {
                 .setX(44)
                 .setG(89)
                 .setB(11)
-                .setUcteXnodeCode("UCTE_DL2")
+                .setPairingKey("UCTE_DL2")
                 .newGeneration()
                 .setTargetP(100)
                 .setTargetQ(200)
