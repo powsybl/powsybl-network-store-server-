@@ -159,7 +159,6 @@ Resource [logback-test.xml] occurs at [jar:file:/home/harperjon/powsybl/powsybl-
 Resource [logback-test.xml] occurs at [jar:file:/home/harperjon/.m2/repository/com/powsybl/powsybl-cgmes-conformity/3.1.0/powsybl-cgmes-conformity-3.1.0-tests.jar!/logback-test.xml]
 Resource [logback-test.xml] occurs at [jar:file:/home/harperjon/.m2/repository/com/powsybl/powsybl-cgmes-model/3.1.0/powsybl-cgmes-model-3.1.0-tests.jar!/logback-test.xml]
                     -->
-                    <logback.configurationFile>logback-test2.xml</logback.configurationFile>
                     <logging.config>classpath:logback-test2.xml</logging.config>
                   </systemPropertyVariables>
                 </configuration>
