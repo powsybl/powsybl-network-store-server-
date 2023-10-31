@@ -3789,7 +3789,6 @@ public class NetworkStoreIT {
             assertFalse(gen.hasProperty("foo"));
             assertNull(gen.getProperty("foo"));
             assertTrue(gen.getPropertyNames().isEmpty());
-            assertFalse(gen.hasProperty());
 
             gen.setProperty("foo", "bar");
             assertEquals("bar", gen.getProperty("foo"));
