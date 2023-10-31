@@ -297,7 +297,7 @@ public class NetworkStoreValidationTest {
         assertTrue(assertThrows(PowsyblException.class, () -> vl1.newStaticVarCompensator().setId("SVC1").setNode(1).setBmin(1).setBmax(10).setRegulationMode(StaticVarCompensator.RegulationMode.REACTIVE_POWER).add())
                 .getMessage().matches("(.*)reactive power setpoint(.*)"));
 
-        StaticVarCompensator svc = vl1.newStaticVarCompensator().setId("SVC1").setNode(1).setBmin(1).setBmax(10).setRegulationMode(StaticVarCompensator.RegulationMode.REACTIVE_POWER).setReactivePowerSetPoint(10).add();
+        StaticVarCompensator svc = vl1.newStaticVarCompensator().setId("SVC1").setNode(1).setBmin(1).setBmax(10).setRegulationMode(StaticVarCompensator.RegulationMode.REACTIVE_POWER).setReactivePowerSetpoint(10).add();
 
         assertTrue(assertThrows(PowsyblException.class, () -> svc.setBmin(Double.NaN)).getMessage().contains("bmin is invalid"));
         assertTrue(assertThrows(PowsyblException.class, () -> svc.setBmax(Double.NaN)).getMessage().contains("bmax is invalid"));

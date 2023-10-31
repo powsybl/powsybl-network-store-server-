@@ -484,7 +484,7 @@ public class Mappings {
         danglingLineMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, DanglingLineAttributes::getAliasByType, DanglingLineAttributes::setAliasByType));
         danglingLineMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, DanglingLineAttributes::getAliasesWithoutType, DanglingLineAttributes::setAliasesWithoutType));
         danglingLineMappings.addColumnMapping("generation", new ColumnMapping<>(DanglingLineGenerationAttributes.class, DanglingLineAttributes::getGeneration, DanglingLineAttributes::setGeneration));
-        danglingLineMappings.addColumnMapping("ucteXnodeCode", new ColumnMapping<>(String.class, DanglingLineAttributes::getUcteXnodeCode, DanglingLineAttributes::setUcteXnodeCode));
+        danglingLineMappings.addColumnMapping("pairingKey", new ColumnMapping<>(String.class, DanglingLineAttributes::getPairingKey, DanglingLineAttributes::setPairingKey));
         danglingLineMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, DanglingLineAttributes::getPosition, DanglingLineAttributes::setPosition));
         danglingLineMappings.addColumnMapping(PERMANENT_CURRENT_LIMIT, new ColumnMapping<>(Double.class,
             (DanglingLineAttributes attributes) -> attributes.getCurrentLimits() != null ? attributes.getCurrentLimits().getPermanentLimit() : null,

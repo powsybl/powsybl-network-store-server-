@@ -50,7 +50,7 @@
     <properties>
         <sirocco.version>1.0</sirocco.version>
 
-        <powsybl-ws-dependencies.version>2.4.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.5.0</powsybl-ws-dependencies.version>
 
         <sonar.coverage.jacoco.xmlReportPaths>
             ../network-store-integration-test/target/site/jacoco-aggregate/jacoco.xml,

@@ -114,7 +114,7 @@ public class NetworkStoreIT {
     private static void testNetwork(Network network) {
         assertEquals(false, network.isFictitious());
         assertEquals("sim1", network.getId());
-        assertEquals("sim1", network.getName());
+        assertEquals("sim1", network.getNameOrId());
         assertEquals("test", network.getSourceFormat());
         assertEquals("2019-05-27T11:31:41.109+02:00", network.getCaseDate().toString());
         assertEquals(0, network.getForecastDistance());
@@ -180,7 +180,7 @@ public class NetworkStoreIT {
             assertEquals(1, buses.size());
             assertEquals("n1_voltageLevel1_0", buses.get(0).getId());
             assertEquals("n1_voltageLevel1_0", buses.get(0).getId());
-            assertEquals("n1_voltageLevel1_0", buses.get(0).getName());
+            assertEquals("n1_voltageLevel1_0", buses.get(0).getNameOrId());
             List<BusbarSection> busbarSections = new ArrayList<>();
             List<Generator> generators = new ArrayList<>();
             List<Load> loads = new ArrayList<>();
@@ -249,8 +249,8 @@ public class NetworkStoreIT {
             assertEquals(0.0002, svc.getBmin(), 0.00001);
             assertEquals(0.0008, svc.getBmax(), 0.00001);
             assertEquals(StaticVarCompensator.RegulationMode.VOLTAGE, svc.getRegulationMode());
-            assertEquals(390, svc.getVoltageSetPoint(), 0.1);
-            assertEquals(200, svc.getReactivePowerSetPoint(), 0.1);
+            assertEquals(390, svc.getVoltageSetpoint(), 0.1);
+            assertEquals(200, svc.getReactivePowerSetpoint(), 0.1);
             assertEquals(435, svc.getTerminal().getP(), 0.1);
             assertEquals(315, svc.getTerminal().getQ(), 0.1);
 
@@ -258,8 +258,8 @@ public class NetworkStoreIT {
             svc.setBmin(0.5);
             svc.setBmax(0.7);
             svc.setRegulationMode(StaticVarCompensator.RegulationMode.REACTIVE_POWER);
-            svc.setVoltageSetPoint(400);
-            svc.setReactivePowerSetPoint(220);
+            svc.setVoltageSetpoint(400);
+            svc.setReactivePowerSetpoint(220);
             svc.getTerminal().setP(450);
             svc.getTerminal().setQ(300);
 
@@ -278,8 +278,8 @@ public class NetworkStoreIT {
             assertEquals(0.5, svc.getBmin(), 0.00001);
             assertEquals(0.7, svc.getBmax(), 0.00001);
             assertEquals(StaticVarCompensator.RegulationMode.REACTIVE_POWER, svc.getRegulationMode());
-            assertEquals(400, svc.getVoltageSetPoint(), 0.1);
-            assertEquals(220, svc.getReactivePowerSetPoint(), 0.1);
+            assertEquals(400, svc.getVoltageSetpoint(), 0.1);
+            assertEquals(220, svc.getReactivePowerSetpoint(), 0.1);
             assertEquals(450, svc.getTerminal().getP(), 0.1);
             assertEquals(300, svc.getTerminal().getQ(), 0.1);
         }
@@ -1046,14 +1046,14 @@ public class NetworkStoreIT {
             DanglingLine danglingLine = danglingLines.findFirst().get();
             assertFalse(danglingLine.isFictitious());
             assertEquals("DL1", danglingLine.getId());
-            assertEquals("Dangling line 1", danglingLine.getName());
+            assertEquals("Dangling line 1", danglingLine.getNameOrId());
             assertEquals(533, danglingLine.getP0(), 0.1);
             assertEquals(242, danglingLine.getQ0(), 0.1);
             assertEquals(27, danglingLine.getR(), 0.1);
             assertEquals(44, danglingLine.getX(), 0.1);
             assertEquals(89, danglingLine.getG(), 0.1);
             assertEquals(11, danglingLine.getB(), 0.1);
-            assertEquals("UCTE_DL1", danglingLine.getUcteXnodeCode());
+            assertEquals("UCTE_DL1", danglingLine.getPairingKey());
             assertEquals(100, danglingLine.getGeneration().getTargetP(), 0.1);
             assertEquals(200, danglingLine.getGeneration().getTargetQ(), 0.1);
             assertEquals(300, danglingLine.getGeneration().getTargetV(), 0.1);
@@ -2293,7 +2293,7 @@ public class NetworkStoreIT {
 
             //Find the one which is not paired (not part of a tie line)
             DanglingLine dl = readNetwork.getDanglingLineStream().filter(d -> !d.isPaired()).findFirst().orElseThrow(AssertionError::new);
-            assertEquals("XG__F_21", dl.getUcteXnodeCode());
+            assertEquals("XG__F_21", dl.getPairingKey());
             ConnectablePosition connectablePosition = dl.getExtension(ConnectablePosition.class);
             assertNull(connectablePosition);
             ConnectablePosition connectablePosition2 = dl.getExtensionByName("");
@@ -2333,7 +2333,7 @@ public class NetworkStoreIT {
                     .setX(6)
                     .setG(3)
                     .setB(1)
-                    .setUcteXnodeCode("test")
+                    .setPairingKey("test")
                     .add();
             DanglingLine danglingLine2 = vl2.newDanglingLine()
                     .setId("DL2")
@@ -2354,7 +2354,7 @@ public class NetworkStoreIT {
                 .add();
 
             assertEquals("id", tieLine2.getId());
-            assertEquals("test", tieLine2.getUcteXnodeCode());
+            assertEquals("test", tieLine2.getPairingKey());
             assertEquals(10.5, tieLine2.getR(), ESP);
             assertEquals(12.5, tieLine2.getX(), ESP);
             assertEquals(3.0, tieLine2.getG1(), ESP);
@@ -2621,7 +2621,7 @@ public class NetworkStoreIT {
                 .setBmin(0.0002)
                 .setBmax(0.0008)
                 .setRegulationMode(StaticVarCompensator.RegulationMode.VOLTAGE)
-                .setVoltageSetPoint(390)
+                .setVoltageSetpoint(390)
                 .add();
             svcsVL3 = vl3.getConnectables(StaticVarCompensator.class);
             assertEquals(1, Iterables.size(svcsVL3));
@@ -2847,7 +2847,7 @@ public class NetworkStoreIT {
                 .setName("SVC1")
                 .setConnectableBus("04878f11-c766-11e1-8775-005056c00008")
                 .setRegulationMode(StaticVarCompensator.RegulationMode.OFF)
-                .setReactivePowerSetPoint(5.2f)
+                .setReactivePowerSetpoint(5.2f)
                 .setBmax(0.5f)
                 .setBmin(0.1f)
                 .add();
@@ -3789,7 +3789,6 @@ public class NetworkStoreIT {
             assertFalse(gen.hasProperty("foo"));
             assertNull(gen.getProperty("foo"));
             assertTrue(gen.getPropertyNames().isEmpty());
-            assertTrue(gen.getProperties().isEmpty());
 
             gen.setProperty("foo", "bar");
             assertEquals("bar", gen.getProperty("foo"));
@@ -3804,7 +3803,7 @@ public class NetworkStoreIT {
             assertTrue(gen.hasProperty("foo"));
             assertEquals("bar", gen.getProperty("foo"));
             assertEquals(Collections.singleton("foo"), gen.getPropertyNames());
-            assertEquals(1, gen.getProperties().size());
+            assertEquals(1, gen.getPropertyNames().size());
         }
     }
 
