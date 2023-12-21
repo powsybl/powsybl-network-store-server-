@@ -777,8 +777,8 @@ public class NetworkStoreRepositoryTest {
                         .voltageLevelId("vl1")
                         .build())
                 .build();
-        networkStoreRepository.createLines(NETWORK_UUID,  List.of(line1));
-        networkStoreRepository.createLoads(NETWORK_UUID,  List.of(load1));
+        networkStoreRepository.createLines(NETWORK_UUID, List.of(line1));
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(load1));
         List<String> identifiablesIds = networkStoreRepository.getIdentifiablesIds(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM);
         assertEquals(List.of("load1", "line1"), identifiablesIds);
     }
