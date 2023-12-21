@@ -537,4 +537,11 @@ public final class QueryCatalog {
                 EQUIPMENT_ID_COLUMN + " in (" +
                 "?, ".repeat(numberOfValues - 1) + "?)";
     }
+
+    public static String buildGetIdsQuery(String table) {
+        return "select " + ID_COLUMN +
+                " from " + table + " where " +
+                NETWORK_UUID_COLUMN + " = ? and " +
+                VARIANT_NUM_COLUMN + " = ?";
+    }
 }

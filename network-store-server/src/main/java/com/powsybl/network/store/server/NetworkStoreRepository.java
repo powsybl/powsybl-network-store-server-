@@ -193,6 +193,32 @@ public class NetworkStoreRepository {
         }
     }
 
+    public List<String> getIdentifiablesIds(UUID networkUuid, int variantNum) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+
+        List<String> ids = new ArrayList<>();
+        try (var connection = dataSource.getConnection()) {
+            for (String table : ELEMENT_TABLES) {
+                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdsQuery(table))) {
+                    preparedStmt.setObject(1, networkUuid);
+                    preparedStmt.setObject(2, variantNum);
+                    try (ResultSet resultSet = preparedStmt.executeQuery()) {
+                        while (resultSet.next()) {
+                            ids.add(resultSet.getString(1));
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+
+        stopwatch.stop();
+        LOGGER.info("Get identifiables IDs done in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+        return ids;
+    }
+
     @FunctionalInterface
     interface SqlExecutor {
 

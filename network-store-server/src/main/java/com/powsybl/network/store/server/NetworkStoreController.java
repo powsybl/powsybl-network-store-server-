@@ -1362,4 +1362,15 @@ public class NetworkStoreController {
                                                                                     @Parameter(description = "Identifiable ID", required = true) @PathVariable("id") String id) {
         return get(() -> repository.getIdentifiable(networkId, variantNum, id));
     }
+
+    @GetMapping(value = "/{networkUuid}/{variantNum}/identifiables-ids", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get all identifiables IDs")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully get the all identifiables IDs"),
+        @ApiResponse(responseCode = "404", description = "The network has not been found")
+    })
+    public List<String> getIdentifiablesIds(@Parameter(description = "Network ID", required = true) @PathVariable("networkUuid") UUID networkUuid,
+                                            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum) {
+        return repository.getIdentifiablesIds(networkUuid, variantNum);
+    }
 }
