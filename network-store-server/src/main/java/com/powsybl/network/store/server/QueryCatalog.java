@@ -6,10 +6,11 @@
  */
 package com.powsybl.network.store.server;
 
+import com.powsybl.network.store.model.Contained;
+import com.powsybl.network.store.model.IdentifiableAttributes;
 import com.powsybl.network.store.model.Resource;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
@@ -175,6 +176,109 @@ public final class QueryCatalog {
         }
         return query.toString();
     }
+
+    public static String buildMultiRowsUpdateIdentifiableQuery(String tableName, Set<String> columns, String columnToAddToWhereClause, int rowsNumber) {
+        StringBuilder query = new StringBuilder("update ")
+                .append(tableName + " as T1 \n")
+                .append(" set \n");
+        var it = columns.iterator();
+        while (it.hasNext()) {
+            String column = it.next();
+            if (!column.equals(columnToAddToWhereClause)) {
+                query.append(column + " = T2." + column);
+                if (it.hasNext()) {
+                    query.append(", \n");
+                } else {
+                    query.append("\n");
+                }
+            }
+        }
+
+        query.append(" FROM (VALUES \n");
+        for (int i = 0; i < rowsNumber; i++) {
+            query.append("(");
+            query.append("?, ");
+            query.append("?, ");
+            query.append("?, ");
+            it = columns.iterator();
+            while (it.hasNext()) {
+                it.next();
+                query.append("?");
+                if (it.hasNext()) {
+                    query.append(", ");
+                }
+            }
+            query.append(")");
+            if (i < rowsNumber -1) {
+                query.append(",\n");
+            }
+        }
+        query.append(" )\n");
+        query.append(" AS T2( ");
+
+        it = columns.iterator();
+        while (it.hasNext()) {
+            String column = it.next();
+            if (!column.equals(columnToAddToWhereClause)) {
+                query.append(column);
+                query.append(", ");
+            }
+        }
+        query.append(NETWORK_UUID_COLUMN  + ", ");
+        query.append(VARIANT_NUM_COLUMN  + ", " );
+        query.append(ID_COLUMN);
+        if (columnToAddToWhereClause != null) {
+            query.append(", ");
+            query.append(columnToAddToWhereClause);
+        }
+        query.append(" )\n");
+
+        query.append(" where ").append("T2." + NETWORK_UUID_COLUMN + "::text").append(" = T1." + NETWORK_UUID_COLUMN + "::text and \n")
+                .append(" T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
+                .append(" T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + " and\n");
+        if (columnToAddToWhereClause != null) {
+            query.append(" T2." + columnToAddToWhereClause + "::text").append(" = T1." + columnToAddToWhereClause + "::text");
+        }
+        query.append(";");
+        System.out.println("QUERY ======\n" + query);
+        return query.toString();
+    }
+
+//    public static <T extends IdentifiableAttributes & Contained> String buildValuesForMultipleRowsUpdate(UUID networkUuid, List<Resource<T>> resources, String columnToAddToWhereClause, TableMapping tableMapping) {
+//        StringBuilder valuesToUpdate = new StringBuilder("");
+//        List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
+//        for (Resource<T> resource : resources) {
+//            valuesToUpdate
+//                    .append("(")
+//                    .append("'" + networkUuid + "', ")
+//                    .append("'" + resource.getVariantNum() + "', ")
+//                    .append("'" + resource.getId() + "', ");
+////            for (var column : tableMapping.getColumnsMapping().entrySet()) {
+////
+////                valuesToUpdate.append("'" + tableMapping.getColumnsMapping().get(column) + "', ");
+////            }
+//
+//            T attributes = resource.getAttributes();
+//            values.clear();
+//            for (var e : tableMapping.getColumnsMapping().entrySet()) {
+//                String columnName = e.getKey();
+////                var mapping = e.getValue();
+//                if (!columnName.equals(columnToAddToWhereClause)) {
+//                    valuesToUpdate.append("'" + attributes.getContainerIds().iterator().next() + "', ");
+////                    values.add(mapping.get(attributes));
+//                }
+//            }
+//            valuesToUpdate.append(")");
+////            values.add(networkUuid);
+////            values.add(resource.getVariantNum());
+////            values.add(resource.getId());
+////            values.add(resource.getAttributes().getContainerIds().iterator().next());
+////            bindValues(preparedStmt, values);
+////            preparedStmt.a();
+//        }
+//        System.out.println("VALUES ======\n" + valuesToUpdate);
+//        return valuesToUpdate.toString();
+//    }
 
     public static String buildUpdateInjectionSvQuery(String tableName) {
         return "update " +
@@ -537,4 +641,5 @@ public final class QueryCatalog {
                 EQUIPMENT_ID_COLUMN + " in (" +
                 "?, ".repeat(numberOfValues - 1) + "?)";
     }
+
 }

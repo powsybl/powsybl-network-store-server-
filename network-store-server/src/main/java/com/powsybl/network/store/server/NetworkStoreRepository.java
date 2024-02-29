@@ -38,6 +38,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
@@ -68,6 +69,8 @@ public class NetworkStoreRepository {
     private final Mappings mappings;
 
     private static final int BATCH_SIZE = 1000;
+
+    private static final int UPDATE_BATCH_SIZE = 100;
 
     private static final String SUBSTATION_ID = "substationid";
 
@@ -666,10 +669,12 @@ public class NetworkStoreRepository {
         return getIdentifiablesInContainer(networkUuid, variantNum, voltageLevelId, tableMapping.getVoltageLevelIdColumns(), tableMapping);
     }
 
-    public <T extends IdentifiableAttributes & Contained> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
+    public <T extends IdentifiableAttributes & Contained> void updateIdentifiables2(UUID networkUuid, List<Resource<T>> resources,
                                                                                    TableMapping tableMapping, String columnToAddToWhereClause) {
+        AtomicReference<Long> startTime = new AtomicReference<>();
+        startTime.set(System.nanoTime());
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause))) {
+            try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause))) {
                 List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
                 for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<T> resource : subResources) {
@@ -695,9 +700,45 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        LOGGER.info("UPDATE IDENTIFIABLE {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
+    }
+
+    public <T extends IdentifiableAttributes & Contained> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
+                                                                                   TableMapping tableMapping, String columnToAddToWhereClause) {
+        AtomicReference<Long> startTime = new AtomicReference<>();
+        startTime.set(System.nanoTime());
+        try (var connection = dataSource.getConnection()) {
+                for (List<Resource<T>> subResources : Lists.partition(resources, UPDATE_BATCH_SIZE)) {
+                    List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
+                    try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause, subResources.size()))) {
+
+                        for (Resource<T> resource : subResources) {
+                            T attributes = resource.getAttributes();
+                            for (var e : tableMapping.getColumnsMapping().entrySet()) {
+                                String columnName = e.getKey();
+                                var mapping = e.getValue();
+                                if (!columnName.equals(columnToAddToWhereClause)) {
+                                    values.add(mapping.get(attributes));
+                                }
+                            }
+                            values.add(networkUuid);
+                            values.add(resource.getVariantNum());
+                            values.add(resource.getId());
+                            values.add(resource.getAttributes().getContainerIds().iterator().next());
+                        }
+                    bindValues(preparedStmt, values);
+                    preparedStmt.execute();
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+        LOGGER.info("UPDATE IDENTIFIABLE {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
     }
 
     public void updateInjectionsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources, String tableName) {
+        AtomicReference<Long> startTime = new AtomicReference<>();
+        startTime.set(System.nanoTime());
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateInjectionSvQuery(tableName))) {
                 List<Object> values = new ArrayList<>(5);
@@ -719,6 +760,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        LOGGER.info("UPDATE SV INJECTIONS {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
     }
 
     public void updateBranchesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources, String tableName) {
