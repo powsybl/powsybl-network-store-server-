@@ -708,17 +708,27 @@ public class NetworkStoreRepository {
         AtomicReference<Long> startTime = new AtomicReference<>();
         startTime.set(System.nanoTime());
         try (var connection = dataSource.getConnection()) {
-                for (List<Resource<T>> subResources : Lists.partition(resources, UPDATE_BATCH_SIZE)) {
-                    List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
+                for (List<Resource<T>> subResources : Lists.partition(resources, 1000)) {
+                    List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size() * 1000);
                     try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause, subResources.size()))) {
-
                         for (Resource<T> resource : subResources) {
                             T attributes = resource.getAttributes();
                             for (var e : tableMapping.getColumnsMapping().entrySet()) {
                                 String columnName = e.getKey();
                                 var mapping = e.getValue();
                                 if (!columnName.equals(columnToAddToWhereClause)) {
-                                    values.add(mapping.get(attributes));
+                                    Object value = mapping.get(attributes);
+                                    if(value == null) {
+                                        if (e.getValue().getClassR() == Double.class) {
+                                            values.add(Double.NaN);
+                                        } else if (e.getValue().getClassR() == Integer.class) {
+                                            values.add(0);
+                                        } else {
+                                            values.add(mapping.get(attributes));
+                                        }
+                                    } else {
+                                        values.add(mapping.get(attributes));
+                                    }
                                 }
                             }
                             values.add(networkUuid);
@@ -726,14 +736,17 @@ public class NetworkStoreRepository {
                             values.add(resource.getId());
                             values.add(resource.getAttributes().getContainerIds().iterator().next());
                         }
-                    bindValues(preparedStmt, values);
-                    preparedStmt.execute();
-                }
+                        AtomicReference<Long> startTime2 = new AtomicReference<>();
+                        startTime2.set(System.nanoTime());
+                        bindValues(preparedStmt, values);
+                        LOGGER.info("bindValues {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime2.get()));
+                        preparedStmt.execute();
+                    }
             }
+            LOGGER.info("UPDATE IDENTIFIABLE {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
-        LOGGER.info("UPDATE IDENTIFIABLE {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
     }
 
     public void updateInjectionsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources, String tableName) {
