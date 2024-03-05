@@ -343,7 +343,11 @@ public class NetworkStoreControllerIT {
                 .position1(ConnectablePositionAttributes.builder().label("labPosition1").order(1).direction(ConnectablePosition.Direction.BOTTOM).build())
                 .position2(ConnectablePositionAttributes.builder().label("labPosition2").order(2).direction(ConnectablePosition.Direction.TOP).build())
                 .mergedXnode(MergedXnodeAttributes.builder().rdp(50.).build())
-                .currentLimits1(LimitsAttributes.builder().permanentLimit(20.).build())
+                .selectedOperationalLimitsGroupId1("group1")
+                .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                        .id("group1")
+                        .currentLimits(LimitsAttributes.builder().permanentLimit(20.).temporaryLimits(new TreeMap<>(Map.of(1200, TemporaryLimitAttributes.builder().value(30.).acceptableDuration(1200).build()))).build())
+                        .build()))
                 .build())
             .build();
 
@@ -368,7 +372,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.position2.label").value("labPosition2"))
                 .andExpect(jsonPath("data[0].attributes.position2.direction").value("TOP"))
                 .andExpect(jsonPath("data[0].attributes.mergedXnode.rdp").value(50.0))
-                .andExpect(jsonPath("data[0].attributes.currentLimits1.permanentLimit").value(20.));
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group1\"].currentLimits.permanentLimit").value(20.));
 
         resLine.getAttributes().setP1(100.);  // changing p1 value
         resLine.getAttributes().getProperties().put("property1", "newValue1");  // changing property value
@@ -415,7 +419,11 @@ public class NetworkStoreControllerIT {
                         .position1(null)
                         .position2(null)
                         .mergedXnode(MergedXnodeAttributes.builder().rdp(50.).build())
-                        .currentLimits1(LimitsAttributes.builder().permanentLimit(20.).build())
+                        .selectedOperationalLimitsGroupId1("group1")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
                         .build())
                 .build();
 
@@ -437,7 +445,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.aliasByType[\"aliasDouble\"]").value("valueAliasDouble"))
                 .andExpect(jsonPath("data[0].attributes.aliasesWithoutType").value("alias1"))
                 .andExpect(jsonPath("data[0].attributes.mergedXnode.rdp").value(50.0))
-                .andExpect(jsonPath("data[0].attributes.currentLimits1.permanentLimit").value(20.));
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group1\"].currentLimits.permanentLimit").value(20.));
 
         Resource<LineAttributes> resLine2 = Resource.lineBuilder()
             .id("idLine2")
@@ -468,7 +476,11 @@ public class NetworkStoreControllerIT {
                 .position1(ConnectablePositionAttributes.builder().label("labPosition12").order(4).direction(ConnectablePosition.Direction.BOTTOM).build())
                 .position2(ConnectablePositionAttributes.builder().label("labPosition22").order(9).direction(ConnectablePosition.Direction.TOP).build())
                 .mergedXnode(MergedXnodeAttributes.builder().rdp(80.).build())
-                .currentLimits1(LimitsAttributes.builder().permanentLimit(30.).build())
+                .selectedOperationalLimitsGroupId1("group1")
+                .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                        .id("group1")
+                        .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                        .build()))
                 .build())
             .build();
 
@@ -484,9 +496,9 @@ public class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].id").value("idLine"))
             .andExpect(jsonPath("data[0].attributes.p1").value(100.))
             .andExpect(jsonPath("data[0].attributes.properties[\"property1\"]").value("newValue1"))
-            .andExpect(jsonPath("data[1].id").value("idLine2"))
-            .andExpect(jsonPath("data[1].attributes.p1").value(30.))
-            .andExpect(jsonPath("data[1].attributes.properties[\"property12\"]").value("value12"));
+            .andExpect(jsonPath("data[2].id").value("idLine2"))
+            .andExpect(jsonPath("data[2].attributes.p1").value(30.))
+            .andExpect(jsonPath("data[2].attributes.properties[\"property12\"]").value("value12"));
 
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl1/lines")
             .contentType(APPLICATION_JSON))
@@ -705,7 +717,11 @@ public class NetworkStoreControllerIT {
                                 .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().minQ(20).maxQ(30).build())
                                 .build())
                         .pairingKey("XN1")
-                        .currentLimits(LimitsAttributes.builder().permanentLimit(5).build())
+                        .selectedOperationalLimitsGroupId("group1")
+                        .operationalLimitsGroups(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
                         .p(100.)
                         .q(200)
                         .build())

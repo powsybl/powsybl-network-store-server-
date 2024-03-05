@@ -1,0 +1,102 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+    <changeSet author="labidiayo" id="2986331049274-1">
+        <addColumn tableName="temporarylimit">
+            <column name="operationallimitsgroupid" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+
+        <createTable tableName="permanentlimit">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmenttype" type="VARCHAR(255)"/>
+            <column name="networkuuid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operationallimitsgroupid" type="VARCHAR(50)"/>
+            <column name="side" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="limittype" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value_" type="FLOAT8"/>
+        </createTable>
+
+        <addColumn tableName="line">
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="line">
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="twowindingstransformer">
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="twowindingstransformer">
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="danglingline">
+            <column name="selectedoperationallimitsgroupid" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid3" type="VARCHAR(50)" defaultValue="DEFAULT"/>
+        </addColumn>
+
+        <renameColumn
+                newColumnName="ratiotapchangerregulationvalue"
+                oldColumnName="ratiotapchangertargetv"
+                tableName="twowindingstransformer"/>
+        <addColumn tableName="twowindingstransformer">
+            <column name="ratiotapchangerregulationmode" type="TEXT"/>
+        </addColumn>
+
+        <renameColumn
+                newColumnName="ratiotapchangerregulationvalue1"
+                oldColumnName="ratiotapchangertargetv1"
+                tableName="threewindingstransformer"/>
+        <renameColumn
+                newColumnName="ratiotapchangerregulationvalue2"
+                oldColumnName="ratiotapchangertargetv2"
+                tableName="threewindingstransformer"/>
+        <renameColumn
+                newColumnName="ratiotapchangerregulationvalue3"
+                oldColumnName="ratiotapchangertargetv3"
+                tableName="threewindingstransformer"/>
+        <addColumn tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode1" type="TEXT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode2" type="TEXT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode3" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+    <!-- <changeSet author="labidiayo" id="migrationPermanentLimits-1">
+        <sqlFile
+                dbms="!postgresql"
+                encoding="UTF-8"
+                path="migrationPermanentLimits.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+        <sqlFile
+                dbms="postgresql"
+                encoding="UTF-8"
+                path="migrationPermanentLimits.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+    </changeSet> -->
+</databaseChangeLog>

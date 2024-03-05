@@ -408,6 +408,17 @@ public class NetworkStoreController {
         return getAll(() -> repository.getVoltageLevelDanglingLines(networkId, variantNum, voltageLevelId), null);
     }
 
+    // grounds
+
+    @GetMapping(value = "/{networkId}/{variantNum}/voltage-levels/{voltageLevelId}/grounds", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get grounds connected to voltage level")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get grounds connected to the voltage level"))
+    public ResponseEntity<TopLevelDocument<GroundAttributes>> getVoltageLevelGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                                     @Parameter(description = "Voltage level ID", required = true) @PathVariable("voltageLevelId") String voltageLevelId) {
+        return getAll(List::of, null);
+    }
+
     // generator
 
     @PostMapping(value = "/{networkId}/generators")
@@ -1285,6 +1296,16 @@ public class NetworkStoreController {
                                                       @Parameter(description = "dangling line SV resources", required = true) @RequestBody List<Resource<InjectionSvAttributes>> danglingLineResources) {
 
         return updateAll(resources -> repository.updateDanglingLinesSv(networkId, resources), danglingLineResources);
+    }
+
+    // ground
+    @GetMapping(value = "/{networkId}/{variantNum}/grounds", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get dangling lines")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get ground list"))
+    public ResponseEntity<TopLevelDocument<GroundAttributes>> getGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                                     @Parameter(description = "Max number of grounds to get") @RequestParam(required = false) Integer limit) {
+        return getAll(List::of, limit);
     }
 
     // buses
