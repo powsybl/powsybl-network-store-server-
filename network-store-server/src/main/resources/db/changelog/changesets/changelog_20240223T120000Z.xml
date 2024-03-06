@@ -5,12 +5,12 @@
     <changeSet author="labidiayo" id="2986331049275-1">
         <addColumn tableName="temporarylimit">
             <column name="operationallimitsgroupid" type="VARCHAR(50)">
-                <constraints nullable="false"/>
             </column>
         </addColumn>
         <update tableName="temporarylimit">
             <column name="operationallimitsgroupid" value="DEFAULT"/>
         </update>
+        <addNotNullConstraint columnDataType="VARCHAR(50)" columnName="operationallimitsgroupid" tableName="temporarylimit"/>
 
         <createTable tableName="permanentlimit">
             <column name="equipmentid" type="VARCHAR(255)">
