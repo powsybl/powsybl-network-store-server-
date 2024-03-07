@@ -4,12 +4,8 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
     <changeSet author="labidiayo" id="2986331049275-1">
         <addColumn tableName="temporarylimit">
-            <column name="operationallimitsgroupid" type="VARCHAR(50)">
-            </column>
+            <column name="operationallimitsgroupid" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="temporarylimit">
-            <column name="operationallimitsgroupid" value="DEFAULT"/>
-        </update>
         <addNotNullConstraint columnDataType="VARCHAR(50)" columnName="operationallimitsgroupid" tableName="temporarylimit"/>
 
         <createTable tableName="permanentlimit">
@@ -44,60 +40,36 @@
         </createIndex>
 
         <addColumn tableName="line">
-            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="line">
-            <column name="selectedoperationallimitsgroupid1" value="DEFAULT"/>
-        </update>
 
         <addColumn tableName="line">
-            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="line">
-            <column name="selectedoperationallimitsgroupid2" value="DEFAULT"/>
-        </update>
 
         <addColumn tableName="twowindingstransformer">
-            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="twowindingstransformer">
-            <column name="selectedoperationallimitsgroupid1" value="DEFAULT"/>
-        </update>
 
         <addColumn tableName="twowindingstransformer">
-            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="twowindingstransformer">
-            <column name="selectedoperationallimitsgroupid2" value="DEFAULT"/>
-        </update>
 
         <addColumn tableName="danglingline">
-            <column name="selectedoperationallimitsgroupid" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="danglingline">
-            <column name="selectedoperationallimitsgroupid" value="DEFAULT"/>
-        </update>
 
         <addColumn tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid1" value="DEFAULT"/>
-        </update>
 
         <addColumn tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid2" value="DEFAULT"/>
-        </update>
 
         <addColumn tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid3" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid3" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <update tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid3" value="DEFAULT"/>
-        </update>
 
         <renameColumn
                 newColumnName="ratiotapchangerregulationvalue"
@@ -153,5 +125,32 @@
                 relativeToChangelogFile="true"
                 splitStatements="true"
                 stripComments="true"/>
+    </changeSet>
+
+    <changeSet author="labidiayo" id="post-migrationPermanentLimits-_20240223T120000Z">
+        <dropColumn columnName="permanentcurrentlimit1" tableName="line"/>
+        <dropColumn columnName="permanentcurrentlimit2" tableName="line"/>
+        <dropColumn columnName="permanentcurrentlimit1" tableName="twowindingstransformer"/>
+        <dropColumn columnName="permanentcurrentlimit2" tableName="twowindingstransformer"/>
+        <dropColumn columnName="permanentcurrentlimit" tableName="danglingline"/>
+        <dropColumn columnName="permanentcurrentlimit1" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentcurrentlimit2" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentcurrentlimit3" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentactivepowerlimit1" tableName="line"/>
+        <dropColumn columnName="permanentactivepowerlimit2" tableName="line"/>
+        <dropColumn columnName="permanentactivepowerlimit1" tableName="twowindingstransformer"/>
+        <dropColumn columnName="permanentactivepowerlimit2" tableName="twowindingstransformer"/>
+        <dropColumn columnName="permanentactivepowerlimit" tableName="danglingline"/>
+        <dropColumn columnName="permanentactivepowerlimit1" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentactivepowerlimit2" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentactivepowerlimit3" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentapparentpowerlimit1" tableName="line"/>
+        <dropColumn columnName="permanentapparentpowerlimit2" tableName="line"/>
+        <dropColumn columnName="permanentapparentpowerlimit1" tableName="twowindingstransformer"/>
+        <dropColumn columnName="permanentapparentpowerlimit2" tableName="twowindingstransformer"/>
+        <dropColumn columnName="permanentapparentpowerlimit" tableName="danglingline"/>
+        <dropColumn columnName="permanentapparentpowerlimit1" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentapparentpowerlimit2" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentapparentpowerlimit3" tableName="threewindingstransformer"/>
     </changeSet>
 </databaseChangeLog>
