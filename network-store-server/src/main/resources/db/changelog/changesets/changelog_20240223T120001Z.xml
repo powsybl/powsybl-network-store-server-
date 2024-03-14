@@ -1,0 +1,273 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+    <changeSet author="labidiayo" id="2986331049275-1">
+        <createTable tableName="temporarylimittemp">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmenttype" type="VARCHAR(255)"/>
+            <column name="networkuuid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operationallimitsgroupid" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="side" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="limittype" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="value_" type="FLOAT8"/>
+            <column name="acceptableduration" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fictitious" type="BOOLEAN"/>
+        </createTable>
+        <sql>
+            INSERT INTO temporarylimittemp (equipmentid, equipmenttype, networkuuid, variantnum, operationallimitsgroupid, side, limittype, name, value_, acceptableduration, fictitious)
+            SELECT equipmentid, equipmenttype, networkuuid, variantnum, 'DEFAULT', side, limittype, name, value_, acceptableduration, fictitious
+            FROM temporarylimit;
+        </sql>
+        <dropTable tableName="temporarylimit"/>
+        <renameTable newTableName="temporarylimit" oldTableName="temporarylimittemp"/>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, side, acceptableduration, limittype, operationallimitsgroupid" constraintName="temporarylimit_pkey" tableName="temporarylimit"/>
+        <createIndex indexName="temporarylimit_networkuuid_variantnum_equipmenttype_idx" tableName="temporarylimit">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="equipmenttype"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="labidiayo" id="2986331049275-2">
+        <createTable tableName="permanentlimit">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmenttype" type="VARCHAR(255)"/>
+            <column name="networkuuid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operationallimitsgroupid" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="side" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="limittype" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value_" type="FLOAT8"/>
+        </createTable>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, side, operationallimitsgroupid, limittype" constraintName="permanentlimit_pkey" tableName="permanentlimit"/>
+        <sqlFile
+                encoding="UTF-8"
+                path="migrationPermanentLimits_20240223T120000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+        <createIndex indexName="permanentlimit_networkuuid_variantnum_equipmenttype_idx" tableName="permanentlimit">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="equipmenttype"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="labidiayo" id="2986331049275-3">
+        <createTable tableName="linetemp">
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="voltagelevelid1" type="VARCHAR(255)"/>
+            <column name="voltagelevelid2" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="fictitious" type="BOOLEAN"/>
+            <column name="properties" type="TEXT"/>
+            <column name="aliaseswithouttype" type="TEXT"/>
+            <column name="aliasbytype" type="TEXT"/>
+            <column name="node1" type="INTEGER"/>
+            <column name="node2" type="INTEGER"/>
+            <column name="r" type="FLOAT8"/>
+            <column name="x" type="FLOAT8"/>
+            <column name="g1" type="FLOAT8"/>
+            <column name="b1" type="FLOAT8"/>
+            <column name="g2" type="FLOAT8"/>
+            <column name="b2" type="FLOAT8"/>
+            <column name="p1" type="FLOAT8"/>
+            <column name="q1" type="FLOAT8"/>
+            <column name="p2" type="FLOAT8"/>
+            <column name="q2" type="FLOAT8"/>
+            <column name="position1" type="TEXT"/>
+            <column name="position2" type="TEXT"/>
+            <column name="bus1" type="VARCHAR(255)"/>
+            <column name="bus2" type="VARCHAR(255)"/>
+            <column name="connectablebus1" type="VARCHAR(255)"/>
+            <column name="connectablebus2" type="VARCHAR(255)"/>
+            <column name="mergedxnode" type="TEXT"/>
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)"/>
+            <column name="operatingstatus" type="VARCHAR(50)"/>
+        </createTable>
+        <sql>
+            INSERT INTO linetemp (networkuuid, variantnum, id, voltagelevelid1, voltagelevelid2, name, fictitious, properties, aliaseswithouttype, aliasbytype, node1, node2, r, x, g1, b1, g2, b2, p1, q1, p2, q2, position1, position2, bus1, bus2, connectablebus1, connectablebus2, mergedxnode, selectedoperationallimitsgroupid1, selectedoperationallimitsgroupid2, operatingstatus)
+            SELECT networkuuid, variantnum, id, voltagelevelid1, voltagelevelid2, name, fictitious, properties, aliaseswithouttype, aliasbytype, node1, node2, r, x, g1, b1, g2, b2, p1, q1, p2, q2, position1, position2, bus1, bus2, connectablebus1, connectablebus2, mergedxnode, 'DEFAULT', 'DEFAULT', operatingstatus
+            FROM line;
+        </sql>
+        <dropTable tableName="line"/>
+        <renameTable newTableName="line" oldTableName="linetemp"/>
+        <addPrimaryKey columnNames="networkuuid, variantnum, id" constraintName="line_pkey" tableName="line"/>
+        <createIndex indexName="line_networkuuid_variantnum_voltagelevelid1_idx" tableName="line">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="voltagelevelid1"/>
+        </createIndex>
+        <createIndex indexName="line_networkuuid_variantnum_voltagelevelid2_idx" tableName="line">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="voltagelevelid2"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="labidiayo" id="2986331049275-4">
+        <createTable tableName="twowindingstransformertemp">
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="voltagelevelid1" type="VARCHAR(255)"/>
+            <column name="voltagelevelid2" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="fictitious" type="BOOLEAN"/>
+            <column name="properties" type="TEXT"/>
+            <column name="aliaseswithouttype" type="TEXT"/>
+            <column name="aliasbytype" type="TEXT"/>
+            <column name="node1" type="INTEGER"/>
+            <column name="node2" type="INTEGER"/>
+            <column name="r" type="FLOAT8"/>
+            <column name="x" type="FLOAT8"/>
+            <column name="g" type="FLOAT8"/>
+            <column name="b" type="FLOAT8"/>
+            <column name="ratedu1" type="FLOAT8"/>
+            <column name="ratedu2" type="FLOAT8"/>
+            <column name="rateds" type="FLOAT8"/>
+            <column name="p1" type="FLOAT8"/>
+            <column name="q1" type="FLOAT8"/>
+            <column name="p2" type="FLOAT8"/>
+            <column name="q2" type="FLOAT8"/>
+            <column name="position1" type="TEXT"/>
+            <column name="position2" type="TEXT"/>
+            <column name="bus1" type="VARCHAR(255)"/>
+            <column name="bus2" type="VARCHAR(255)"/>
+            <column name="connectablebus1" type="VARCHAR(255)"/>
+            <column name="connectablebus2" type="VARCHAR(255)"/>
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)"/>
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)"/>
+            <column name="phaseangleclock" type="TEXT"/>
+            <column name="operatingstatus" type="VARCHAR(50)"/>
+            <column name="cgmestapchangers" type="TEXT"/>
+            <column name="phasetapchangerlowtapposition" type="INTEGER"/>
+            <column name="phasetapchangertapposition" type="INTEGER"/>
+            <column name="phasetapchangerregulating" type="BOOLEAN"/>
+            <column name="phasetapchangertargetdeadband" type="FLOAT8"/>
+            <column name="phasetapchangerterminalrefconnectableid" type="VARCHAR(255)"/>
+            <column name="phasetapchangerterminalrefside" type="TEXT"/>
+            <column name="phasetapchangerregulationmode" type="TEXT"/>
+            <column name="phasetapchangerregulationvalue" type="FLOAT8"/>
+            <column name="ratiotapchangerlowtapposition" type="INTEGER"/>
+            <column name="ratiotapchangertapposition" type="INTEGER"/>
+            <column name="ratiotapchangerregulating" type="BOOLEAN"/>
+            <column name="ratiotapchangertargetdeadband" type="FLOAT8"/>
+            <column name="ratiotapchangerterminalrefconnectableid" type="VARCHAR(255)"/>
+            <column name="ratiotapchangerterminalrefside" type="TEXT"/>
+            <column name="ratiotapchangerloadtapchangingcapabilities" type="BOOLEAN"/>
+            <column name="ratiotapchangerregulationvalue" type="FLOAT8"/>
+            <column name="ratiotapchangerregulationmode" type="TEXT"/>
+        </createTable>
+        <sql>
+            INSERT INTO twowindingstransformertemp (networkuuid, variantnum, id, voltagelevelid1, voltagelevelid2, name, fictitious, properties, aliaseswithouttype, aliasbytype, node1, node2, r, x, g, b, ratedu1, ratedu2, rateds, p1, q1, p2, q2, position1, position2, bus1, bus2, connectablebus1, connectablebus2, selectedoperationallimitsgroupid1, selectedoperationallimitsgroupid2, phaseangleclock, operatingstatus, cgmestapchangers, phasetapchangerlowtapposition, phasetapchangertapposition, phasetapchangerregulating, phasetapchangertargetdeadband, phasetapchangerterminalrefconnectableid, phasetapchangerterminalrefside, phasetapchangerregulationmode, phasetapchangerregulationvalue, ratiotapchangerlowtapposition, ratiotapchangertapposition, ratiotapchangerregulating, ratiotapchangertargetdeadband, ratiotapchangerterminalrefconnectableid, ratiotapchangerterminalrefside, ratiotapchangerloadtapchangingcapabilities, ratiotapchangerregulationvalue, ratiotapchangerregulationmode)
+            SELECT networkuuid, variantnum, id, voltagelevelid1, voltagelevelid2, name, fictitious, properties, aliaseswithouttype, aliasbytype, node1, node2, r, x, g, b, ratedu1, ratedu2, rateds, p1, q1, p2, q2, position1, position2, bus1, bus2, connectablebus1, connectablebus2, 'DEFAULT', 'DEFAULT', phaseangleclock, operatingstatus, cgmestapchangers, phasetapchangerlowtapposition, phasetapchangertapposition, phasetapchangerregulating, phasetapchangertargetdeadband, phasetapchangerterminalrefconnectableid, phasetapchangerterminalrefside, phasetapchangerregulationmode, phasetapchangerregulationvalue, ratiotapchangerlowtapposition, ratiotapchangertapposition, ratiotapchangerregulating, ratiotapchangertargetdeadband, ratiotapchangerterminalrefconnectableid, ratiotapchangerterminalrefside, ratiotapchangerloadtapchangingcapabilities, ratiotapchangertargetv, CASE WHEN ratiotapchangertargetv IS NOT NULL THEN 'VOLTAGE' ELSE NULL END
+            FROM twowindingstransformer;
+        </sql>
+        <dropTable tableName="twowindingstransformer"/>
+        <renameTable newTableName="twowindingstransformer" oldTableName="twowindingstransformertemp"/>
+        <addPrimaryKey columnNames="networkuuid, variantnum, id" constraintName="twowindingstransformer_pkey" tableName="twowindingstransformer"/>
+        <createIndex indexName="twowindingstransformer_networkuuid_variantnum_voltageleveli_idx" tableName="twowindingstransformer">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="voltagelevelid1"/>
+        </createIndex>
+        <createIndex indexName="twowindingstransformer_networkuuid_variantnum_voltagelevel_idx1" tableName="twowindingstransformer">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="voltagelevelid2"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="labidiayo" id="2986331049275-5">
+        <addColumn tableName="danglingline">
+            <column name="selectedoperationallimitsgroupid" type="VARCHAR(50)" value="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" value="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" value="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid3" type="VARCHAR(50)" value="DEFAULT"/>
+        </addColumn>
+        <renameColumn
+                newColumnName="ratiotapchangerregulationvalue1"
+                oldColumnName="ratiotapchangertargetv1"
+                tableName="threewindingstransformer"/>
+        <renameColumn
+                newColumnName="ratiotapchangerregulationvalue2"
+                oldColumnName="ratiotapchangertargetv2"
+                tableName="threewindingstransformer"/>
+        <renameColumn
+                newColumnName="ratiotapchangerregulationvalue3"
+                oldColumnName="ratiotapchangertargetv3"
+                tableName="threewindingstransformer"/>
+        <addColumn tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode1" type="TEXT"/>
+        </addColumn>
+        <update tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode1" value="VOLTAGE"/>
+            <where>ratiotapchangerregulationvalue1 IS NOT NULL</where>
+        </update>
+        <addColumn tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode2" type="TEXT"/>
+        </addColumn>
+        <update tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode2" value="VOLTAGE"/>
+            <where>ratiotapchangerregulationvalue2 IS NOT NULL</where>
+        </update>
+        <addColumn tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode3" type="TEXT"/>
+        </addColumn>
+        <update tableName="threewindingstransformer">
+            <column name="ratiotapchangerregulationmode3" value="VOLTAGE"/>
+            <where>ratiotapchangerregulationvalue3 IS NOT NULL</where>
+        </update>
+    </changeSet>
+</databaseChangeLog>

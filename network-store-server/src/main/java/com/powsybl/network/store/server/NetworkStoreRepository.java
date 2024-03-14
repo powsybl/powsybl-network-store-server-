@@ -18,6 +18,9 @@ import com.powsybl.iidm.network.LimitType;
 import com.powsybl.iidm.network.ReactiveLimitsKind;
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.model.utils.VariantUtils;
+import com.powsybl.network.store.server.dto.LimitsInfos;
+import com.powsybl.network.store.server.dto.OwnerInfo;
+import com.powsybl.network.store.server.dto.PermanentLimitAttributes;
 import com.powsybl.network.store.server.exceptions.JsonApiErrorResponseException;
 import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 import com.powsybl.ws.commons.LogUtils;
@@ -1783,7 +1786,7 @@ public class NetworkStoreRepository {
                     resource.getVariantNum()
                 );
                 T equipment = resource.getAttributes();
-                map.put(info, equipment.getAllLimitsInfos());
+                map.put(info, getAllLimitsInfos(equipment));
             }
         }
         return map;
@@ -1885,23 +1888,23 @@ public class NetworkStoreRepository {
         LimitType type = temporaryLimit.getLimitType();
         int side = temporaryLimit.getSide();
         String groupId = temporaryLimit.getOperationalLimitsGroupId();
-        if (equipment.getLimits(type, side, groupId) == null) {
-            equipment.setLimits(type, side, new LimitsAttributes(), groupId);
+        if (getLimits(equipment, type, side, groupId) == null) {
+            setLimits(equipment, type, side, new LimitsAttributes(), groupId);
         }
-        if (equipment.getLimits(type, side, groupId).getTemporaryLimits() == null) {
-            equipment.getLimits(type, side, groupId).setTemporaryLimits(new TreeMap<>());
+        if (getLimits(equipment, type, side, groupId).getTemporaryLimits() == null) {
+            getLimits(equipment, type, side, groupId).setTemporaryLimits(new TreeMap<>());
         }
-        equipment.getLimits(type, side, groupId).getTemporaryLimits().put(temporaryLimit.getAcceptableDuration(), temporaryLimit);
+        getLimits(equipment, type, side, groupId).getTemporaryLimits().put(temporaryLimit.getAcceptableDuration(), temporaryLimit);
     }
 
     private <T extends LimitHolder> void insertPermanentLimitInEquipment(T equipment, PermanentLimitAttributes permanentLimit) {
         LimitType type = permanentLimit.getLimitType();
         int side = permanentLimit.getSide();
         String groupId = permanentLimit.getOperationalLimitsGroupId();
-        if (equipment.getLimits(type, side, groupId) == null) {
-            equipment.setLimits(type, side, new LimitsAttributes(), groupId);
+        if (getLimits(equipment, type, side, groupId) == null) {
+            setLimits(equipment, type, side, new LimitsAttributes(), groupId);
         }
-        equipment.getLimits(type, side, groupId).setPermanentLimit(permanentLimit.getValue());
+        getLimits(equipment, type, side, groupId).setPermanentLimit(permanentLimit.getValue());
     }
 
     private void deleteTemporaryLimits(UUID networkUuid, int variantNum, String equipmentId) {
@@ -2405,5 +2408,64 @@ public class NetworkStoreRepository {
             resourceIdsByVariant.put(resource.getVariantNum(), resourceIds);
         }
         resourceIdsByVariant.forEach((k, v) -> deleteTapChangerSteps(networkUuid, k, v));
+    }
+
+    private static final String EXCEPTION_UNKNOWN_LIMIT_TYPE = "Unknown limit type";
+
+    private void fillLimitsInfosByTypeAndSide(LimitHolder equipment, LimitsInfos result, LimitType type, int side) {
+        Map<String, OperationalLimitsGroupAttributes> operationalLimitsGroups = equipment.getOperationalLimitsGroups(side);
+        if (operationalLimitsGroups != null) {
+            for (Map.Entry<String, OperationalLimitsGroupAttributes> entry : operationalLimitsGroups.entrySet()) {
+                LimitsAttributes limits = getLimits(equipment, type, side, entry.getKey());
+                if (limits != null) {
+                    if (limits.getTemporaryLimits() != null) {
+                        List<TemporaryLimitAttributes> temporaryLimits = new ArrayList<>(
+                                limits.getTemporaryLimits().values());
+                        temporaryLimits.forEach(e -> {
+                            e.setSide(side);
+                            e.setLimitType(type);
+                            e.setOperationalLimitsGroupId(entry.getKey());
+                        });
+                        result.getTemporaryLimits().addAll(temporaryLimits);
+                    }
+                    if (!Double.isNaN(limits.getPermanentLimit())) {
+                        result.getPermanentLimits().add(PermanentLimitAttributes.builder()
+                                .side(side)
+                                .limitType(type)
+                                .value(limits.getPermanentLimit())
+                                .operationalLimitsGroupId(entry.getKey())
+                                .build());
+                    }
+                }
+            }
+        }
+    }
+
+    private LimitsInfos getAllLimitsInfos(LimitHolder equipment) {
+        LimitsInfos result = new LimitsInfos();
+        for (Integer side : equipment.getSideList()) {
+            fillLimitsInfosByTypeAndSide(equipment, result, LimitType.CURRENT, side);
+            fillLimitsInfosByTypeAndSide(equipment, result, LimitType.ACTIVE_POWER, side);
+            fillLimitsInfosByTypeAndSide(equipment, result, LimitType.APPARENT_POWER, side);
+        }
+        return result;
+    }
+
+    private void setLimits(LimitHolder equipment, LimitType type, int side, LimitsAttributes limits, String operationalLimitsGroupId) {
+        switch (type) {
+            case CURRENT -> equipment.setCurrentLimits(side, limits, operationalLimitsGroupId);
+            case APPARENT_POWER -> equipment.setApparentPowerLimits(side, limits, operationalLimitsGroupId);
+            case ACTIVE_POWER -> equipment.setActivePowerLimits(side, limits, operationalLimitsGroupId);
+            default -> throw new IllegalArgumentException(EXCEPTION_UNKNOWN_LIMIT_TYPE);
+        }
+    }
+
+    private LimitsAttributes getLimits(LimitHolder equipment, LimitType type, int side, String operationalLimitsGroupId) {
+        return switch (type) {
+            case CURRENT -> equipment.getCurrentLimits(side, operationalLimitsGroupId);
+            case APPARENT_POWER -> equipment.getApparentPowerLimits(side, operationalLimitsGroupId);
+            case ACTIVE_POWER -> equipment.getActivePowerLimits(side, operationalLimitsGroupId);
+            default -> throw new IllegalArgumentException(EXCEPTION_UNKNOWN_LIMIT_TYPE);
+        };
     }
 }

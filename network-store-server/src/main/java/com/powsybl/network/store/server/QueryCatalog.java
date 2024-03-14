@@ -274,9 +274,9 @@ public final class QueryCatalog {
     // Temporary Limits
     public static String buildCloneTemporaryLimitsQuery() {
         return "insert into temporarylimit(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", side, limitType, " + NAME_COLUMN +
+                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", side, limitType, " + NAME_COLUMN +
                 ", value_, acceptableDuration, fictitious) " + "select " + EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", ?, ?, side, limitType, " + NAME_COLUMN +
+                EQUIPMENT_TYPE_COLUMN + ", ?, ?, " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", side, limitType, " + NAME_COLUMN +
                 ", value_, acceptableDuration, fictitious from temporarylimit where " + NETWORK_UUID_COLUMN +
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
@@ -350,8 +350,8 @@ public final class QueryCatalog {
     // permanent Limits
     public static String buildClonePermanentLimitsQuery() {
         return "insert into permanentlimit(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", side, limitType, value_) " + "select " + EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", ?, ?, side, limitType, value_ from permanentlimit where " + NETWORK_UUID_COLUMN +
+                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", side, limitType, value_) " + "select " + EQUIPMENT_ID_COLUMN + ", " +
+                EQUIPMENT_TYPE_COLUMN + ", ?, ?, " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", side, limitType, value_ from permanentlimit where " + NETWORK_UUID_COLUMN +
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
