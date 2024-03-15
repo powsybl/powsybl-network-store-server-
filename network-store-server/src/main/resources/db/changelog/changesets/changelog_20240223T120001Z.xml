@@ -227,15 +227,10 @@
         <addColumn tableName="danglingline">
             <column name="selectedoperationallimitsgroupid" type="VARCHAR(50)" value="DEFAULT"/>
         </addColumn>
-        <addColumn tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" value="DEFAULT"/>
-        </addColumn>
-        <addColumn tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" value="DEFAULT"/>
-        </addColumn>
-        <addColumn tableName="threewindingstransformer">
-            <column name="selectedoperationallimitsgroupid3" type="VARCHAR(50)" value="DEFAULT"/>
-        </addColumn>
+        <dropColumn columnName="permanentcurrentlimit" tableName="danglingline"/>
+        <dropColumn columnName="permanentactivepowerlimit" tableName="danglingline"/>
+        <dropColumn columnName="permanentapparentpowerlimit" tableName="danglingline"/>
+
         <renameColumn
                 newColumnName="ratiotapchangerregulationvalue1"
                 oldColumnName="ratiotapchangertargetv1"
@@ -269,5 +264,25 @@
             <column name="ratiotapchangerregulationmode3" value="VOLTAGE"/>
             <where>ratiotapchangerregulationvalue3 IS NOT NULL</where>
         </update>
+
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid1" type="VARCHAR(50)" value="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid2" type="VARCHAR(50)" value="DEFAULT"/>
+        </addColumn>
+        <addColumn tableName="threewindingstransformer">
+            <column name="selectedoperationallimitsgroupid3" type="VARCHAR(50)" value="DEFAULT"/>
+        </addColumn>
+
+        <dropColumn columnName="permanentcurrentlimit1" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentactivepowerlimit1" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentapparentpowerlimit1" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentcurrentlimit2" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentactivepowerlimit2" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentapparentpowerlimit2" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentcurrentlimit3" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentactivepowerlimit3" tableName="threewindingstransformer"/>
+        <dropColumn columnName="permanentapparentpowerlimit3" tableName="threewindingstransformer"/>
     </changeSet>
 </databaseChangeLog>
