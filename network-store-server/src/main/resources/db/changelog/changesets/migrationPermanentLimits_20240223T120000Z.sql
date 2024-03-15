@@ -23,74 +23,74 @@ select id, 'LINE', networkuuid, variantnum, 'DEFAULT', 2, 'APPARENT_POWER', perm
 from line
 where permanentapparentpowerlimit2 is not null
 union all
-select id, 'TWOWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'CURRENT', permanentcurrentlimit1
+select id, 'TWO_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'CURRENT', permanentcurrentlimit1
 from twowindingstransformer
 where permanentcurrentlimit1 is not null
 union all
-select id, 'TWOWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'CURRENT', permanentcurrentlimit2
+select id, 'TWO_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'CURRENT', permanentcurrentlimit2
 from twowindingstransformer
 where permanentcurrentlimit2 is not null
 union all
-select id, 'TWOWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'ACTIVE_POWER', permanentactivepowerlimit1
+select id, 'TWO_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'ACTIVE_POWER', permanentactivepowerlimit1
 from twowindingstransformer
 where permanentactivepowerlimit1 is not null
 union all
-select id, 'TWOWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'ACTIVE_POWER', permanentactivepowerlimit2
+select id, 'TWO_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'ACTIVE_POWER', permanentactivepowerlimit2
 from twowindingstransformer
 where permanentactivepowerlimit2 is not null
 union all
-select id, 'TWOWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'APPARENT_POWER', permanentapparentpowerlimit1
+select id, 'TWO_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'APPARENT_POWER', permanentapparentpowerlimit1
 from twowindingstransformer
 where permanentapparentpowerlimit1 is not null
 union all
-select id, 'TWOWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'APPARENT_POWER', permanentapparentpowerlimit2
+select id, 'TWO_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'APPARENT_POWER', permanentapparentpowerlimit2
 from twowindingstransformer
 where permanentapparentpowerlimit2 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'CURRENT', permanentcurrentlimit1
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'CURRENT', permanentcurrentlimit1
 from threewindingstransformer
 where permanentcurrentlimit1 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'CURRENT', permanentcurrentlimit2
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'CURRENT', permanentcurrentlimit2
 from threewindingstransformer
 where permanentcurrentlimit2 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 3, 'CURRENT', permanentcurrentlimit3
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 3, 'CURRENT', permanentcurrentlimit3
 from threewindingstransformer
 where permanentcurrentlimit3 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'ACTIVE_POWER', permanentactivepowerlimit1
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'ACTIVE_POWER', permanentactivepowerlimit1
 from threewindingstransformer
 where permanentactivepowerlimit1 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'ACTIVE_POWER', permanentactivepowerlimit2
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'ACTIVE_POWER', permanentactivepowerlimit2
 from threewindingstransformer
 where permanentactivepowerlimit2 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 3, 'ACTIVE_POWER', permanentactivepowerlimit3
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 3, 'ACTIVE_POWER', permanentactivepowerlimit3
 from threewindingstransformer
 where permanentactivepowerlimit3 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'APPARENT_POWER', permanentapparentpowerlimit1
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 1, 'APPARENT_POWER', permanentapparentpowerlimit1
 from threewindingstransformer
 where permanentapparentpowerlimit1 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'APPARENT_POWER', permanentapparentpowerlimit2
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 2, 'APPARENT_POWER', permanentapparentpowerlimit2
 from threewindingstransformer
 where permanentapparentpowerlimit2 is not null
 union all
-select id, 'THREEWINDINGSTRANSFORMER', networkuuid, variantnum, 'DEFAULT', 3, 'APPARENT_POWER', permanentapparentpowerlimit3
+select id, 'THREE_WINDINGS_TRANSFORMER', networkuuid, variantnum, 'DEFAULT', 3, 'APPARENT_POWER', permanentapparentpowerlimit3
 from threewindingstransformer
 where permanentapparentpowerlimit3 is not null
 union all
-select id, 'DANGLINGLINE', networkuuid, variantnum, 'DEFAULT', 1, 'CURRENT', permanentcurrentlimit
+select id, 'DANGLING_LINE', networkuuid, variantnum, 'DEFAULT', 1, 'CURRENT', permanentcurrentlimit
 from danglingline
 where permanentcurrentlimit is not null
 union all
-select id, 'DANGLINGLINE', networkuuid, variantnum, 'DEFAULT', 1, 'ACTIVE_POWER', permanentactivepowerlimit
+select id, 'DANGLING_LINE', networkuuid, variantnum, 'DEFAULT', 1, 'ACTIVE_POWER', permanentactivepowerlimit
 from danglingline
 where permanentactivepowerlimit is not null
 union all
-select id, 'DANGLINGLINE', networkuuid, variantnum, 'DEFAULT', 1, 'APPARENT_POWER', permanentapparentpowerlimit
+select id, 'DANGLING_LINE', networkuuid, variantnum, 'DEFAULT', 1, 'APPARENT_POWER', permanentapparentpowerlimit
 from danglingline
 where permanentapparentpowerlimit is not null;
