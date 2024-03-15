@@ -6,13 +6,9 @@
  */
 package com.powsybl.network.store.server;
 
-import com.powsybl.network.store.model.Contained;
-import com.powsybl.network.store.model.IdentifiableAttributes;
 import com.powsybl.network.store.model.Resource;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
@@ -180,8 +176,6 @@ public final class QueryCatalog {
     }
 
     public static String buildMultiRowsUpdateIdentifiableQuery(String tableName, Set<String> columns, String columnToAddToWhereClause, int rowsNumber) {
-        AtomicReference<Long> startTime2 = new AtomicReference<>();
-        startTime2.set(System.nanoTime());
         StringBuilder query = new StringBuilder("update ")
                 .append(tableName + " as T1 \n")
                 .append(" set \n");
@@ -213,7 +207,7 @@ public final class QueryCatalog {
                 }
             }
             query.append(")");
-            if (i < rowsNumber -1) {
+            if (i < rowsNumber - 1) {
                 query.append(",\n");
             }
         }
@@ -228,8 +222,8 @@ public final class QueryCatalog {
                 query.append(", ");
             }
         }
-        query.append(NETWORK_UUID_COLUMN  + ", ");
-        query.append(VARIANT_NUM_COLUMN  + ", " );
+        query.append(NETWORK_UUID_COLUMN + ", ");
+        query.append(VARIANT_NUM_COLUMN + ", ");
         query.append(ID_COLUMN);
         if (columnToAddToWhereClause != null) {
             query.append(", ");
@@ -244,46 +238,8 @@ public final class QueryCatalog {
             query.append(" T2." + columnToAddToWhereClause + "::text").append(" = T1." + columnToAddToWhereClause + "::text");
         }
         query.append(";");
-        System.out.println("QUERY ======\n" + query);
-        System.out.println("bindValues {}ms " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime2.get()));
         return query.toString();
     }
-
-//    public static <T extends IdentifiableAttributes & Contained> String buildValuesForMultipleRowsUpdate(UUID networkUuid, List<Resource<T>> resources, String columnToAddToWhereClause, TableMapping tableMapping) {
-//        StringBuilder valuesToUpdate = new StringBuilder("");
-//        List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
-//        for (Resource<T> resource : resources) {
-//            valuesToUpdate
-//                    .append("(")
-//                    .append("'" + networkUuid + "', ")
-//                    .append("'" + resource.getVariantNum() + "', ")
-//                    .append("'" + resource.getId() + "', ");
-////            for (var column : tableMapping.getColumnsMapping().entrySet()) {
-////
-////                valuesToUpdate.append("'" + tableMapping.getColumnsMapping().get(column) + "', ");
-////            }
-//
-//            T attributes = resource.getAttributes();
-//            values.clear();
-//            for (var e : tableMapping.getColumnsMapping().entrySet()) {
-//                String columnName = e.getKey();
-////                var mapping = e.getValue();
-//                if (!columnName.equals(columnToAddToWhereClause)) {
-//                    valuesToUpdate.append("'" + attributes.getContainerIds().iterator().next() + "', ");
-////                    values.add(mapping.get(attributes));
-//                }
-//            }
-//            valuesToUpdate.append(")");
-////            values.add(networkUuid);
-////            values.add(resource.getVariantNum());
-////            values.add(resource.getId());
-////            values.add(resource.getAttributes().getContainerIds().iterator().next());
-////            bindValues(preparedStmt, values);
-////            preparedStmt.a();
-//        }
-//        System.out.println("VALUES ======\n" + valuesToUpdate);
-//        return valuesToUpdate.toString();
-//    }
 
     public static String buildUpdateInjectionSvQuery(String tableName) {
         return "update " +
