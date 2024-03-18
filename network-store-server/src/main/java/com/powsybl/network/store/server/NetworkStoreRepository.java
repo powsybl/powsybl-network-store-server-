@@ -6,7 +6,6 @@
  */
 package com.powsybl.network.store.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -29,19 +28,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
 import static com.powsybl.network.store.server.QueryCatalog.*;
+import static com.powsybl.network.store.server.Utils.bindAttributes;
+import static com.powsybl.network.store.server.Utils.bindValues;
 
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
@@ -53,12 +51,13 @@ public class NetworkStoreRepository {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkStoreRepository.class);
 
     @Autowired
-    public NetworkStoreRepository(DataSource dataSource, ObjectMapper mapper, Mappings mappings) {
+    public NetworkStoreRepository(DataSource dataSource, ObjectMapper mapper, Mappings mappings, ExtensionHandler extensionHandler) {
         this.dataSource = dataSource;
         this.mappings = mappings;
         this.mapper = mapper.registerModule(new JavaTimeModule())
                 .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
                 .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+        this.extensionHandler = extensionHandler;
     }
 
     private final DataSource dataSource;
@@ -67,69 +66,11 @@ public class NetworkStoreRepository {
 
     private final Mappings mappings;
 
-    private static final int BATCH_SIZE = 1000;
+    private final ExtensionHandler extensionHandler;
+
+    static final int BATCH_SIZE = 1000;
 
     private static final String SUBSTATION_ID = "substationid";
-
-    private static boolean isCustomTypeJsonified(Class<?> clazz) {
-        return !(
-            Integer.class.equals(clazz) || Long.class.equals(clazz)
-                    || Float.class.equals(clazz) || Double.class.equals(clazz)
-                    || String.class.equals(clazz) || Boolean.class.equals(clazz)
-                    || UUID.class.equals(clazz)
-                    || Date.class.isAssignableFrom(clazz) // java.util.Date and java.sql.Date
-            );
-    }
-
-    private void bindValues(PreparedStatement statement, List<Object> values) throws SQLException {
-        int idx = 0;
-        for (Object o : values) {
-            if (o instanceof Instant) {
-                Instant d = (Instant) o;
-                statement.setDate(++idx, new java.sql.Date(d.toEpochMilli()));
-            } else if (o == null || !isCustomTypeJsonified(o.getClass())) {
-                statement.setObject(++idx, o);
-            } else {
-                try {
-                    statement.setObject(++idx, mapper.writeValueAsString(o));
-                } catch (JsonProcessingException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-        }
-    }
-
-    private void bindAttributes(ResultSet resultSet, int columnIndex, ColumnMapping columnMapping, IdentifiableAttributes attributes) {
-        try {
-            Object value = null;
-            if (columnMapping.getClassR() == null || isCustomTypeJsonified(columnMapping.getClassR())) {
-                String str = resultSet.getString(columnIndex);
-                if (str != null) {
-                    if (columnMapping.getClassMapKey() != null && columnMapping.getClassMapValue() != null) {
-                        value = mapper.readValue(str, mapper.getTypeFactory().constructMapType(Map.class, columnMapping.getClassMapKey(), columnMapping.getClassMapValue()));
-                    } else {
-                        if (columnMapping.getClassR() == null) {
-                            throw new PowsyblException("Invalid mapping config");
-                        }
-                        if (columnMapping.getClassR() == Instant.class) {
-                            value = resultSet.getTimestamp(columnIndex).toInstant();
-                        } else {
-                            value = mapper.readValue(str, columnMapping.getClassR());
-                        }
-                    }
-                }
-            } else {
-                value = resultSet.getObject(columnIndex, columnMapping.getClassR());
-            }
-            if (value != null) {
-                columnMapping.set(attributes, value);
-            }
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
 
     // network
 
@@ -181,7 +122,7 @@ public class NetworkStoreRepository {
                         NetworkAttributes attributes = new NetworkAttributes();
                         MutableInt columnIndex = new MutableInt(2);
                         networkMapping.getColumnsMapping().forEach((columnName, columnMapping) -> {
-                            bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes);
+                            bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes, mapper);
                             columnIndex.increment();
                         });
                         return Optional.of(Resource.networkBuilder()
@@ -258,7 +199,7 @@ public class NetworkStoreRepository {
                     for (var mapping : tableMapping.getColumnsMapping().values()) {
                         values.add(mapping.get(attributes));
                     }
-                    bindValues(preparedStmt, values);
+                    bindValues(preparedStmt, values, mapper);
                     preparedStmt.addBatch();
                 }
                 preparedStmt.executeBatch();
@@ -285,7 +226,7 @@ public class NetworkStoreRepository {
                         }
                         values.add(attributes.getUuid());
                         values.add(resource.getVariantNum());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -320,6 +261,12 @@ public class NetworkStoreRepository {
 
             // Delete of the tap changer steps (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete of the extensions (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.executeUpdate();
             }
@@ -364,6 +311,13 @@ public class NetworkStoreRepository {
 
             // Delete of the Tap Changer steps (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete of the extensions (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
@@ -467,6 +421,15 @@ public class NetworkStoreRepository {
             preparedStmt.setInt(4, sourceVariantNum);
             preparedStmt.execute();
         }
+
+        // Copy of the Extensions (which are not Identifiables objects)
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneExtensionsQuery())) {
+            preparedStmt.setObject(1, targetUuid);
+            preparedStmt.setInt(2, targetVariantNum);
+            preparedStmt.setObject(3, uuid);
+            preparedStmt.setInt(4, sourceVariantNum);
+            preparedStmt.execute();
+        }
     }
 
     public void cloneNetwork(UUID networkUuid, String sourceVariantId, String targetVariantId, boolean mayOverwrite) {
@@ -502,7 +465,7 @@ public class NetworkStoreRepository {
                         for (var mapping : tableMapping.getColumnsMapping().values()) {
                             values.add(mapping.get(attributes));
                         }
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -511,6 +474,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        extensionHandler.insertExtensions(extensionHandler.getExtensionsFromEquipments(networkUuid, resources));
     }
 
     private <T extends IdentifiableAttributes> Optional<Resource<T>> getIdentifiable(UUID networkUuid, int variantNum, String equipmentId,
@@ -525,7 +489,7 @@ public class NetworkStoreRepository {
                     T attributes = (T) tableMapping.getAttributesSupplier().get();
                     MutableInt columnIndex = new MutableInt(1);
                     tableMapping.getColumnsMapping().forEach((columnName, columnMapping) -> {
-                        bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes);
+                        bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes, mapper);
                         columnIndex.increment();
                     });
                     Resource.Builder<T> resourceBuilder = (Resource.Builder<T>) tableMapping.getResourceBuilderSupplier().get();
@@ -544,6 +508,8 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> Resource<T> completeResourceInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensionAttributes = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        extensionHandler.insertExtensionsInEquipments(networkUuid, List.of((Resource<BatteryAttributes>) resource), extensionAttributes);
         switch (resource.getType()) {
             case GENERATOR:
                 return completeGeneratorInfos(resource, networkUuid, variantNum, equipmentId);
@@ -620,7 +586,7 @@ public class NetworkStoreRepository {
                 T attributes = (T) tableMapping.getAttributesSupplier().get();
                 MutableInt columnIndex = new MutableInt(2);
                 tableMapping.getColumnsMapping().forEach((columnName, columnMapping) -> {
-                    bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes);
+                    bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes, mapper);
                     columnIndex.increment();
                 });
                 Resource.Builder<T> resourceBuilder = (Resource.Builder<T>) tableMapping.getResourceBuilderSupplier().get();
@@ -636,19 +602,24 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiables(UUID networkUuid, int variantNum,
                                                                                   TableMapping tableMapping) {
+        List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
-            return getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
+            identifiables = getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, tableMapping.getResourceType().toString());
+        extensionHandler.insertExtensionsInEquipments(networkUuid, identifiables, extensions);
+        return identifiables;
     }
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInContainer(UUID networkUuid, int variantNum, String containerId,
                                                                                              Set<String> containerColumns,
                                                                                              TableMapping tableMapping) {
+        List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesInContainerQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), containerColumns));
             preparedStmt.setObject(1, networkUuid);
@@ -656,10 +627,13 @@ public class NetworkStoreRepository {
             for (int i = 0; i < containerColumns.size(); i++) {
                 preparedStmt.setString(3 + i, containerId);
             }
-            return getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
+            identifiables = getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, tableMapping.getResourceType().toString());
+        extensionHandler.insertExtensionsInEquipments(networkUuid, identifiables, extensions);
+        return identifiables;
     }
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInVoltageLevel(UUID networkUuid, int variantNum, String voltageLevelId, TableMapping tableMapping) {
@@ -686,7 +660,7 @@ public class NetworkStoreRepository {
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
                         values.add(resource.getAttributes().getContainerIds().iterator().next());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -695,6 +669,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        extensionHandler.updateExtensions(networkUuid, resources);
     }
 
     public void updateInjectionsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources, String tableName) {
@@ -710,7 +685,7 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -736,7 +711,7 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -762,13 +737,15 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
                 }
             }
         });
+        // TODO add a without auto commit??
+        extensionHandler.updateExtensions(networkUuid, resources);
     }
 
     public void deleteIdentifiable(UUID networkUuid, int variantNum, String id, String tableName) {
@@ -782,6 +759,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        extensionHandler.deleteExtensions(networkUuid, variantNum, id);
     }
 
     // substation
@@ -829,7 +807,7 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -1327,7 +1305,7 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -1563,7 +1541,7 @@ public class NetworkStoreRepository {
                             if (columnIndex == null) {
                                 throw new PowsyblException("Column '" + columnName.toLowerCase() + "' of table '" + tableName + "' not found");
                             }
-                            bindAttributes(resultSet, columnIndex, columnMapping, attributes);
+                            bindAttributes(resultSet, columnIndex, columnMapping, attributes, mapper);
                         });
 
                         Resource<IdentifiableAttributes> resource = new Resource.Builder<>(tableMapping.getResourceType())
@@ -1679,7 +1657,7 @@ public class NetworkStoreRepository {
                             values.add(temporaryLimit.getValue());
                             values.add(temporaryLimit.getAcceptableDuration());
                             values.add(temporaryLimit.isFictitious());
-                            bindValues(preparedStmt, values);
+                            bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
                         }
                     }
@@ -1777,7 +1755,7 @@ public class NetworkStoreRepository {
                             values.add(reactiveCapabilityCurvePoint.getMinQ());
                             values.add(reactiveCapabilityCurvePoint.getMaxQ());
                             values.add(reactiveCapabilityCurvePoint.getP());
-                            bindValues(preparedStmt, values);
+                            bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
                         }
                     }
@@ -2088,7 +2066,7 @@ public class NetworkStoreRepository {
                             values.add(tapChangerStep.getG());
                             values.add(tapChangerStep.getB());
                             values.add(tapChangerStep.getAlpha());
-                            bindValues(preparedStmt, values);
+                            bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
                         }
                     }

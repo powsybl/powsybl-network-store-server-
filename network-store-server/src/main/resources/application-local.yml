@@ -4,3 +4,7 @@ spring:
 powsybl-ws:
   database:
     host: localhost
+
+logging:
+  level:
+    root: trace

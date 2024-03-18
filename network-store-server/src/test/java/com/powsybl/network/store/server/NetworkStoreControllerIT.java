@@ -957,4 +957,88 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.model.maximumSectionCount").value(3))
                 .andExpect(jsonPath("data[0].attributes.p").value(100.));
     }
+
+//    @Test
+//    public void testBattery() throws Exception {
+//        //Initialize network
+//        Resource<NetworkAttributes> n1 = Resource.networkBuilder()
+//                .id("n1")
+//                .variantNum(0)
+//                .attributes(NetworkAttributes.builder()
+//                        .uuid(NETWORK_UUID)
+//                        .variantId(VariantManagerConstants.INITIAL_VARIANT_ID)
+//                        .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
+//                        .build())
+//                .build();
+//        mvc.perform(post("/" + VERSION + "/networks")
+//                        .contentType(APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(Collections.singleton(n1))))
+//                .andExpect(status().isCreated());
+//
+//        Map<String, ExtensionAttributes> extensionAttributes = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build(),
+//                "position", ConnectablePositionAttributes.builder().label("test23").build());
+//
+//        Resource<BatteryAttributes> battery = Resource.batteryBuilder()
+//                .id("batteryId")
+//                .attributes(BatteryAttributes.builder()
+//                        .voltageLevelId("vl1")
+//                        .name("battery1")
+//                        .targetP(250)
+//                        .targetQ(100)
+//                        .maxP(500)
+//                        .minP(100)
+//                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
+//                        .extensionAttributes(extensionAttributes)
+//                        .build())
+//                .build();
+//
+//        mvc.perform(post("/" + VERSION + "/networks/" + NETWORK_UUID + "/batteries")
+//                        .contentType(APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(Collections.singleton(battery))))
+//                .andExpect(status().isCreated());
+//
+//        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/batteries")
+//                        .contentType(APPLICATION_JSON))
+//                .andExpect(status().isOk())
+//                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+//                .andExpect(jsonPath("data[0].attributes.targetP").value("250.0"))
+//                .andExpect(jsonPath("data[0].attributes.targetQ").value("100.0"))
+//                .andExpect(jsonPath("data[0].attributes.maxP").value("500.0"))
+//                .andExpect(jsonPath("data[0].attributes.minP").value("100.0"))
+//                .andExpect(jsonPath("data[0].attributes.extensionAttributes").value("100.0"));
+//
+//        battery.getAttributes().setP(310);
+//        battery.getAttributes().setQ(120);
+//        mvc.perform(put("/" + VERSION + "/networks/" + NETWORK_UUID + "/batteries")
+//                        .contentType(APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(Collections.singleton(battery))))
+//                .andExpect(status().isOk());
+//
+//        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/batteries/" + battery.getId())
+//                        .contentType(APPLICATION_JSON))
+//                .andExpect(status().isOk())
+//                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+//                .andExpect(jsonPath("data[0].attributes.targetP").value("250.0"))
+//                .andExpect(jsonPath("data[0].attributes.targetQ").value("100.0"))
+//                .andExpect(jsonPath("data[0].attributes.maxP").value("500.0"))
+//                .andExpect(jsonPath("data[0].attributes.minP").value("100.0"))
+//                .andExpect(jsonPath("data[0].attributes.p").value("310.0"))
+//                .andExpect(jsonPath("data[0].attributes.q").value("120.0"));
+//
+//        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl1/batteries")
+//                        .contentType(APPLICATION_JSON))
+//                .andExpect(status().isOk())
+//                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+//                .andExpect(jsonPath("data[0].attributes.targetP").value("250.0"))
+//                .andExpect(jsonPath("data[0].attributes.targetQ").value("100.0"))
+//                .andExpect(jsonPath("data[0].attributes.maxP").value("500.0"))
+//                .andExpect(jsonPath("data[0].attributes.minP").value("100.0"))
+//                .andExpect(jsonPath("data[0].attributes.p").value("310.0"))
+//                .andExpect(jsonPath("data[0].attributes.q").value("120.0"));
+//
+//        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/batteries/battery1")
+//                        .contentType(APPLICATION_JSON))
+//                .andExpect(status().isOk());
+//
+//    }
 }
