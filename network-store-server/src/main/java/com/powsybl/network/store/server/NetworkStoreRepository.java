@@ -1375,6 +1375,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
 
         insertTemporaryLimitsInEquipments(networkUuid, lines, temporaryLimits);
+        insertTemporaryLimitsInEquipments(networkUuid, lines, temporaryLimits);
 
         return lines;
     }
