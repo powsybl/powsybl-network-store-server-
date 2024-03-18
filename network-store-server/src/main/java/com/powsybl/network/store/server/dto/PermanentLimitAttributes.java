@@ -28,15 +28,15 @@ import lombok.Setter;
 public class PermanentLimitAttributes {
 
     @JsonIgnore
-    @Schema(description = "Operational limits group Id", required = true)
+    @Schema(description = "Operational limits group Id")
     private String operationalLimitsGroupId;
 
     @JsonIgnore
-    @Schema(description = "Permanent limit side", required = true)
+    @Schema(description = "Permanent limit side")
     private Integer side;
 
     @JsonIgnore
-    @Schema(description = "Permanent limit type", required = true)
+    @Schema(description = "Permanent limit type")
     private LimitType limitType;
 
     @Schema(description = "Permanent limit value")

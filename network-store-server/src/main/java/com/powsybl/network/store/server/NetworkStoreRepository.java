@@ -1682,9 +1682,8 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, LimitsInfos> mergeLimitsIntoLimitsInfos(Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits) {
         Map<OwnerInfo, LimitsInfos> limitsInfos = new HashMap<>();
-        temporaryLimits.forEach((ownerInfo, temporaryLimitAttributes) -> {
-            limitsInfos.put(ownerInfo, new LimitsInfos(new ArrayList<>(), temporaryLimitAttributes));
-        });
+        temporaryLimits.forEach((ownerInfo, temporaryLimitAttributes) -> limitsInfos.put(ownerInfo,
+                new LimitsInfos(new ArrayList<>(), temporaryLimitAttributes)));
         permanentLimits.forEach((ownerInfo, permanentLimitAttributes) -> {
             if (limitsInfos.containsKey(ownerInfo)) {
                 limitsInfos.get(ownerInfo).getPermanentLimits().addAll(permanentLimitAttributes);
