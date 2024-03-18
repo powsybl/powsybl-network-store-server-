@@ -52,6 +52,7 @@
 
         <powsybl-ws-dependencies.version>2.8.0</powsybl-ws-dependencies.version>
 
+        <sonar.moduleKey>com.powsybl:powsybl-network-store-server</sonar.moduleKey>
         <sonar.coverage.jacoco.xmlReportPaths>
             ../network-store-integration-test/target/site/jacoco-aggregate/jacoco.xml,
             ../../network-store-integration-test/target/site/jacoco-aggregate/jacoco.xml,
