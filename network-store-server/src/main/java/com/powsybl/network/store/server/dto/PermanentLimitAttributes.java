@@ -12,15 +12,17 @@ import com.powsybl.iidm.network.LimitType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author Ayoub LABIDI <ayoub.labidi at rte-france.com>
  */
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Setter
+@Getter
 @Builder
 @Schema(description = "Permanent limit attributes")
 public class PermanentLimitAttributes {

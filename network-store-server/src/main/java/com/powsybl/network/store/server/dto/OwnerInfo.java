@@ -10,9 +10,7 @@ import com.powsybl.network.store.model.ResourceType;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -28,8 +26,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@EqualsAndHashCode
 public class OwnerInfo {
     private String equipmentId;
 

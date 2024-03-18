@@ -416,6 +416,7 @@ public class NetworkStoreController {
     public ResponseEntity<TopLevelDocument<GroundAttributes>> getVoltageLevelGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                                                      @Parameter(description = "Voltage level ID", required = true) @PathVariable("voltageLevelId") String voltageLevelId) {
+        // FIXME: implement
         return getAll(List::of, null);
     }
 
