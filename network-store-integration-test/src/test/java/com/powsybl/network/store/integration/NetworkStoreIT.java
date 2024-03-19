@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.powsybl.cgmes.conformity.CgmesConformity1Catalog;
 import com.powsybl.cgmes.conformity.CgmesConformity1ModifiedCatalog;
+import com.powsybl.cgmes.conversion.CgmesImport;
 import com.powsybl.cgmes.extensions.*;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.datasource.ReadOnlyDataSource;
@@ -17,6 +18,7 @@ import com.powsybl.commons.datasource.ResourceDataSource;
 import com.powsybl.commons.datasource.ResourceSet;
 import com.powsybl.commons.extensions.Extension;
 import com.powsybl.commons.reporter.ReporterModel;
+import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.entsoe.util.EntsoeArea;
 import com.powsybl.entsoe.util.EntsoeAreaImpl;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
@@ -4555,7 +4557,9 @@ public class NetworkStoreIT {
     public void cgmesControlAreaTieLineTest() {
         try (NetworkStoreService service = createNetworkStoreService()) {
             // import new network in the store
-            service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseAssembled().dataSource());
+            Properties properties = new Properties();
+            properties.put(CgmesImport.IMPORT_CGM_WITH_SUBNETWORKS, "false");
+            service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseAssembled().dataSource(), null, LocalComputationManager.getDefault(), properties);
         }
 
         try (NetworkStoreService service = createNetworkStoreService()) {

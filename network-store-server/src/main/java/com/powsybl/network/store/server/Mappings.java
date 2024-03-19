@@ -124,15 +124,9 @@ public class Mappings {
     private static final String POSITION = "position";
     private static final String POSITION_1 = "position1";
     private static final String POSITION_2 = "position2";
-    private static final String PERMANENT_CURRENT_LIMIT = "permanentCurrentLimit";
-    private static final String PERMANENT_CURRENT_LIMIT_1 = "permanentCurrentLimit1";
-    private static final String PERMANENT_CURRENT_LIMIT_2 = "permanentCurrentLimit2";
-    private static final String PERMANENT_APPARENT_POWER_LIMIT = "permanentApparentPowerLimit";
-    private static final String PERMANENT_APPARENT_POWER_LIMIT_1 = "permanentApparentPowerLimit1";
-    private static final String PERMANENT_APPARENT_POWER_LIMIT_2 = "permanentApparentPowerLimit2";
-    private static final String PERMANENT_ACTIVE_POWER_LIMIT = "permanentActivePowerLimit";
-    private static final String PERMANENT_ACTIVE_POWER_LIMIT_1 = "permanentActivePowerLimit1";
-    private static final String PERMANENT_ACTIVE_POWER_LIMIT_2 = "permanentActivePowerLimit2";
+    private static final String SELECTED_OPERATIONAL_LIMITS_GROUP_ID_COLUMN = "selectedOperationalLimitsGroupId";
+    private static final String SELECTED_OPERATIONAL_LIMITS_GROUP_ID1_COLUMN = "selectedOperationalLimitsGroupId1";
+    private static final String SELECTED_OPERATIONAL_LIMITS_GROUP_ID2_COLUMN = "selectedOperationalLimitsGroupId2";
     private static final String VOLTAGE_REGULATOR_ON = "voltageRegulatorOn";
     private static final String REGULATION_TERMINAL = "regulatingTerminal";
     private static final String MINQ = "minQ";
@@ -180,54 +174,9 @@ public class Mappings {
         lineMappings.addColumnMapping(POSITION_1, new ColumnMapping<>(ConnectablePositionAttributes.class, LineAttributes::getPosition1, LineAttributes::setPosition1));
         lineMappings.addColumnMapping(POSITION_2, new ColumnMapping<>(ConnectablePositionAttributes.class, LineAttributes::getPosition2, LineAttributes::setPosition2));
         lineMappings.addColumnMapping("mergedXnode", new ColumnMapping<>(MergedXnodeAttributes.class, LineAttributes::getMergedXnode, LineAttributes::setMergedXnode));
-        lineMappings.addColumnMapping(PERMANENT_CURRENT_LIMIT_1, new ColumnMapping<>(Double.class,
-            (LineAttributes attributes) -> attributes.getCurrentLimits1() != null ? attributes.getCurrentLimits1().getPermanentLimit() : null,
-            (LineAttributes attributes, Double value) -> {
-                if (attributes.getCurrentLimits1() == null) {
-                    attributes.setCurrentLimits1(new LimitsAttributes());
-                }
-                attributes.getCurrentLimits1().setPermanentLimit(value);
-            }));
-        lineMappings.addColumnMapping(PERMANENT_CURRENT_LIMIT_2, new ColumnMapping<>(Double.class,
-            (LineAttributes attributes) -> attributes.getCurrentLimits2() != null ? attributes.getCurrentLimits2().getPermanentLimit() : null,
-            (LineAttributes attributes, Double value) -> {
-                if (attributes.getCurrentLimits2() == null) {
-                    attributes.setCurrentLimits2(new LimitsAttributes());
-                }
-                attributes.getCurrentLimits2().setPermanentLimit(value);
-            }));
-        lineMappings.addColumnMapping(PERMANENT_APPARENT_POWER_LIMIT_1, new ColumnMapping<>(Double.class,
-            (LineAttributes attributes) -> attributes.getApparentPowerLimits1() != null ? attributes.getApparentPowerLimits1().getPermanentLimit() : null,
-            (LineAttributes attributes, Double value) -> {
-                if (attributes.getApparentPowerLimits1() == null) {
-                    attributes.setApparentPowerLimits1(new LimitsAttributes());
-                }
-                attributes.getApparentPowerLimits1().setPermanentLimit(value);
-            }));
-        lineMappings.addColumnMapping(PERMANENT_APPARENT_POWER_LIMIT_2, new ColumnMapping<>(Double.class,
-            (LineAttributes attributes) -> attributes.getApparentPowerLimits2() != null ? attributes.getApparentPowerLimits2().getPermanentLimit() : null,
-            (LineAttributes attributes, Double value) -> {
-                if (attributes.getApparentPowerLimits2() == null) {
-                    attributes.setApparentPowerLimits2(new LimitsAttributes());
-                }
-                attributes.getApparentPowerLimits2().setPermanentLimit(value);
-            }));
-        lineMappings.addColumnMapping(PERMANENT_ACTIVE_POWER_LIMIT_1, new ColumnMapping<>(Double.class,
-            (LineAttributes attributes) -> attributes.getActivePowerLimits1() != null ? attributes.getActivePowerLimits1().getPermanentLimit() : null,
-            (LineAttributes attributes, Double value) -> {
-                if (attributes.getActivePowerLimits1() == null) {
-                    attributes.setActivePowerLimits1(new LimitsAttributes());
-                }
-                attributes.getActivePowerLimits1().setPermanentLimit(value);
-            }));
-        lineMappings.addColumnMapping(PERMANENT_ACTIVE_POWER_LIMIT_2, new ColumnMapping<>(Double.class,
-            (LineAttributes attributes) -> attributes.getActivePowerLimits2() != null ? attributes.getActivePowerLimits2().getPermanentLimit() : null,
-            (LineAttributes attributes, Double value) -> {
-                if (attributes.getActivePowerLimits2() == null) {
-                    attributes.setActivePowerLimits2(new LimitsAttributes());
-                }
-                attributes.getActivePowerLimits2().setPermanentLimit(value);
-            }));
+        lineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID1_COLUMN, new ColumnMapping<>(String.class, LineAttributes::getSelectedOperationalLimitsGroupId1, LineAttributes::setSelectedOperationalLimitsGroupId1));
+        lineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID2_COLUMN, new ColumnMapping<>(String.class, LineAttributes::getSelectedOperationalLimitsGroupId2, LineAttributes::setSelectedOperationalLimitsGroupId2));
+
     }
 
     public TableMapping getLoadMappings() {
@@ -487,30 +436,7 @@ public class Mappings {
         danglingLineMappings.addColumnMapping("generation", new ColumnMapping<>(DanglingLineGenerationAttributes.class, DanglingLineAttributes::getGeneration, DanglingLineAttributes::setGeneration));
         danglingLineMappings.addColumnMapping("pairingKey", new ColumnMapping<>(String.class, DanglingLineAttributes::getPairingKey, DanglingLineAttributes::setPairingKey));
         danglingLineMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, DanglingLineAttributes::getPosition, DanglingLineAttributes::setPosition));
-        danglingLineMappings.addColumnMapping(PERMANENT_CURRENT_LIMIT, new ColumnMapping<>(Double.class,
-            (DanglingLineAttributes attributes) -> attributes.getCurrentLimits() != null ? attributes.getCurrentLimits().getPermanentLimit() : null,
-            (DanglingLineAttributes attributes, Double value) -> {
-                if (attributes.getCurrentLimits() == null) {
-                    attributes.setCurrentLimits(new LimitsAttributes());
-                }
-                attributes.getCurrentLimits().setPermanentLimit(value);
-            }));
-        danglingLineMappings.addColumnMapping(PERMANENT_APPARENT_POWER_LIMIT, new ColumnMapping<>(Double.class,
-            (DanglingLineAttributes attributes) -> attributes.getApparentPowerLimits() != null ? attributes.getApparentPowerLimits().getPermanentLimit() : null,
-            (DanglingLineAttributes attributes, Double value) -> {
-                if (attributes.getApparentPowerLimits() == null) {
-                    attributes.setApparentPowerLimits(new LimitsAttributes());
-                }
-                attributes.getApparentPowerLimits().setPermanentLimit(value);
-            }));
-        danglingLineMappings.addColumnMapping(PERMANENT_ACTIVE_POWER_LIMIT, new ColumnMapping<>(Double.class,
-            (DanglingLineAttributes attributes) -> attributes.getActivePowerLimits() != null ? attributes.getActivePowerLimits().getPermanentLimit() : null,
-            (DanglingLineAttributes attributes, Double value) -> {
-                if (attributes.getActivePowerLimits() == null) {
-                    attributes.setActivePowerLimits(new LimitsAttributes());
-                }
-                attributes.getActivePowerLimits().setPermanentLimit(value);
-            }));
+        danglingLineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID_COLUMN, new ColumnMapping<>(String.class, DanglingLineAttributes::getSelectedOperationalLimitsGroupId, DanglingLineAttributes::setSelectedOperationalLimitsGroupId));
         danglingLineMappings.addColumnMapping(TIE_LINE_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getTieLineId, DanglingLineAttributes::setTieLineId));
         danglingLineMappings.addColumnMapping(OPERATING_STATUS, new ColumnMapping<>(String.class, DanglingLineAttributes::getOperatingStatus, DanglingLineAttributes::setOperatingStatus));
     }
@@ -705,54 +631,8 @@ public class Mappings {
         twoWindingsTransformerMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, TwoWindingsTransformerAttributes::getAliasesWithoutType, TwoWindingsTransformerAttributes::setAliasesWithoutType));
         twoWindingsTransformerMappings.addColumnMapping(POSITION_1, new ColumnMapping<>(ConnectablePositionAttributes.class, TwoWindingsTransformerAttributes::getPosition1, TwoWindingsTransformerAttributes::setPosition1));
         twoWindingsTransformerMappings.addColumnMapping(POSITION_2, new ColumnMapping<>(ConnectablePositionAttributes.class, TwoWindingsTransformerAttributes::getPosition2, TwoWindingsTransformerAttributes::setPosition2));
-        twoWindingsTransformerMappings.addColumnMapping(PERMANENT_CURRENT_LIMIT_1, new ColumnMapping<>(Double.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getCurrentLimits1() != null ? attributes.getCurrentLimits1().getPermanentLimit() : null,
-            (TwoWindingsTransformerAttributes attributes, Double value) -> {
-                if (attributes.getCurrentLimits1() == null) {
-                    attributes.setCurrentLimits1(new LimitsAttributes());
-                }
-                attributes.getCurrentLimits1().setPermanentLimit(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping(PERMANENT_CURRENT_LIMIT_2, new ColumnMapping<>(Double.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getCurrentLimits2() != null ? attributes.getCurrentLimits2().getPermanentLimit() : null,
-            (TwoWindingsTransformerAttributes attributes, Double value) -> {
-                if (attributes.getCurrentLimits2() == null) {
-                    attributes.setCurrentLimits2(new LimitsAttributes());
-                }
-                attributes.getCurrentLimits2().setPermanentLimit(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping(PERMANENT_APPARENT_POWER_LIMIT_1, new ColumnMapping<>(Double.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getApparentPowerLimits1() != null ? attributes.getApparentPowerLimits1().getPermanentLimit() : null,
-            (TwoWindingsTransformerAttributes attributes, Double value) -> {
-                if (attributes.getApparentPowerLimits1() == null) {
-                    attributes.setApparentPowerLimits1(new LimitsAttributes());
-                }
-                attributes.getApparentPowerLimits1().setPermanentLimit(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping(PERMANENT_APPARENT_POWER_LIMIT_2, new ColumnMapping<>(Double.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getApparentPowerLimits2() != null ? attributes.getApparentPowerLimits2().getPermanentLimit() : null,
-            (TwoWindingsTransformerAttributes attributes, Double value) -> {
-                if (attributes.getApparentPowerLimits2() == null) {
-                    attributes.setApparentPowerLimits2(new LimitsAttributes());
-                }
-                attributes.getApparentPowerLimits2().setPermanentLimit(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping(PERMANENT_ACTIVE_POWER_LIMIT_1, new ColumnMapping<>(Double.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getActivePowerLimits1() != null ? attributes.getActivePowerLimits1().getPermanentLimit() : null,
-            (TwoWindingsTransformerAttributes attributes, Double value) -> {
-                if (attributes.getActivePowerLimits1() == null) {
-                    attributes.setActivePowerLimits1(new LimitsAttributes());
-                }
-                attributes.getActivePowerLimits1().setPermanentLimit(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping(PERMANENT_ACTIVE_POWER_LIMIT_2, new ColumnMapping<>(Double.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getActivePowerLimits2() != null ? attributes.getActivePowerLimits2().getPermanentLimit() : null,
-            (TwoWindingsTransformerAttributes attributes, Double value) -> {
-                if (attributes.getActivePowerLimits2() == null) {
-                    attributes.setActivePowerLimits2(new LimitsAttributes());
-                }
-                attributes.getActivePowerLimits2().setPermanentLimit(value);
-            }));
+        twoWindingsTransformerMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID1_COLUMN, new ColumnMapping<>(String.class, TwoWindingsTransformerAttributes::getSelectedOperationalLimitsGroupId1, TwoWindingsTransformerAttributes::setSelectedOperationalLimitsGroupId1));
+        twoWindingsTransformerMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID2_COLUMN, new ColumnMapping<>(String.class, TwoWindingsTransformerAttributes::getSelectedOperationalLimitsGroupId2, TwoWindingsTransformerAttributes::setSelectedOperationalLimitsGroupId2));
         twoWindingsTransformerMappings.addColumnMapping("cgmesTapChangers", new ColumnMapping<>(List.class, TwoWindingsTransformerAttributes::getCgmesTapChangerAttributesList, TwoWindingsTransformerAttributes::setCgmesTapChangerAttributesList));
         twoWindingsTransformerMappings.addColumnMapping("phaseAngleClock", new ColumnMapping<>(TwoWindingsTransformerPhaseAngleClockAttributes.class, TwoWindingsTransformerAttributes::getPhaseAngleClockAttributes, TwoWindingsTransformerAttributes::setPhaseAngleClockAttributes));
 
@@ -910,13 +790,21 @@ public class Mappings {
                 }
                 attributes.getRatioTapChangerAttributes().setLoadTapChangingCapabilities(value);
             }));
-        twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerTargetV", new ColumnMapping<>(Double.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().getTargetV() : null,
+        twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerRegulationValue", new ColumnMapping<>(Double.class,
+            (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().getRegulationValue() : null,
             (TwoWindingsTransformerAttributes attributes, Double value) -> {
                 if (attributes.getRatioTapChangerAttributes() == null) {
                     attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
                 }
-                attributes.getRatioTapChangerAttributes().setTargetV(value);
+                attributes.getRatioTapChangerAttributes().setRegulationValue(value);
+            }));
+        twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerRegulationMode", new ColumnMapping<>(RatioTapChanger.RegulationMode.class,
+            (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().getRegulationMode() : null,
+            (TwoWindingsTransformerAttributes attributes, RatioTapChanger.RegulationMode value) -> {
+                if (attributes.getRatioTapChangerAttributes() == null) {
+                    attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
+                }
+                attributes.getRatioTapChangerAttributes().setRegulationMode(value);
             }));
     }
 
@@ -975,30 +863,9 @@ public class Mappings {
             threeWindingsTransformerMappings.addColumnMapping(RATED_S + i, new ColumnMapping<>(Double.class,
                 (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatedS(),
                 (ThreeWindingsTransformerAttributes attributes, Double ratedS) -> attributes.getLeg(i).setRatedS(ratedS)));
-            threeWindingsTransformerMappings.addColumnMapping(PERMANENT_CURRENT_LIMIT + i, new ColumnMapping<>(Double.class,
-                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getCurrentLimitsAttributes() != null ? attributes.getLeg(i).getCurrentLimitsAttributes().getPermanentLimit() : null,
-                (ThreeWindingsTransformerAttributes attributes, Double value) -> {
-                    if (attributes.getLeg(i).getCurrentLimitsAttributes() == null) {
-                        attributes.getLeg(i).setCurrentLimitsAttributes(new LimitsAttributes());
-                    }
-                    attributes.getLeg(i).getCurrentLimitsAttributes().setPermanentLimit(value);
-                }));
-            threeWindingsTransformerMappings.addColumnMapping(PERMANENT_APPARENT_POWER_LIMIT + i, new ColumnMapping<>(Double.class,
-                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getApparentPowerLimitsAttributes() != null ? attributes.getLeg(i).getApparentPowerLimitsAttributes().getPermanentLimit() : null,
-                (ThreeWindingsTransformerAttributes attributes, Double value) -> {
-                    if (attributes.getLeg(i).getApparentPowerLimitsAttributes() == null) {
-                        attributes.getLeg(i).setApparentPowerLimitsAttributes(new LimitsAttributes());
-                    }
-                    attributes.getLeg(i).getApparentPowerLimitsAttributes().setPermanentLimit(value);
-                }));
-            threeWindingsTransformerMappings.addColumnMapping(PERMANENT_ACTIVE_POWER_LIMIT + i, new ColumnMapping<>(Double.class,
-                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getActivePowerLimitsAttributes() != null ? attributes.getLeg(i).getActivePowerLimitsAttributes().getPermanentLimit() : null,
-                (ThreeWindingsTransformerAttributes attributes, Double value) -> {
-                    if (attributes.getLeg(i).getActivePowerLimitsAttributes() == null) {
-                        attributes.getLeg(i).setActivePowerLimitsAttributes(new LimitsAttributes());
-                    }
-                    attributes.getLeg(i).getActivePowerLimitsAttributes().setPermanentLimit(value);
-                }));
+            threeWindingsTransformerMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID_COLUMN + i, new ColumnMapping<>(String.class,
+                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getSelectedOperationalLimitsGroupId(),
+                (ThreeWindingsTransformerAttributes attributes, String selectedOperationalLimitsGroupId) -> attributes.getLeg(i).setSelectedOperationalLimitsGroupId(selectedOperationalLimitsGroupId)));
             // PhaseTapChanger
             threeWindingsTransformerMappings.addColumnMapping("phaseTapChangerLowTapPosition" + i, new ColumnMapping<>(Integer.class,
                 (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getPhaseTapChangerAttributes() != null ? attributes.getLeg(i).getPhaseTapChangerAttributes().getLowTapPosition() : null,
@@ -1153,13 +1020,21 @@ public class Mappings {
                     }
                     attributes.getLeg(i).getRatioTapChangerAttributes().setLoadTapChangingCapabilities(value);
                 }));
-            threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerTargetV" + i, new ColumnMapping<>(Double.class,
-                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().getTargetV() : null,
+            threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerRegulationValue" + i, new ColumnMapping<>(Double.class,
+                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().getRegulationValue() : null,
                 (ThreeWindingsTransformerAttributes attributes, Double value) -> {
                     if (attributes.getLeg(i).getRatioTapChangerAttributes() == null) {
                         attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
                     }
-                    attributes.getLeg(i).getRatioTapChangerAttributes().setTargetV(value);
+                    attributes.getLeg(i).getRatioTapChangerAttributes().setRegulationValue(value);
+                }));
+            threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerRegulationMode" + i, new ColumnMapping<>(RatioTapChanger.RegulationMode.class,
+                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().getRegulationMode() : null,
+                (ThreeWindingsTransformerAttributes attributes, RatioTapChanger.RegulationMode value) -> {
+                    if (attributes.getLeg(i).getRatioTapChangerAttributes() == null) {
+                        attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
+                    }
+                    attributes.getLeg(i).getRatioTapChangerAttributes().setRegulationMode(value);
                 }));
         });
     }
