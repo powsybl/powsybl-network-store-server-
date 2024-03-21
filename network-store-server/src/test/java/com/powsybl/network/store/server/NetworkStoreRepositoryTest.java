@@ -10,7 +10,6 @@ import com.powsybl.iidm.network.LimitType;
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.LimitsInfos;
 import com.powsybl.network.store.server.dto.OwnerInfo;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -567,7 +566,6 @@ public class NetworkStoreRepositoryTest {
                 .attributes(ThreeWindingsTransformerAttributes.builder()
                         .name("id3WTransformerA")
                         .ratedU0(1)
-                        .operatingStatus("IN_OPERATION")
                         .leg1(LegAttributes.builder()
                                 .ratioTapChangerAttributes(RatioTapChangerAttributes.builder()
                                 .lowTapPosition(20)
@@ -584,7 +582,6 @@ public class NetworkStoreRepositoryTest {
                 .attributes(ThreeWindingsTransformerAttributes.builder()
                         .name("id3WTransformerB")
                         .ratedU0(1)
-                        .operatingStatus("IN_OPERATION")
                         .leg1(new LegAttributes())
                         .leg2(LegAttributes.builder()
                                 .phaseTapChangerAttributes(PhaseTapChangerAttributes.builder()

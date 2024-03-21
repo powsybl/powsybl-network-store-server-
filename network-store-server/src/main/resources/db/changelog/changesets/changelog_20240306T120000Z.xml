@@ -1,0 +1,47 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+    <changeSet author="abouhours" id="2986331049275-1">
+        <createTable tableName="extension">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmenttype" type="VARCHAR(255)"/>
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value_" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="abouhours" id="2986331049275-2">
+        <createIndex indexName="extension_networkuuid_variantnum_equipmenttype_idx" tableName="extension">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="equipmenttype"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="abouhours" id="2986331049275-3">
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, name" constraintName="extension_pkey" tableName="extension"/>
+    </changeSet>
+    <changeSet author="abouhours" id="2986331049275-4">
+        <!--        TODO finish migrations, it should not be necessary to add the @class with jsonb, it's for testing... -->
+<!--        <sql>-->
+<!--            INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name, value_)-->
+<!--            SELECT networkuuid, variantnum, id, 'BATTERY', 'activePowerControl',-->
+<!--                   jsonb_set(-->
+<!--                           COALESCE(activepowercontrol::jsonb, '{}'::jsonb),-->
+<!--                           '{@class}',-->
+<!--                           '"com.powsybl.network.store.model.ActivePowerControlAttributes"'::jsonb-->
+<!--                   )-->
+<!--            FROM battery-->
+<!--            WHERE activepowercontrol::jsonb IS NOT NULL-->
+<!--        </sql>-->
+    </changeSet>
+</databaseChangeLog>
