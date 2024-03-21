@@ -35,8 +35,11 @@ public final class QueryCatalog {
     static final String INDEX_COLUMN = "index";
     static final String TAPCHANGER_TYPE_COLUMN = "tapChangerType";
     static final String ALPHA_COLUMN = "alpha";
-
+    static final String OPERATIONAL_LIMITS_GROUP_ID_COLUMN = "operationalLimitsGroupId";
+    static final String SELECTED_OPERATIONAL_LIMITS_GROUP_ID_COLUMN = "selectedOperationalLimitsGroupId";
     static final String TAP_CHANGER_STEP_TABLE = "tapChangerStep";
+    static final String SIDE_COLUMN = "side";
+    static final String LIMIT_TYPE_COLUMN = "limitType";
 
     private QueryCatalog() {
     }
@@ -338,9 +341,9 @@ public final class QueryCatalog {
     // Temporary Limits
     public static String buildCloneTemporaryLimitsQuery() {
         return "insert into temporarylimit(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", side, limitType, " + NAME_COLUMN +
+                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " + NAME_COLUMN +
                 ", value_, acceptableDuration, fictitious) " + "select " + EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", ?, ?, side, limitType, " + NAME_COLUMN +
+                EQUIPMENT_TYPE_COLUMN + ", ?, ?, " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " + NAME_COLUMN +
                 ", value_, acceptableDuration, fictitious from temporarylimit where " + NETWORK_UUID_COLUMN +
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
@@ -350,7 +353,8 @@ public final class QueryCatalog {
                 EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", " +
-                "side, limitType, " +
+                OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " +
+                SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " +
                 NAME_COLUMN + ", " +
                 "value_, acceptableDuration, fictitious " +
                 "from temporarylimit where " +
@@ -367,7 +371,8 @@ public final class QueryCatalog {
                 EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", " +
-                "side, limitType, " +
+                OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " +
+                SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " +
                 NAME_COLUMN + ", " +
                 "value_, acceptableDuration, fictitious " +
                 "from temporarylimit where " +
@@ -380,10 +385,11 @@ public final class QueryCatalog {
     public static String buildInsertTemporaryLimitsQuery() {
         return "insert into temporarylimit(" +
                 EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + " ," +
-                VARIANT_NUM_COLUMN + ", side, limitType, " +
+                NETWORK_UUID_COLUMN + ", " +
+                VARIANT_NUM_COLUMN + ", " +
+                OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " +
                 NAME_COLUMN + ", value_, acceptableDuration, fictitious)" +
-                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
     public static String buildDeleteTemporaryLimitsVariantEquipmentINQuery(int numberOfValues) {
@@ -405,6 +411,77 @@ public final class QueryCatalog {
 
     public static String buildDeleteTemporaryLimitsQuery() {
         return "delete from temporarylimit where " +
+                NETWORK_UUID_COLUMN + " = ?";
+    }
+
+    // permanent Limits
+    public static String buildClonePermanentLimitsQuery() {
+        return "insert into permanentlimit(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
+                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", value_) " + "select " + EQUIPMENT_ID_COLUMN + ", " +
+                EQUIPMENT_TYPE_COLUMN + ", ?, ?, " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", value_ from permanentlimit where " + NETWORK_UUID_COLUMN +
+                " = ? and " + VARIANT_NUM_COLUMN + " = ?";
+    }
+
+    public static String buildPermanentLimitQuery(String columnNameForWhereClause) {
+        return "select " + EQUIPMENT_ID_COLUMN + ", " +
+                EQUIPMENT_TYPE_COLUMN + ", " +
+                NETWORK_UUID_COLUMN + ", " +
+                VARIANT_NUM_COLUMN + ", " +
+                OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " +
+                SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " +
+                "value_ " +
+                "from permanentlimit where " +
+                NETWORK_UUID_COLUMN + " = ? and " +
+                VARIANT_NUM_COLUMN + " = ? and " +
+                columnNameForWhereClause + " = ?";
+    }
+
+    public static String buildPermanentLimitWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
+        if (numberOfValues < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+        return "select " + EQUIPMENT_ID_COLUMN + ", " +
+                EQUIPMENT_TYPE_COLUMN + ", " +
+                NETWORK_UUID_COLUMN + ", " +
+                VARIANT_NUM_COLUMN + ", " +
+                OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " +
+                SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " +
+                "value_ " +
+                "from permanentlimit where " +
+                NETWORK_UUID_COLUMN + " = ? and " +
+                VARIANT_NUM_COLUMN + " = ? and " +
+                columnNameForInClause + " in (" +
+                "?, ".repeat(numberOfValues - 1) + "?)";
+    }
+
+    public static String buildInsertPermanentLimitsQuery() {
+        return "insert into permanentlimit(" +
+                EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
+                NETWORK_UUID_COLUMN + ", " +
+                VARIANT_NUM_COLUMN + ", " +
+                OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", value_)" +
+                " values (?, ?, ?, ?, ?, ?, ?, ?)";
+    }
+
+    public static String buildDeletePermanentLimitsVariantEquipmentINQuery(int numberOfValues) {
+        if (numberOfValues < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+        return "delete from permanentlimit where " +
+                NETWORK_UUID_COLUMN + " = ? and " +
+                VARIANT_NUM_COLUMN + " = ? and " +
+                EQUIPMENT_ID_COLUMN + " in (" +
+                "?, ".repeat(numberOfValues - 1) + "?)";
+    }
+
+    public static String buildDeletePermanentLimitsVariantQuery() {
+        return "delete from permanentlimit where " +
+                NETWORK_UUID_COLUMN + " = ? and " +
+                VARIANT_NUM_COLUMN + " = ?";
+    }
+
+    public static String buildDeletePermanentLimitsQuery() {
+        return "delete from permanentlimit where " +
                 NETWORK_UUID_COLUMN + " = ?";
     }
 
@@ -483,7 +560,7 @@ public final class QueryCatalog {
                 NETWORK_UUID_COLUMN + "," +
                 VARIANT_NUM_COLUMN + "," +
                 INDEX_COLUMN + ", " +
-                "side" + ", " +
+                SIDE_COLUMN + ", " +
                 TAPCHANGER_TYPE_COLUMN + ", " +
                 "rho" + ", " +
                 "r" + ", " +
@@ -497,7 +574,7 @@ public final class QueryCatalog {
                 "?" + "," +
                 "?" + "," +
                 INDEX_COLUMN + ", " +
-                "side" + ", " +
+                SIDE_COLUMN + ", " +
                 TAPCHANGER_TYPE_COLUMN + ", " +
                 "rho" + ", " +
                 "r" + ", " +
@@ -518,7 +595,7 @@ public final class QueryCatalog {
             NETWORK_UUID_COLUMN + "," +
             VARIANT_NUM_COLUMN + "," +
             INDEX_COLUMN + ", " +
-            "side" + ", " +
+            SIDE_COLUMN + ", " +
             TAPCHANGER_TYPE_COLUMN + ", " +
             "rho" + ", " +
             "r" + ", " +
@@ -543,7 +620,7 @@ public final class QueryCatalog {
                 NETWORK_UUID_COLUMN + "," +
                 VARIANT_NUM_COLUMN + "," +
                 INDEX_COLUMN + ", " +
-                "side" + ", " +
+                SIDE_COLUMN + ", " +
                 TAPCHANGER_TYPE_COLUMN + ", " +
                 "rho" + ", " +
                 "r" + ", " +
@@ -567,7 +644,7 @@ public final class QueryCatalog {
                 NETWORK_UUID_COLUMN + "," +
                 VARIANT_NUM_COLUMN + "," +
                 INDEX_COLUMN + ", " +
-                "side" + ", " +
+                SIDE_COLUMN + ", " +
                 TAPCHANGER_TYPE_COLUMN + ", " +
                 "rho" + ", " +
                 "r" + ", " +
