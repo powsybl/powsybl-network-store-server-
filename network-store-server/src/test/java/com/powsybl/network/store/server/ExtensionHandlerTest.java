@@ -157,9 +157,8 @@ public class ExtensionHandlerTest {
         assertTrue(activePowerControl.isParticipate());
         assertEquals(6.0, activePowerControl.getDroop(), 0.1);
         assertEquals(1.5, activePowerControl.getParticipationFactor(), 0.1);
-        // TODO finish testing what's inside the extensions
         assertNotNull(extensionAttributes.get("operatingStatus"));
-        assertEquals(ActivePowerControlAttributes.class, extensionAttributes.get("activePowerControl").getClass());
+        assertEquals(ActivePowerControlAttributes.class, activePowerControl.getClass());
         assertEquals(OperatingStatusAttributes.class, extensionAttributes.get("operatingStatus").getClass());
     }
 
@@ -269,8 +268,10 @@ public class ExtensionHandlerTest {
         assertEquals(1.5, activePowerControl.getParticipationFactor(), 0.1);
 
         extensionAttributesMapA = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(10.0).participate(false).participationFactor(2.0).build());
-        mapA.put(infoBatteryA, extensionAttributesMapA);
-        extensionHandler.updateExtensions(mapA);
+        BatteryAttributes batteryAttributes = new BatteryAttributes();
+        batteryAttributes.setExtensionAttributes(extensionAttributesMapA);
+        Resource<BatteryAttributes> batteryA = Resource.batteryBuilder().id("idBatteryA").attributes(batteryAttributes).build();
+        extensionHandler.updateExtensions(NETWORK_UUID, List.of(batteryA));
         extensions = extensionHandler.getExtensions(NETWORK_UUID, 0, "equipmentId", "idBatteryA");
         extensionAttributes = extensions.get(infoBatteryA);
         activePowerControl = (ActivePowerControlAttributes) extensionAttributes.get("activePowerControl");

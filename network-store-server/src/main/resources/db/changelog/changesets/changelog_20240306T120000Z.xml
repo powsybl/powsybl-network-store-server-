@@ -17,8 +17,7 @@
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-<!--            add more? 255 = short??-->
-            <column name="value_" type="VARCHAR(255)"/>
+            <column name="value_" type="TEXT"/>
         </createTable>
     </changeSet>
     <changeSet author="abouhours" id="2986331049275-2">
@@ -30,5 +29,19 @@
     </changeSet>
     <changeSet author="abouhours" id="2986331049275-3">
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, name" constraintName="extension_pkey" tableName="extension"/>
+    </changeSet>
+    <changeSet author="abouhours" id="2986331049275-4">
+        <!--        TODO finish migrations, it should not be necessary to add the @class with jsonb, it's for testing... -->
+<!--        <sql>-->
+<!--            INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name, value_)-->
+<!--            SELECT networkuuid, variantnum, id, 'BATTERY', 'activePowerControl',-->
+<!--                   jsonb_set(-->
+<!--                           COALESCE(activepowercontrol::jsonb, '{}'::jsonb),-->
+<!--                           '{@class}',-->
+<!--                           '"com.powsybl.network.store.model.ActivePowerControlAttributes"'::jsonb-->
+<!--                   )-->
+<!--            FROM battery-->
+<!--            WHERE activepowercontrol::jsonb IS NOT NULL-->
+<!--        </sql>-->
     </changeSet>
 </databaseChangeLog>

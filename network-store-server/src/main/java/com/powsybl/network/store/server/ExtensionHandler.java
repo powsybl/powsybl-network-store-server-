@@ -1,6 +1,7 @@
 package com.powsybl.network.store.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
@@ -27,7 +28,7 @@ public class ExtensionHandler {
 
     public ExtensionHandler(DataSource dataSource, ObjectMapper mapper) {
         this.dataSource = dataSource;
-        this.mapper = mapper;
+        this.mapper = mapper.enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS.mappedFeature());
     }
 
     public void insertExtensions(Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
@@ -47,34 +48,6 @@ public class ExtensionHandler {
                             values.add(entry.getKey().getVariantNum());
                             values.add(extension.getKey());
                             values.add(extension.getValue().toJson());
-                            bindValues(preparedStmt, values, mapper);
-                            preparedStmt.addBatch();
-                        }
-                    }
-                    preparedStmt.executeBatch();
-                }
-            }
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
-    }
-
-    //TODO remove?
-    public void updateExtensions(Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
-        try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildUpdateExtensionsQuery())) {
-                List<Object> values = new ArrayList<>(6);
-                List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(extensions.entrySet());
-                for (List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> subExtensions : Lists.partition(list, BATCH_SIZE)) {
-                    for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
-                        for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
-                            values.clear();
-                            values.add(extension.getValue().toJson());
-                            values.add(extension.getKey());
-                            values.add(entry.getKey().getEquipmentId());
-                            values.add(entry.getKey().getEquipmentType().toString());
-                            values.add(entry.getKey().getNetworkUuid());
-                            values.add(entry.getKey().getVariantNum());
                             bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
                         }
@@ -132,7 +105,8 @@ public class ExtensionHandler {
                 owner.setVariantNum(resultSet.getInt(4));
 
                 String extensionName = resultSet.getString(5);
-                ExtensionAttributes extensionValue = mapper.readValue(resultSet.getString(6), ExtensionAttributes.class); // TODO can do better than object mapper? Use method fromJson?
+                // TODO can do better than object mapper? Because otherwise need to use @class?
+                ExtensionAttributes extensionValue = mapper.readValue(resultSet.getString(6), ExtensionAttributes.class);
 
                 map.computeIfAbsent(owner, k -> new HashMap<>());
                 map.get(owner).put(extensionName, extensionValue);

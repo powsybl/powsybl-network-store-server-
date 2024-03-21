@@ -82,14 +82,4 @@ public final class QueryExtensionCatalog {
         return "delete from " + EXTENSION_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ?";
     }
-
-    public static String buildUpdateExtensionsQuery() {
-        return "update " +
-                EXTENSION_TABLE +
-                " set value_ = ?" +
-                " where name = ? and " + EQUIPMENT_ID_COLUMN + " = ? and " +
-                EQUIPMENT_TYPE_COLUMN + " = ? and " +
-                NETWORK_UUID_COLUMN + " = ? and " +
-                VARIANT_NUM_COLUMN + " = ?";
-    }
 }
