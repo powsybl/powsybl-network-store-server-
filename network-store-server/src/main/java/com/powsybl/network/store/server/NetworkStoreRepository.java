@@ -73,8 +73,7 @@ public class NetworkStoreRepository {
 
     private static final int BATCH_SIZE = 1000;
 
-    private static final int UPDATE_BATCH_SIZE = 100;
-
+    private static final int UPDATE_BATCH_SIZE = 1000;
     private static final String SUBSTATION_ID = "substationid";
 
     private static boolean isCustomTypeJsonified(Class<?> clazz) {
@@ -733,8 +732,8 @@ public class NetworkStoreRepository {
         AtomicReference<Long> startTime = new AtomicReference<>();
         startTime.set(System.nanoTime());
         try (var connection = dataSource.getConnection()) {
-            for (List<Resource<T>> subResources : Lists.partition(resources, 1000)) {
-                List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size() * 1000);
+            for (List<Resource<T>> subResources : Lists.partition(resources, UPDATE_BATCH_SIZE)) {
+                List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
                 try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause, subResources.size()))) {
                     for (Resource<T> resource : subResources) {
                         T attributes = resource.getAttributes();
