@@ -185,7 +185,7 @@ public final class QueryCatalog {
         var it = columns.iterator();
         while (it.hasNext()) {
             String column = it.next();
-            if (!column.equals(columnToAddToWhereClause)) {
+            if (!column.equalsIgnoreCase(columnToAddToWhereClause)) {
                 query.append(column + " = T2." + column);
                 if (it.hasNext()) {
                     query.append(", \n");
@@ -220,7 +220,7 @@ public final class QueryCatalog {
         it = columns.iterator();
         while (it.hasNext()) {
             String column = it.next();
-            if (!column.equals(columnToAddToWhereClause)) {
+            if (!column.equalsIgnoreCase(columnToAddToWhereClause)) {
                 query.append(column);
                 query.append(", ");
             }

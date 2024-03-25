@@ -740,7 +740,7 @@ public class NetworkStoreRepository {
                         for (var e : tableMapping.getColumnsMapping().entrySet()) {
                             String columnName = e.getKey();
                             var mapping = e.getValue();
-                            if (!columnName.equals(columnToAddToWhereClause)) {
+                            if (!columnName.equalsIgnoreCase(columnToAddToWhereClause)) {
                                 Object value = mapping.get(attributes);
                                 if (value == null) {
                                     if (e.getValue().getClassR() == Double.class) {
