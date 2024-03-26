@@ -2,7 +2,6 @@ package com.powsybl.network.store.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.powsybl.network.store.model.ExtensionAttributes;
@@ -14,6 +13,7 @@ import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
+import java.io.UncheckedIOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -41,14 +41,12 @@ public class ExtensionHandler {
                     for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
                         for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
                             values.clear();
-                            // In order, from the QueryCatalog.buildInsertExtensionsQuery SQL query :
-                            // equipmentId, equipmentType, networkUuid, variantNum, name, value_
                             values.add(entry.getKey().getEquipmentId());
                             values.add(entry.getKey().getEquipmentType().toString());
                             values.add(entry.getKey().getNetworkUuid());
                             values.add(entry.getKey().getVariantNum());
                             values.add(extension.getKey());
-                            values.add(extension.getValue().toJson());
+                            values.add(extension.getValue());
                             bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
                         }
@@ -98,29 +96,24 @@ public class ExtensionHandler {
             while (resultSet.next()) {
 
                 OwnerInfo owner = new OwnerInfo();
-                // In order, from the QueryCatalog.buildInsertExtensionsQuery SQL query :
-                // equipmentId, equipmentType, networkUuid, variantNum, name, value_
                 owner.setEquipmentId(resultSet.getString(1));
                 owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
                 owner.setNetworkUuid(UUID.fromString(resultSet.getString(3)));
                 owner.setVariantNum(resultSet.getInt(4));
 
                 String extensionName = resultSet.getString(5);
-                // TODO can do better than object mapper? Because otherwise need to use @class?
                 ExtensionAttributes extensionValue = mapper.readValue(resultSet.getString(6), ExtensionAttributes.class);
 
                 map.computeIfAbsent(owner, k -> new HashMap<>());
                 map.get(owner).put(extensionName, extensionValue);
             }
             return map;
-        } catch (JsonMappingException e) {
-            throw new RuntimeException(e);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
-    protected <T extends IdentifiableAttributes> Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
+    public <T extends IdentifiableAttributes> Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
         Map<OwnerInfo, Map<String, ExtensionAttributes>> map = new HashMap<>();
 
         if (!resources.isEmpty()) {
@@ -140,7 +133,7 @@ public class ExtensionHandler {
         return map;
     }
 
-    protected <T extends IdentifiableAttributes> void insertExtensionsInEquipments(UUID networkUuid, List<Resource<T>> equipments, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
+    public <T extends IdentifiableAttributes> void insertExtensionsInEquipments(UUID networkUuid, List<Resource<T>> equipments, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
         if (!extensions.isEmpty() && !equipments.isEmpty()) {
             for (Resource<T> equipmentAttributesResource : equipments) {
                 OwnerInfo owner = new OwnerInfo(
@@ -161,11 +154,11 @@ public class ExtensionHandler {
         }
     }
 
-    protected void deleteExtensions(UUID networkUuid, int variantNum, String equipmentId) {
+    public void deleteExtensions(UUID networkUuid, int variantNum, String equipmentId) {
         deleteExtensions(networkUuid, variantNum, List.of(equipmentId));
     }
 
-    protected void deleteExtensions(UUID networkUuid, int variantNum, List<String> equipmentIds) {
+    public void deleteExtensions(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setObject(1, networkUuid);
@@ -180,7 +173,7 @@ public class ExtensionHandler {
         }
     }
 
-    protected <T extends IdentifiableAttributes> void deleteExtensions(UUID networkUuid, List<Resource<T>> resources) {
+    public <T extends IdentifiableAttributes> void deleteExtensions(UUID networkUuid, List<Resource<T>> resources) {
         Map<Integer, List<String>> resourceIdsByVariant = new HashMap<>();
         for (Resource<T> resource : resources) {
             List<String> resourceIds = resourceIdsByVariant.get(resource.getVariantNum());
@@ -195,7 +188,11 @@ public class ExtensionHandler {
         resourceIdsByVariant.forEach((k, v) -> deleteExtensions(networkUuid, k, v));
     }
 
-    //TODO tests
+    /**
+     * Extensions do not always exist in the initial variant and can be added by a
+     * modification for example. Instead of implementing an UPSERT, we delete then insert
+     * the extensions.
+     */
     public <T extends IdentifiableAttributes> void updateExtensions(UUID networkUuid, List<Resource<T>> resources) {
         deleteExtensions(networkUuid, resources);
         insertExtensions(getExtensionsFromEquipments(networkUuid, resources));

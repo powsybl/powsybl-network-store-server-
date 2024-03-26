@@ -68,7 +68,6 @@ public class NetworkStoreControllerIT {
                 .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
     }
 
-    //TODO test extension attributes in this elephant test
     @Test
     public void test() throws Exception {
         mvc.perform(get("/" + VERSION + "/networks")
