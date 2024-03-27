@@ -186,7 +186,7 @@ public final class QueryCatalog {
         } else if (clazz == Boolean.class) {
             return "::boolean";
         } else if (clazz == Float.class) {
-            return "::float";
+            return "::real";
         } else if (clazz == Long.class) {
             return "::bigint";
         } else if (clazz == UUID.class) {
