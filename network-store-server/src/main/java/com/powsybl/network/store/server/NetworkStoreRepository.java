@@ -34,10 +34,12 @@ import org.springframework.stereotype.Repository;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -698,7 +700,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                 List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
-                try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause, subResources.size()))) {
+                try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping(), columnToAddToWhereClause, subResources.size()))) {
                     for (Resource<T> resource : subResources) {
                         T attributes = resource.getAttributes();
                         for (var e : tableMapping.getColumnsMapping().entrySet()) {

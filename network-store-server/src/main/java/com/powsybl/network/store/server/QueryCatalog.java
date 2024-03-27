@@ -8,7 +8,9 @@ package com.powsybl.network.store.server;
 
 import com.powsybl.network.store.model.Resource;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
@@ -178,7 +180,8 @@ public final class QueryCatalog {
         return query.toString();
     }
 
-    public static String buildMultiRowsUpdateIdentifiableQuery(String tableName, Set<String> columns, String columnToAddToWhereClause, int rowsNumber) {
+    public static String buildMultiRowsUpdateIdentifiableQuery(String tableName, Map<String, ColumnMapping> columnMapping, String columnToAddToWhereClause, int rowsNumber) {
+        Set<String> columns = columnMapping.keySet();
         StringBuilder query = new StringBuilder("update ")
                 .append(tableName + " as T1 \n")
                 .append(" set \n");
@@ -198,16 +201,28 @@ public final class QueryCatalog {
         query.append(" FROM (VALUES \n");
         for (int i = 0; i < rowsNumber; i++) {
             query.append("(");
-            query.append("?, ");
-            query.append("?, ");
-            query.append("?, ");
             it = columns.iterator();
             while (it.hasNext()) {
-                it.next();
-                query.append("?");
-                if (it.hasNext()) {
-                    query.append(", ");
+                String column = it.next();
+                if (!column.equalsIgnoreCase(columnToAddToWhereClause)) {
+                    Class<?> columnType = columnMapping.get(column).getClassR();
+                    if (columnType == Double.class) {
+                        query.append("?::double precision");
+                    } else if (columnType == Boolean.class) {
+                        query.append("?::boolean");
+                    } else {
+                        query.append("?");
+                    }
+                    if (it.hasNext()) {
+                        query.append(", ");
+                    }
                 }
+            }
+            query.append(", ?");
+            query.append(", ?");
+            query.append(", ?");
+            if (columnToAddToWhereClause != null) {
+                query.append(", ?");
             }
             query.append(")");
             if (i < rowsNumber - 1) {
