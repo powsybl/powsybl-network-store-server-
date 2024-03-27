@@ -71,7 +71,6 @@ public class NetworkStoreRepository {
 
     private static final int BATCH_SIZE = 1000;
 
-    private static final int UPDATE_BATCH_SIZE = 1000;
     private static final String SUBSTATION_ID = "substationid";
 
     private static boolean isCustomTypeJsonified(Class<?> clazz) {
@@ -693,18 +692,16 @@ public class NetworkStoreRepository {
 
     public <T extends IdentifiableAttributes & Contained> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
                                                                                    TableMapping tableMapping, String columnToAddToWhereClause) {
-        AtomicReference<Long> startTime = new AtomicReference<>();
-        startTime.set(System.nanoTime());
         try (var connection = dataSource.getConnection()) {
             for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                 List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
-                try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause, subResources.size()))) {
+                try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateIdentifiableQuery(tableMapping, columnToAddToWhereClause, subResources.size()))) {
                     for (Resource<T> resource : subResources) {
                         T attributes = resource.getAttributes();
                         for (var e : tableMapping.getColumnsMapping().entrySet()) {
                             String columnName = e.getKey();
                             var mapping = e.getValue();
-                            if (!columnName.equals(columnToAddToWhereClause)) {
+                            if (!columnName.equalsIgnoreCase(columnToAddToWhereClause)) {
                                 values.add(mapping.get(attributes));
                             }
                         }
@@ -717,7 +714,6 @@ public class NetworkStoreRepository {
                     preparedStmt.execute();
                 }
             }
-            LOGGER.info("UPDATE IDENTIFIABLE {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }

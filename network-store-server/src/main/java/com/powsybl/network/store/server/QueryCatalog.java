@@ -178,15 +178,35 @@ public final class QueryCatalog {
         return query.toString();
     }
 
-    public static String buildMultiRowsUpdateIdentifiableQuery(String tableName, Set<String> columns, String columnToAddToWhereClause, int rowsNumber) {
+    private static String getSQLType(Class clazz) {
+        if (clazz == Double.class) {
+            return "::double precision";
+        } else if (clazz == Integer.class) {
+            return "::integer";
+        } else if (clazz == Boolean.class) {
+            return "::boolean";
+        } else if (clazz == Float.class) {
+            return "::float";
+        } else if (clazz == Long.class) {
+            return "::bigint";
+        } else if (clazz == UUID.class) {
+            return "::uuid";
+        } else if (clazz == String.class) {
+            return "::text";
+        }
+        return "";
+    }
+
+    public static String buildMultiRowsUpdateIdentifiableQuery(TableMapping tableMapping, String columnToAddToWhereClause, int rowsNumber) {
+        Set<String> columns = tableMapping.getColumnsMapping().keySet();
         StringBuilder query = new StringBuilder("update ")
-                .append(tableName + " as T1 \n")
+                .append(tableMapping.getTable() + " as T1 \n")
                 .append(" set \n");
         var it = columns.iterator();
         while (it.hasNext()) {
             String column = it.next();
             if (!column.equalsIgnoreCase(columnToAddToWhereClause)) {
-                query.append(column + " = T2." + column);
+                query.append(column + " = T2." + column + getSQLType(tableMapping.getColumnsMapping().get(column).getClassR()));
                 if (it.hasNext()) {
                     query.append(", \n");
                 } else {
@@ -234,7 +254,7 @@ public final class QueryCatalog {
         }
         query.append(" )\n");
 
-        query.append(" where ").append("T2." + NETWORK_UUID_COLUMN + "::text").append(" = T1." + NETWORK_UUID_COLUMN + "::text and \n")
+        query.append(" where ").append("T2." + NETWORK_UUID_COLUMN).append(" = T1." + NETWORK_UUID_COLUMN + " and \n")
                 .append(" T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
                 .append(" T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + " and\n");
         if (columnToAddToWhereClause != null) {
