@@ -201,7 +201,7 @@ public final class QueryCatalog {
         Set<String> columns = tableMapping.getColumnsMapping().keySet();
         StringBuilder query = new StringBuilder("update ")
                 .append(tableMapping.getTable() + " as T1 \n")
-                .append(" set \n");
+                .append("set \n");
         var it = columns.iterator();
         while (it.hasNext()) {
             String column = it.next();
@@ -215,7 +215,7 @@ public final class QueryCatalog {
             }
         }
 
-        query.append(" FROM (VALUES \n");
+        query.append("FROM (VALUES \n");
         for (int i = 0; i < rowsNumber; i++) {
             query.append("(");
             query.append("?, ");
@@ -235,7 +235,7 @@ public final class QueryCatalog {
             }
         }
         query.append(" )\n");
-        query.append(" AS T2( ");
+        query.append("AS T2( ");
 
         it = columns.iterator();
         while (it.hasNext()) {
@@ -254,11 +254,11 @@ public final class QueryCatalog {
         }
         query.append(" )\n");
 
-        query.append(" where ").append("T2." + NETWORK_UUID_COLUMN).append(" = T1." + NETWORK_UUID_COLUMN + " and \n")
-                .append(" T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
-                .append(" T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + " and\n");
+        query.append("where ").append("T2." + NETWORK_UUID_COLUMN).append(" = T1." + NETWORK_UUID_COLUMN + " and \n")
+                .append("T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
+                .append("T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + " and\n");
         if (columnToAddToWhereClause != null) {
-            query.append(" T2." + columnToAddToWhereClause).append(" = T1." + columnToAddToWhereClause);
+            query.append("T2." + columnToAddToWhereClause).append(" = T1." + columnToAddToWhereClause);
         }
         query.append(";");
         return query.toString();
