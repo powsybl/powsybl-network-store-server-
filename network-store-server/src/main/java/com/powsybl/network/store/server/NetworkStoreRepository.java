@@ -34,12 +34,10 @@ import org.springframework.stereotype.Repository;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -693,46 +691,12 @@ public class NetworkStoreRepository {
         return getIdentifiablesInContainer(networkUuid, variantNum, voltageLevelId, tableMapping.getVoltageLevelIdColumns(), tableMapping);
     }
 
-    public <T extends IdentifiableAttributes & Contained> void updateIdentifiables2(UUID networkUuid, List<Resource<T>> resources,
-                                                                                   TableMapping tableMapping, String columnToAddToWhereClause) {
-        AtomicReference<Long> startTime = new AtomicReference<>();
-        startTime.set(System.nanoTime());
-        try (var connection = dataSource.getConnection()) {
-            try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause))) {
-                List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
-                for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                    for (Resource<T> resource : subResources) {
-                        T attributes = resource.getAttributes();
-                        values.clear();
-                        for (var e : tableMapping.getColumnsMapping().entrySet()) {
-                            String columnName = e.getKey();
-                            var mapping = e.getValue();
-                            if (!columnName.equals(columnToAddToWhereClause)) {
-                                values.add(mapping.get(attributes));
-                            }
-                        }
-                        values.add(networkUuid);
-                        values.add(resource.getVariantNum());
-                        values.add(resource.getId());
-                        values.add(resource.getAttributes().getContainerIds().iterator().next());
-                        bindValues(preparedStmt, values);
-                        preparedStmt.addBatch();
-                    }
-                    preparedStmt.executeBatch();
-                }
-            }
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
-        LOGGER.info("UPDATE IDENTIFIABLE {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
-    }
-
     public <T extends IdentifiableAttributes & Contained> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
                                                                                    TableMapping tableMapping, String columnToAddToWhereClause) {
         AtomicReference<Long> startTime = new AtomicReference<>();
         startTime.set(System.nanoTime());
         try (var connection = dataSource.getConnection()) {
-            for (List<Resource<T>> subResources : Lists.partition(resources, UPDATE_BATCH_SIZE)) {
+            for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                 List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
                 try (PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause, subResources.size()))) {
                     for (Resource<T> resource : subResources) {
@@ -740,19 +704,8 @@ public class NetworkStoreRepository {
                         for (var e : tableMapping.getColumnsMapping().entrySet()) {
                             String columnName = e.getKey();
                             var mapping = e.getValue();
-                            if (!columnName.equalsIgnoreCase(columnToAddToWhereClause)) {
-                                Object value = mapping.get(attributes);
-                                if (value == null) {
-                                    if (e.getValue().getClassR() == Double.class) {
-                                        values.add(Double.NaN);
-                                    } else if (e.getValue().getClassR() == Integer.class) {
-                                        values.add(0);
-                                    } else {
-                                        values.add(mapping.get(attributes));
-                                    }
-                                } else {
-                                    values.add(mapping.get(attributes));
-                                }
+                            if (!columnName.equals(columnToAddToWhereClause)) {
+                                values.add(mapping.get(attributes));
                             }
                         }
                         values.add(networkUuid);

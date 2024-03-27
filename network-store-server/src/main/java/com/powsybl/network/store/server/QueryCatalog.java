@@ -238,7 +238,7 @@ public final class QueryCatalog {
                 .append(" T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
                 .append(" T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + " and\n");
         if (columnToAddToWhereClause != null) {
-            query.append(" T2." + columnToAddToWhereClause + "::text").append(" = T1." + columnToAddToWhereClause + "::text");
+            query.append(" T2." + columnToAddToWhereClause).append(" = T1." + columnToAddToWhereClause);
         }
         query.append(";");
         return query.toString();
