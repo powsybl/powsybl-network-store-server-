@@ -656,7 +656,8 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
-        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, tableMapping.getResourceType().toString());
+        List<String> equipmentsIds = identifiables.stream().map(Resource::getId).toList();
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensionsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
         extensionHandler.insertExtensionsInEquipments(networkUuid, identifiables, extensions);
         return identifiables;
     }
