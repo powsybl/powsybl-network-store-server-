@@ -751,5 +751,4 @@ public final class QueryCatalog {
                 EQUIPMENT_ID_COLUMN + " in (" +
                 "?, ".repeat(numberOfValues - 1) + "?)";
     }
-
 }
