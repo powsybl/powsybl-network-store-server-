@@ -362,16 +362,6 @@ public final class QueryCatalog {
         return query.toString();
     }
 
-    public static String buildUpdateVoltageLevelSvQuery() {
-        return "update " +
-                VOLTAGE_LEVEL_TABLE +
-                " set calculatedbusesforbusview = ?" +
-                ", calculatedbusesforbusbreakerview = ?" +
-                " where " + NETWORK_UUID_COLUMN + " = ? and " +
-                VARIANT_NUM_COLUMN + " = ? and " +
-                ID_COLUMN + " = ?";
-    }
-
     public static String buildUpdateNetworkQuery(Collection<String> columns) {
         StringBuilder query = new StringBuilder("update ")
                 .append(NETWORK_TABLE)

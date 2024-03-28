@@ -770,63 +770,8 @@ public class NetworkStoreRepository {
         } catch(SQLException e){
             throw new UncheckedSqlException(e);
         }
+        LOGGER.info(tableName);
         LOGGER.info("UPDATE SV BRANCH {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
-    }
-
-    public void updateThreeWindingsTransformersSv(UUID networkUuid, List<Resource<ThreeWindingsTransformerSvAttributes>> resources) {
-        AtomicReference<Long> startTime = new AtomicReference<>();
-        startTime.set(System.nanoTime());
-        try (var connection = dataSource.getConnection()) {
-            for (List<Resource<ThreeWindingsTransformerSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                List<Object> values = new ArrayList<>(9 * BATCH_SIZE);
-                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateThreeWindingsTransformerSvQuery(subResources.size()))) {
-                    ThreeWindingsTransformerSvAttributes attributes;
-                    for (Resource<ThreeWindingsTransformerSvAttributes> resource : subResources) {
-                        attributes = resource.getAttributes();
-                        values.add(attributes.getP1());
-                        values.add(attributes.getQ1());
-                        values.add(attributes.getP2());
-                        values.add(attributes.getQ2());
-                        values.add(attributes.getP3());
-                        values.add(attributes.getQ3());
-                        values.add(networkUuid);
-                        values.add(resource.getVariantNum());
-                        values.add(resource.getId());
-                    }
-                    bindValues(preparedStmt, values);
-                    preparedStmt.execute();
-                }
-            }
-        } catch(SQLException e){
-            throw new UncheckedSqlException(e);
-        }
-        LOGGER.info("UPDATE SV 3WT {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
-    }
-
-    public void updateVoltageLevelsSv(UUID networkUuid, List<Resource<VoltageLevelSvAttributes>> resources) {
-        AtomicReference<Long> startTime = new AtomicReference<>();
-        startTime.set(System.nanoTime());
-        try (var connection = dataSource.getConnection()) {
-            for (List<Resource<VoltageLevelSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                List<Object> values = new ArrayList<>(5 * BATCH_SIZE);
-                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateVoltageLevelSvQuery(subResources.size()))) {
-                    VoltageLevelSvAttributes attributes;
-                    for (Resource<VoltageLevelSvAttributes> resource : subResources) {
-                        attributes = resource.getAttributes();
-                        values.add(attributes.getCalculatedBusesForBusView());
-                        values.add(attributes.getCalculatedBusesForBusBreakerView());
-                        values.add(networkUuid);
-                        values.add(resource.getVariantNum());
-                        values.add(resource.getId());
-                    }
-                    bindValues(preparedStmt, values);
-                    preparedStmt.execute();
-                }
-            }
-        } catch(SQLException e){
-            throw new UncheckedSqlException(e);
-        }
-        LOGGER.info("UPDATE SV VOLTAGELEVEL {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
     }
 
     public <T extends IdentifiableAttributes> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
@@ -896,6 +841,32 @@ public class NetworkStoreRepository {
 
     public void updateVoltageLevels(UUID networkUuid, List<Resource<VoltageLevelAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getVoltageLevelMappings(), SUBSTATION_ID);
+    }
+
+    public void updateVoltageLevelsSv(UUID networkUuid, List<Resource<VoltageLevelSvAttributes>> resources) {
+        AtomicReference<Long> startTime = new AtomicReference<>();
+        startTime.set(System.nanoTime());
+        try (var connection = dataSource.getConnection()) {
+            for (List<Resource<VoltageLevelSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
+                List<Object> values = new ArrayList<>(5 * BATCH_SIZE);
+                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateVoltageLevelSvQuery(subResources.size()))) {
+                    VoltageLevelSvAttributes attributes;
+                    for (Resource<VoltageLevelSvAttributes> resource : subResources) {
+                        attributes = resource.getAttributes();
+                        values.add(attributes.getCalculatedBusesForBusView());
+                        values.add(attributes.getCalculatedBusesForBusBreakerView());
+                        values.add(networkUuid);
+                        values.add(resource.getVariantNum());
+                        values.add(resource.getId());
+                    }
+                    bindValues(preparedStmt, values);
+                    preparedStmt.execute();
+                }
+            }
+        } catch(SQLException e){
+            throw new UncheckedSqlException(e);
+        }
+        LOGGER.info("UPDATE SV VOLTAGELEVEL {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
     }
 
     public List<Resource<VoltageLevelAttributes>> getVoltageLevels(UUID networkUuid, int variantNum, String substationId) {
@@ -1377,6 +1348,36 @@ public class NetworkStoreRepository {
 
         deleteTapChangerSteps(networkUuid, resources);
         insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
+    }
+
+    public void updateThreeWindingsTransformersSv(UUID networkUuid, List<Resource<ThreeWindingsTransformerSvAttributes>> resources) {
+        AtomicReference<Long> startTime = new AtomicReference<>();
+        startTime.set(System.nanoTime());
+        try (var connection = dataSource.getConnection()) {
+            for (List<Resource<ThreeWindingsTransformerSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
+                List<Object> values = new ArrayList<>(9 * BATCH_SIZE);
+                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildMultiRowsUpdateThreeWindingsTransformerSvQuery(subResources.size()))) {
+                    ThreeWindingsTransformerSvAttributes attributes;
+                    for (Resource<ThreeWindingsTransformerSvAttributes> resource : subResources) {
+                        attributes = resource.getAttributes();
+                        values.add(attributes.getP1());
+                        values.add(attributes.getQ1());
+                        values.add(attributes.getP2());
+                        values.add(attributes.getQ2());
+                        values.add(attributes.getP3());
+                        values.add(attributes.getQ3());
+                        values.add(networkUuid);
+                        values.add(resource.getVariantNum());
+                        values.add(resource.getId());
+                    }
+                    bindValues(preparedStmt, values);
+                    preparedStmt.execute();
+                }
+            }
+        } catch(SQLException e){
+            throw new UncheckedSqlException(e);
+        }
+        LOGGER.info("UPDATE SV 3WT {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime.get()));
     }
 
     public void deleteThreeWindingsTransformer(UUID networkUuid, int variantNum, String threeWindingsTransformerId) {
