@@ -373,6 +373,7 @@ public class Mappings {
         batteryMappings.addColumnMapping(PROPERTIES, new ColumnMapping<>(Map.class, BatteryAttributes::getProperties, BatteryAttributes::setProperties));
         batteryMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, BatteryAttributes::getAliasByType, BatteryAttributes::setAliasByType));
         batteryMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, BatteryAttributes::getAliasesWithoutType, BatteryAttributes::setAliasesWithoutType));
+        batteryMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, BatteryAttributes::getPosition, BatteryAttributes::setPosition));
     }
 
     public TableMapping getBusbarSectionMappings() {

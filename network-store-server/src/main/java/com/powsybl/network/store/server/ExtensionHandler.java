@@ -1,7 +1,12 @@
+/**
+ * Copyright (c) 2024, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.powsybl.network.store.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.powsybl.network.store.model.ExtensionAttributes;
@@ -22,6 +27,9 @@ import java.util.*;
 import static com.powsybl.network.store.server.NetworkStoreRepository.BATCH_SIZE;
 import static com.powsybl.network.store.server.Utils.bindValues;
 
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
 @Component
 public class ExtensionHandler {
     private final DataSource dataSource;
@@ -29,7 +37,7 @@ public class ExtensionHandler {
 
     public ExtensionHandler(DataSource dataSource, ObjectMapper mapper) {
         this.dataSource = dataSource;
-        this.mapper = mapper.enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS.mappedFeature());
+        this.mapper = mapper;
     }
 
     public void insertExtensions(Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
@@ -189,7 +197,7 @@ public class ExtensionHandler {
     }
 
     /**
-     * Extensions do not always exist in the initial variant and can be added by a
+     * Extensions do not always exist in the variant and can be added by a
      * modification for example. Instead of implementing an UPSERT, we delete then insert
      * the extensions.
      */

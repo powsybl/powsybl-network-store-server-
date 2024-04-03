@@ -26,8 +26,10 @@
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, name" constraintName="extension_pkey" tableName="extension"/>
     </changeSet>
+<!-- The data migration is skipped if the database is not postgres because we use jsonb methods that are specific to postgres -->
     <changeSet author="bouhoursant" id="2986331049277-2">
         <sqlFile
+                dbms="postgresql"
                 path="migrationExtensions_20240306T120000Z.sql"
                 relativeToChangelogFile="true"
                 splitStatements="true"

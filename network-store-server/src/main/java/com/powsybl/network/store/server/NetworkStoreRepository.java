@@ -770,7 +770,6 @@ public class NetworkStoreRepository {
                 }
             }
         });
-        // TODO add a without auto commit??
         extensionHandler.updateExtensions(networkUuid, resources);
     }
 
