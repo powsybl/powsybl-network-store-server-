@@ -2,7 +2,7 @@ INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name
 SELECT networkuuid, variantnum, id, 'BATTERY', 'activePowerControl',
        jsonb_set(
                activepowercontrol::jsonb,
-               '{@type}',
+               '{extensionName}',
                '"activePowerControl"'
        )
 FROM battery
@@ -12,7 +12,7 @@ INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name
 SELECT networkuuid, variantnum, id, 'GENERATOR', 'activePowerControl',
        jsonb_set(
                activepowercontrol::jsonb,
-               '{@type}',
+               '{extensionName}',
                '"activePowerControl"'::jsonb
        )
 FROM generator
@@ -22,7 +22,7 @@ INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name
 SELECT networkuuid, variantnum, id, 'GENERATOR', 'startup',
        jsonb_set(
                generatorstartup::jsonb,
-               '{@type}',
+               '{extensionName}',
                '"startup"'::jsonb
        )
 FROM generator
@@ -31,7 +31,7 @@ WHERE generatorstartup IS NOT NULL;
 INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name, value_)
 SELECT networkuuid, variantnum, id, 'LINE', 'operatingStatus',
        jsonb_build_object(
-               '@type', 'operatingStatus',
+               'extensionName', 'operatingStatus',
                'operatingStatus', operatingStatus
        )
 FROM line
@@ -40,7 +40,7 @@ WHERE operatingStatus IS NOT NULL;
 INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name, value_)
 SELECT networkuuid, variantnum, id, 'HVDC_LINE', 'operatingStatus',
        jsonb_build_object(
-               '@type', 'operatingStatus',
+               'extensionName', 'operatingStatus',
                'operatingStatus', operatingStatus
        )
 FROM hvdcline
@@ -49,7 +49,7 @@ WHERE operatingStatus IS NOT NULL;
 INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name, value_)
 SELECT networkuuid, variantnum, id, 'TIE_LINE', 'operatingStatus',
        jsonb_build_object(
-               '@type', 'operatingStatus',
+               'extensionName', 'operatingStatus',
                'operatingStatus', operatingStatus
        )
 FROM tieline
@@ -58,7 +58,7 @@ WHERE operatingStatus IS NOT NULL;
 INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name, value_)
 SELECT networkuuid, variantnum, id, 'DANGLING_LINE', 'operatingStatus',
        jsonb_build_object(
-               '@type', 'operatingStatus',
+               'extensionName', 'operatingStatus',
                'operatingStatus', operatingStatus
        )
 FROM danglingline
@@ -67,7 +67,7 @@ WHERE operatingStatus IS NOT NULL;
 INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name, value_)
 SELECT networkuuid, variantnum, id, 'TWO_WINDINGS_TRANSFORMER', 'operatingStatus',
        jsonb_build_object(
-               '@type', 'operatingStatus',
+               'extensionName', 'operatingStatus',
                'operatingStatus', operatingStatus
        )
 FROM twowindingstransformer
@@ -76,7 +76,7 @@ WHERE operatingStatus IS NOT NULL;
 INSERT INTO extension (networkuuid, variantnum, equipmentid, equipmentType, name, value_)
 SELECT networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'operatingStatus',
        jsonb_build_object(
-               '@type', 'operatingStatus',
+               'extensionName', 'operatingStatus',
                'operatingStatus', operatingStatus
        )
 FROM threewindingstransformer
