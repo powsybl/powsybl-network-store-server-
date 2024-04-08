@@ -72,7 +72,7 @@ public class ExtensionHandler {
             return Collections.emptyMap();
         }
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildExtensionsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetExtensionsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < valuesForInClause.size(); i++) {
@@ -87,7 +87,7 @@ public class ExtensionHandler {
 
     public Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensions(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildExtensionsQuery(columnNameForWhereClause));
+            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetExtensionsQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);

@@ -25,7 +25,7 @@ public final class QueryExtensionCatalog {
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildExtensionsQuery(String columnNameForWhereClause) {
+    public static String buildGetExtensionsQuery(String columnNameForWhereClause) {
         return "select " + EQUIPMENT_ID_COLUMN + ", " +
                 EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
@@ -37,7 +37,7 @@ public final class QueryExtensionCatalog {
                 columnNameForWhereClause + " = ?";
     }
 
-    public static String buildExtensionsWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
+    public static String buildGetExtensionsWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
