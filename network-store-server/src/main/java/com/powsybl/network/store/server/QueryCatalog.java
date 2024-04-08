@@ -8,8 +8,7 @@ package com.powsybl.network.store.server;
 
 import com.powsybl.network.store.model.Resource;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
@@ -179,50 +178,188 @@ public final class QueryCatalog {
         return query.toString();
     }
 
-    public static String buildUpdateInjectionSvQuery(String tableName) {
-        return "update " +
-                tableName +
-                " set p = ?" +
-                ", q = ?" +
-                " where " + NETWORK_UUID_COLUMN + " = ? and " +
-                VARIANT_NUM_COLUMN + " = ? and " +
-                ID_COLUMN + " = ?";
+    private static String getSQLType(Class clazz) {
+        if (clazz == Double.class) {
+            return "::double precision";
+        } else if (clazz == Integer.class) {
+            return "::integer";
+        } else if (clazz == Boolean.class) {
+            return "::boolean";
+        } else if (clazz == Float.class) {
+            return "::real";
+        } else if (clazz == Long.class) {
+            return "::bigint";
+        } else if (clazz == UUID.class) {
+            return "::uuid";
+        } else if (clazz == String.class) {
+            return "::text";
+        }
+        return "";
     }
 
-    public static String buildUpdateBranchSvQuery(String tableName) {
-        return "update " +
-                tableName +
-                " set p1 = ?" +
-                ", q1 = ?" +
-                ", p2 = ?" +
-                ", q2 = ?" +
-                " where " + NETWORK_UUID_COLUMN + " = ? and " +
-                VARIANT_NUM_COLUMN + " = ? and " +
-                ID_COLUMN + " = ?";
+    public static String buildMultiRowsUpdateIdentifiableQuery(TableMapping tableMapping, String columnToAddToWhereClause, int rowsNumber) {
+        Set<String> columns = tableMapping.getColumnsMapping().keySet();
+        StringBuilder query = new StringBuilder("update ")
+                .append(tableMapping.getTable() + " as T1 \n")
+                .append("set \n");
+        var it = columns.iterator();
+        while (it.hasNext()) {
+            String column = it.next();
+            if (!column.equalsIgnoreCase(columnToAddToWhereClause)) {
+                query.append(column + " = T2." + column + getSQLType(tableMapping.getColumnsMapping().get(column).getClassR()));
+                if (it.hasNext()) {
+                    query.append(", \n");
+                } else {
+                    query.append("\n");
+                }
+            }
+        }
+
+        query.append("FROM (VALUES \n");
+        for (int i = 0; i < rowsNumber; i++) {
+            query.append("(");
+            query.append("?, ");
+            query.append("?, ");
+            query.append("?, ");
+            it = columns.iterator();
+            while (it.hasNext()) {
+                it.next();
+                query.append("?");
+                if (it.hasNext()) {
+                    query.append(", ");
+                }
+            }
+            query.append(")");
+            if (i < rowsNumber - 1) {
+                query.append(",\n");
+            }
+        }
+        query.append(" )\n");
+        query.append("AS T2( ");
+
+        it = columns.iterator();
+        while (it.hasNext()) {
+            String column = it.next();
+            if (!column.equalsIgnoreCase(columnToAddToWhereClause)) {
+                query.append(column);
+                query.append(", ");
+            }
+        }
+        query.append(NETWORK_UUID_COLUMN + ", ");
+        query.append(VARIANT_NUM_COLUMN + ", ");
+        query.append(ID_COLUMN);
+        if (columnToAddToWhereClause != null) {
+            query.append(", ");
+            query.append(columnToAddToWhereClause);
+        }
+        query.append(" )\n");
+
+        query.append("where ").append("T2." + NETWORK_UUID_COLUMN).append(" = T1." + NETWORK_UUID_COLUMN + " and \n")
+                .append("T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
+                .append("T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + " and\n");
+        if (columnToAddToWhereClause != null) {
+            query.append("T2." + columnToAddToWhereClause).append(" = T1." + columnToAddToWhereClause);
+        }
+        query.append(";");
+        return query.toString();
     }
 
-    public static String buildUpdateThreeWindingsTransformerSvQuery() {
-        return "update " +
-                THREE_WINDINGS_TRANSFORMER_TABLE +
-                " set p1 = ?" +
-                ", q1 = ?" +
-                ", p2 = ?" +
-                ", q2 = ?" +
-                ", p3 = ?" +
-                ", q3 = ?" +
-                " where " + NETWORK_UUID_COLUMN + " = ? and " +
-                VARIANT_NUM_COLUMN + " = ? and " +
-                ID_COLUMN + " = ?";
+    public static String buildMultiRowsUpdateInjectionSvQuery(String tableName, int rowsNumber) {
+        StringBuilder query = new StringBuilder("update ")
+                .append(tableName + " as T1 \n")
+                .append("set \n");
+        query.append("p = T2.p::double precision,\n");
+        query.append("q = T2.q::double precision\n");
+
+        query.append("FROM (VALUES \n");
+        for (int i = 0; i < rowsNumber; i++) {
+            query.append("(?, ?, ?, ?, ?)");
+            if (i < rowsNumber - 1) {
+                query.append(",\n");
+            }
+        }
+        query.append(" )\n");
+        query.append("AS T2(p, q, networkUuid, variantNum, id)\n");
+
+        query.append("where ").append("T2." + NETWORK_UUID_COLUMN).append(" = T1." + NETWORK_UUID_COLUMN + " and \n")
+                .append("T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
+                .append("T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + ";");
+        return query.toString();
     }
 
-    public static String buildUpdateVoltageLevelSvQuery() {
-        return "update " +
-                VOLTAGE_LEVEL_TABLE +
-                " set calculatedbusesforbusview = ?" +
-                ", calculatedbusesforbusbreakerview = ?" +
-                " where " + NETWORK_UUID_COLUMN + " = ? and " +
-                VARIANT_NUM_COLUMN + " = ? and " +
-                ID_COLUMN + " = ?";
+    public static String buildMultiRowsUpdateBranchSvQuery(String tableName, int rowsNumber) {
+        StringBuilder query = new StringBuilder("update ")
+                .append(tableName + " as T1 \n")
+                .append("set \n");
+        query.append("p1 = T2.p1::double precision,\n");
+        query.append("q1 = T2.q1::double precision,\n");
+        query.append("p2 = T2.p2::double precision,\n");
+        query.append("q2 = T2.q2::double precision\n");
+
+        query.append("FROM (VALUES \n");
+        for (int i = 0; i < rowsNumber; i++) {
+            query.append("(?, ?, ?, ?, ?, ?, ?)");
+            if (i < rowsNumber - 1) {
+                query.append(",\n");
+            }
+        }
+        query.append(" )\n");
+        query.append("AS T2(p1, q1, p2, q2, networkUuid, variantNum, id)\n");
+
+        query.append("where ").append("T2." + NETWORK_UUID_COLUMN).append(" = T1." + NETWORK_UUID_COLUMN + " and \n")
+                .append("T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
+                .append("T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + ";");
+        return query.toString();
+    }
+
+    public static String buildMultiRowsUpdateThreeWindingsTransformerSvQuery(int rowsNumber) {
+        StringBuilder query = new StringBuilder("update ")
+                .append(THREE_WINDINGS_TRANSFORMER_TABLE + " as T1 \n")
+                .append("set \n");
+        query.append("p1 = T2.p1::double precision,\n");
+        query.append("q1 = T2.q1::double precision,\n");
+        query.append("p2 = T2.p2::double precision,\n");
+        query.append("q2 = T2.q2::double precision,\n");
+        query.append("p3 = T2.p3::double precision,\n");
+        query.append("q3 = T2.q3::double precision\n");
+
+        query.append("FROM (VALUES \n");
+        for (int i = 0; i < rowsNumber; i++) {
+            query.append("(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if (i < rowsNumber - 1) {
+                query.append(",\n");
+            }
+        }
+        query.append(" )\n");
+        query.append("AS T2(p1, q1, p2, q2, p3, q3, networkUuid, variantNum, id)\n");
+
+        query.append("where ").append("T2." + NETWORK_UUID_COLUMN).append(" = T1." + NETWORK_UUID_COLUMN + " and \n")
+                .append("T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
+                .append("T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + ";");
+        return query.toString();
+    }
+
+    public static String buildMultiRowsUpdateVoltageLevelSvQuery(int rowsNumber) {
+        StringBuilder query = new StringBuilder("update ")
+                .append(VOLTAGE_LEVEL_TABLE + " as T1 \n")
+                .append("set \n");
+        query.append("calculatedbusesforbusview = T2.calculatedbusesforbusview::text,\n");
+        query.append("calculatedbusesforbusbreakerview = T2.calculatedbusesforbusbreakerview::text\n");
+
+        query.append("FROM (VALUES \n");
+        for (int i = 0; i < rowsNumber; i++) {
+            query.append("(?, ?, ?, ?, ?)");
+            if (i < rowsNumber - 1) {
+                query.append(",\n");
+            }
+        }
+        query.append(" )\n");
+        query.append("AS T2(calculatedbusesforbusview, calculatedbusesforbusbreakerview, networkUuid, variantNum, id)\n");
+
+        query.append("where ").append("T2." + NETWORK_UUID_COLUMN).append(" = T1." + NETWORK_UUID_COLUMN + " and \n")
+                .append("T2." + VARIANT_NUM_COLUMN).append(" = T1." + VARIANT_NUM_COLUMN + " and\n")
+                .append("T2." + ID_COLUMN).append(" = T1." + ID_COLUMN + ";");
+        return query.toString();
     }
 
     public static String buildUpdateNetworkQuery(Collection<String> columns) {
