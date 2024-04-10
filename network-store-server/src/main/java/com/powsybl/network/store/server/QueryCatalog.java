@@ -19,7 +19,7 @@ import static com.powsybl.network.store.server.Mappings.*;
  */
 public final class QueryCatalog {
 
-    private static final String MINIMAL_VALUE_REQUIREMENT_ERROR = "Function should not be called without at least one value.";
+    static final String MINIMAL_VALUE_REQUIREMENT_ERROR = "Function should not be called without at least one value.";
 
     static final String VARIANT_ID_COLUMN = "variantId";
     static final String UUID_COLUMN = "uuid";
