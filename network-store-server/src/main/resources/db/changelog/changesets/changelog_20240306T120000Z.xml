@@ -1,0 +1,38 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+    <changeSet author="bouhoursant" id="2986331049277-1">
+        <createTable tableName="extension">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmenttype" type="VARCHAR(255)"/>
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value_" type="TEXT"/>
+        </createTable>
+        <createIndex indexName="extension_networkuuid_variantnum_equipmenttype_idx" tableName="extension">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="equipmenttype"/>
+        </createIndex>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, name" constraintName="extension_pkey" tableName="extension"/>
+    </changeSet>
+<!-- The data migration is skipped if the database is not postgres because we use jsonb methods that are specific to postgres -->
+    <changeSet author="bouhoursant" id="2986331049277-2">
+        <sqlFile
+                dbms="postgresql"
+                path="migrationExtensions_20240306T120000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+    </changeSet>
+</databaseChangeLog>
