@@ -50,7 +50,7 @@
     <properties>
         <sirocco.version>1.0</sirocco.version>
 
-        <powsybl-ws-dependencies.version>2.9.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.10.0-SNAPSHOT</powsybl-ws-dependencies.version>
 
         <!-- FIXME : to remove when sonar version is updated on github actions -->
         <!-- https://community.sonarsource.com/t/stackoverflowerror-at-defaultinputcomponent-equals/20324 -->
