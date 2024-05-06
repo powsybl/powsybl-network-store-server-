@@ -8,6 +8,9 @@ package com.powsybl.network.store.server;
 
 import com.powsybl.iidm.network.LimitType;
 import com.powsybl.network.store.model.*;
+import com.powsybl.network.store.server.dto.LimitsInfos;
+import com.powsybl.network.store.server.dto.OwnerInfo;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +63,10 @@ public class NetworkStoreRepositoryTest {
                         .voltageLevelId1("vl1")
                         .voltageLevelId2("vl2")
                         .name("idLineA")
-                        .currentLimits1(LimitsAttributes.builder().permanentLimit(20.).build())
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
                         .build())
                 .build();
 
@@ -70,7 +76,10 @@ public class NetworkStoreRepositoryTest {
                         .voltageLevelId1("vl1")
                         .voltageLevelId2("vl2")
                         .name("idLineB")
-                        .currentLimits1(LimitsAttributes.builder().permanentLimit(20.).build())
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
                         .build())
                 .build();
 
@@ -82,18 +91,21 @@ public class NetworkStoreRepositoryTest {
                 .side(1)
                 .acceptableDuration(100)
                 .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
                 .build();
 
         TemporaryLimitAttributes templimitAOkSide2a = TemporaryLimitAttributes.builder()
                 .side(2)
                 .acceptableDuration(100)
                 .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
                 .build();
 
         TemporaryLimitAttributes templimitAOkSide2b = TemporaryLimitAttributes.builder()
                 .side(2)
                 .acceptableDuration(200)
                 .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
                 .build();
 
         // If there are multiple instance of a limit on the same side with the same acceptable duration, only one is kept.
@@ -101,30 +113,35 @@ public class NetworkStoreRepositoryTest {
                 .side(2)
                 .acceptableDuration(200)
                 .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
                 .build();
 
         TemporaryLimitAttributes templimitWrongEquipmentId = TemporaryLimitAttributes.builder()
                 .side(1)
                 .acceptableDuration(100)
                 .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
                 .build();
 
         TemporaryLimitAttributes templimitBOkSide1a = TemporaryLimitAttributes.builder()
                 .side(1)
                 .acceptableDuration(100)
                 .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
                 .build();
 
         TemporaryLimitAttributes templimitBOkSide1b = TemporaryLimitAttributes.builder()
                 .side(1)
                 .acceptableDuration(200)
                 .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
                 .build();
 
         TemporaryLimitAttributes templimitBOkSide1c = TemporaryLimitAttributes.builder()
                 .side(1)
                 .acceptableDuration(300)
                 .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
                 .build();
 
         List<Resource<LineAttributes>> lines = new ArrayList<>();
@@ -145,32 +162,37 @@ public class NetworkStoreRepositoryTest {
         List<TemporaryLimitAttributes> temporaryLimitsX = new ArrayList<>();
         temporaryLimitsX.add(templimitWrongEquipmentId);
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> map = new HashMap<>();
+        Map<OwnerInfo, LimitsInfos> map = new HashMap<>();
+        LimitsInfos limitsInfosA = new LimitsInfos();
+        limitsInfosA.setTemporaryLimits(temporaryLimitsA);
+        map.put(infoLineA, limitsInfosA);
+        LimitsInfos limitsInfosB = new LimitsInfos();
+        limitsInfosB.setTemporaryLimits(temporaryLimitsB);
+        map.put(infoLineB, limitsInfosB);
+        LimitsInfos limitsInfosX = new LimitsInfos();
+        limitsInfosX.setTemporaryLimits(temporaryLimitsX);
+        map.put(infoLineX, limitsInfosX);
 
-        map.put(infoLineA, temporaryLimitsA);
-        map.put(infoLineB, temporaryLimitsB);
-        map.put(infoLineX, temporaryLimitsX);
+        assertNull(resLineA.getAttributes().getOperationalLimitsGroup1("group1").getCurrentLimits().getTemporaryLimits());
+        assertNull(resLineA.getAttributes().getOperationalLimitsGroup2("group1"));
+        assertNull(resLineB.getAttributes().getOperationalLimitsGroup1("group1").getCurrentLimits().getTemporaryLimits());
+        assertNull(resLineB.getAttributes().getOperationalLimitsGroup2("group1"));
 
-        assertNull(resLineA.getAttributes().getCurrentLimits1().getTemporaryLimits());
-        assertNull(resLineA.getAttributes().getCurrentLimits2());
-        assertNull(resLineB.getAttributes().getCurrentLimits1().getTemporaryLimits());
-        assertNull(resLineB.getAttributes().getCurrentLimits2());
+        networkStoreRepository.insertLimitsInEquipments(NETWORK_UUID, lines, new HashMap<>());
 
-        networkStoreRepository.insertTemporaryLimitsInEquipments(NETWORK_UUID, lines, new HashMap<>());
+        assertNull(resLineA.getAttributes().getOperationalLimitsGroup1("group1").getCurrentLimits().getTemporaryLimits());
+        assertNull(resLineA.getAttributes().getOperationalLimitsGroup2("group1"));
+        assertNull(resLineB.getAttributes().getOperationalLimitsGroup1("group1").getCurrentLimits().getTemporaryLimits());
+        assertNull(resLineB.getAttributes().getOperationalLimitsGroup2("group1"));
 
-        assertNull(resLineA.getAttributes().getCurrentLimits1().getTemporaryLimits());
-        assertNull(resLineA.getAttributes().getCurrentLimits2());
-        assertNull(resLineB.getAttributes().getCurrentLimits1().getTemporaryLimits());
-        assertNull(resLineB.getAttributes().getCurrentLimits2());
-
-        networkStoreRepository.insertTemporaryLimitsInEquipments(NETWORK_UUID, lines, map);
-        assertNotNull(resLineA.getAttributes().getCurrentLimits1().getTemporaryLimits());
-        assertNotNull(resLineA.getAttributes().getCurrentLimits2().getTemporaryLimits());
-        assertEquals(1, resLineA.getAttributes().getCurrentLimits1().getTemporaryLimits().size());
-        assertEquals(2, resLineA.getAttributes().getCurrentLimits2().getTemporaryLimits().size());
-        assertNotNull(resLineB.getAttributes().getCurrentLimits1().getTemporaryLimits());
-        assertNull(resLineB.getAttributes().getCurrentLimits2());
-        assertEquals(3, resLineB.getAttributes().getCurrentLimits1().getTemporaryLimits().size());
+        networkStoreRepository.insertLimitsInEquipments(NETWORK_UUID, lines, map);
+        assertNotNull(resLineA.getAttributes().getOperationalLimitsGroup1("group1").getCurrentLimits().getTemporaryLimits());
+        assertNotNull(resLineA.getAttributes().getOperationalLimitsGroup2("group1").getCurrentLimits().getTemporaryLimits());
+        assertEquals(1, resLineA.getAttributes().getOperationalLimitsGroup1("group1").getCurrentLimits().getTemporaryLimits().size());
+        assertEquals(2, resLineA.getAttributes().getOperationalLimitsGroup2("group1").getCurrentLimits().getTemporaryLimits().size());
+        assertNotNull(resLineB.getAttributes().getOperationalLimitsGroup1("group1").getCurrentLimits().getTemporaryLimits());
+        assertNull(resLineB.getAttributes().getOperationalLimitsGroup2("group1"));
+        assertEquals(3, resLineB.getAttributes().getOperationalLimitsGroup1("group1").getCurrentLimits().getTemporaryLimits().size());
     }
 
     @Test
@@ -545,7 +567,6 @@ public class NetworkStoreRepositoryTest {
                 .attributes(ThreeWindingsTransformerAttributes.builder()
                         .name("id3WTransformerA")
                         .ratedU0(1)
-                        .branchStatus("IN_OPERATION")
                         .leg1(LegAttributes.builder()
                                 .ratioTapChangerAttributes(RatioTapChangerAttributes.builder()
                                 .lowTapPosition(20)
@@ -562,7 +583,6 @@ public class NetworkStoreRepositoryTest {
                 .attributes(ThreeWindingsTransformerAttributes.builder()
                         .name("id3WTransformerB")
                         .ratedU0(1)
-                        .branchStatus("IN_OPERATION")
                         .leg1(new LegAttributes())
                         .leg2(LegAttributes.builder()
                                 .phaseTapChangerAttributes(PhaseTapChangerAttributes.builder()

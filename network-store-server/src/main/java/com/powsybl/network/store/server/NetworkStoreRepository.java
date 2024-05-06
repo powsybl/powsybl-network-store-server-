@@ -6,8 +6,10 @@
  */
 package com.powsybl.network.store.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.powsybl.commons.PowsyblException;
@@ -15,6 +17,9 @@ import com.powsybl.iidm.network.LimitType;
 import com.powsybl.iidm.network.ReactiveLimitsKind;
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.model.utils.VariantUtils;
+import com.powsybl.network.store.server.dto.LimitsInfos;
+import com.powsybl.network.store.server.dto.OwnerInfo;
+import com.powsybl.network.store.server.dto.PermanentLimitAttributes;
 import com.powsybl.network.store.server.exceptions.JsonApiErrorResponseException;
 import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 import com.powsybl.ws.commons.LogUtils;
@@ -26,19 +31,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
 import static com.powsybl.network.store.server.QueryCatalog.*;
+import static com.powsybl.network.store.server.Utils.bindAttributes;
+import static com.powsybl.network.store.server.Utils.bindValues;
 
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
@@ -50,10 +54,13 @@ public class NetworkStoreRepository {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkStoreRepository.class);
 
     @Autowired
-    public NetworkStoreRepository(DataSource dataSource, ObjectMapper mapper, Mappings mappings) {
+    public NetworkStoreRepository(DataSource dataSource, ObjectMapper mapper, Mappings mappings, ExtensionHandler extensionHandler) {
         this.dataSource = dataSource;
-        this.mapper = mapper;
         this.mappings = mappings;
+        this.mapper = mapper.registerModule(new JavaTimeModule())
+                .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+                .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+        this.extensionHandler = extensionHandler;
     }
 
     private final DataSource dataSource;
@@ -62,69 +69,11 @@ public class NetworkStoreRepository {
 
     private final Mappings mappings;
 
-    private static final int BATCH_SIZE = 1000;
+    private final ExtensionHandler extensionHandler;
+
+    static final int BATCH_SIZE = 1000;
 
     private static final String SUBSTATION_ID = "substationid";
-
-    private static boolean isCustomTypeJsonified(Class<?> clazz) {
-        return !(
-            Integer.class.equals(clazz) || Long.class.equals(clazz)
-                    || Float.class.equals(clazz) || Double.class.equals(clazz)
-                    || String.class.equals(clazz) || Boolean.class.equals(clazz)
-                    || UUID.class.equals(clazz)
-                    || Date.class.isAssignableFrom(clazz) // java.util.Date and java.sql.Date
-            );
-    }
-
-    private void bindValues(PreparedStatement statement, List<Object> values) throws SQLException {
-        int idx = 0;
-        for (Object o : values) {
-            if (o instanceof Instant) {
-                Instant d = (Instant) o;
-                statement.setDate(++idx, new java.sql.Date(d.toEpochMilli()));
-            } else if (o == null || !isCustomTypeJsonified(o.getClass())) {
-                statement.setObject(++idx, o);
-            } else {
-                try {
-                    statement.setObject(++idx, mapper.writeValueAsString(o));
-                } catch (JsonProcessingException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-        }
-    }
-
-    private void bindAttributes(ResultSet resultSet, int columnIndex, ColumnMapping columnMapping, IdentifiableAttributes attributes) {
-        try {
-            Object value = null;
-            if (columnMapping.getClassR() == null || isCustomTypeJsonified(columnMapping.getClassR())) {
-                String str = resultSet.getString(columnIndex);
-                if (str != null) {
-                    if (columnMapping.getClassMapKey() != null && columnMapping.getClassMapValue() != null) {
-                        value = mapper.readValue(str, mapper.getTypeFactory().constructMapType(Map.class, columnMapping.getClassMapKey(), columnMapping.getClassMapValue()));
-                    } else {
-                        if (columnMapping.getClassR() == null) {
-                            throw new PowsyblException("Invalid mapping config");
-                        }
-                        if (columnMapping.getClassR() == Instant.class) {
-                            value = resultSet.getTimestamp(columnIndex).toInstant();
-                        } else {
-                            value = mapper.readValue(str, columnMapping.getClassR());
-                        }
-                    }
-                }
-            } else {
-                value = resultSet.getObject(columnIndex, columnMapping.getClassR());
-            }
-            if (value != null) {
-                columnMapping.set(attributes, value);
-            }
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
 
     // network
 
@@ -176,7 +125,7 @@ public class NetworkStoreRepository {
                         NetworkAttributes attributes = new NetworkAttributes();
                         MutableInt columnIndex = new MutableInt(2);
                         networkMapping.getColumnsMapping().forEach((columnName, columnMapping) -> {
-                            bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes);
+                            bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes, mapper);
                             columnIndex.increment();
                         });
                         return Optional.of(Resource.networkBuilder()
@@ -279,7 +228,7 @@ public class NetworkStoreRepository {
                     for (var mapping : tableMapping.getColumnsMapping().values()) {
                         values.add(mapping.get(attributes));
                     }
-                    bindValues(preparedStmt, values);
+                    bindValues(preparedStmt, values, mapper);
                     preparedStmt.addBatch();
                 }
                 preparedStmt.executeBatch();
@@ -306,7 +255,7 @@ public class NetworkStoreRepository {
                         }
                         values.add(attributes.getUuid());
                         values.add(resource.getVariantNum());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -333,6 +282,12 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
+            // Delete permanent limits (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the reactive capability curve points (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
@@ -341,6 +296,12 @@ public class NetworkStoreRepository {
 
             // Delete of the tap changer steps (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete of the extensions (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.executeUpdate();
             }
@@ -376,6 +337,13 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
+            // Delete permanent limits (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsVariantQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the reactive capability curve points (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsVariantQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
@@ -385,6 +353,13 @@ public class NetworkStoreRepository {
 
             // Delete of the Tap Changer steps (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete of the extensions (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
@@ -471,6 +446,15 @@ public class NetworkStoreRepository {
             preparedStmt.execute();
         }
 
+        // Copy of the permanent limits (which are not Identifiables objects)
+        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildClonePermanentLimitsQuery())) {
+            preparedStmt.setString(1, targetUuid.toString());
+            preparedStmt.setInt(2, targetVariantNum);
+            preparedStmt.setString(3, uuid.toString());
+            preparedStmt.setInt(4, sourceVariantNum);
+            preparedStmt.execute();
+        }
+
         // Copy of the reactive capability curve points (which are not Identifiables objects)
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneReactiveCapabilityCurvePointsQuery())) {
             preparedStmt.setString(1, targetUuid.toString());
@@ -482,6 +466,15 @@ public class NetworkStoreRepository {
 
         // Copy of the Tap Changer steps (which are not Identifiables objects)
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTapChangerStepQuery())) {
+            preparedStmt.setObject(1, targetUuid);
+            preparedStmt.setInt(2, targetVariantNum);
+            preparedStmt.setObject(3, uuid);
+            preparedStmt.setInt(4, sourceVariantNum);
+            preparedStmt.execute();
+        }
+
+        // Copy of the Extensions (which are not Identifiables objects)
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneExtensionsQuery())) {
             preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
             preparedStmt.setObject(3, uuid);
@@ -523,7 +516,7 @@ public class NetworkStoreRepository {
                         for (var mapping : tableMapping.getColumnsMapping().values()) {
                             values.add(mapping.get(attributes));
                         }
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -532,6 +525,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        extensionHandler.insertExtensions(extensionHandler.getExtensionsFromEquipments(networkUuid, resources));
     }
 
     private <T extends IdentifiableAttributes> Optional<Resource<T>> getIdentifiable(UUID networkUuid, int variantNum, String equipmentId,
@@ -546,7 +540,7 @@ public class NetworkStoreRepository {
                     T attributes = (T) tableMapping.getAttributesSupplier().get();
                     MutableInt columnIndex = new MutableInt(1);
                     tableMapping.getColumnsMapping().forEach((columnName, columnMapping) -> {
-                        bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes);
+                        bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes, mapper);
                         columnIndex.increment();
                     });
                     Resource.Builder<T> resourceBuilder = (Resource.Builder<T>) tableMapping.getResourceBuilderSupplier().get();
@@ -565,6 +559,8 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> Resource<T> completeResourceInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensionAttributes = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        extensionHandler.insertExtensionsInEquipments(networkUuid, List.of((Resource<BatteryAttributes>) resource), extensionAttributes);
         switch (resource.getType()) {
             case GENERATOR:
                 return completeGeneratorInfos(resource, networkUuid, variantNum, equipmentId);
@@ -597,14 +593,14 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> Resource<T> completeLineInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
-        insertTemporaryLimitsInEquipments(networkUuid, List.of((Resource<LineAttributes>) resource), temporaryLimits);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfos(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertLimitsInEquipments(networkUuid, List.of((Resource<LineAttributes>) resource), limitsInfos);
         return resource;
     }
 
     private <T extends IdentifiableAttributes> Resource<T> completeTwoWindingsTransformerInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
-        insertTemporaryLimitsInEquipments(networkUuid, List.of((Resource<TwoWindingsTransformerAttributes>) resource), temporaryLimits);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfos(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertLimitsInEquipments(networkUuid, List.of((Resource<TwoWindingsTransformerAttributes>) resource), limitsInfos);
 
         Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
         insertTapChangerStepsInEquipments(networkUuid, List.of((Resource<TwoWindingsTransformerAttributes>) resource), tapChangerSteps);
@@ -612,8 +608,8 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> Resource<T> completeThreeWindingsTransformerInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
-        insertTemporaryLimitsInEquipments(networkUuid, List.of((Resource<ThreeWindingsTransformerAttributes>) resource), temporaryLimits);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfos(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertLimitsInEquipments(networkUuid, List.of((Resource<ThreeWindingsTransformerAttributes>) resource), limitsInfos);
 
         Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
         insertTapChangerStepsInEquipments(networkUuid, List.of((Resource<ThreeWindingsTransformerAttributes>) resource), tapChangerSteps);
@@ -627,8 +623,8 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> Resource<T> completeDanglingLineInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
-        insertTemporaryLimitsInEquipments(networkUuid, List.of((Resource<DanglingLineAttributes>) resource), temporaryLimits);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfos(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
+        insertLimitsInEquipments(networkUuid, List.of((Resource<DanglingLineAttributes>) resource), limitsInfos);
         return resource;
     }
 
@@ -641,7 +637,7 @@ public class NetworkStoreRepository {
                 T attributes = (T) tableMapping.getAttributesSupplier().get();
                 MutableInt columnIndex = new MutableInt(2);
                 tableMapping.getColumnsMapping().forEach((columnName, columnMapping) -> {
-                    bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes);
+                    bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes, mapper);
                     columnIndex.increment();
                 });
                 Resource.Builder<T> resourceBuilder = (Resource.Builder<T>) tableMapping.getResourceBuilderSupplier().get();
@@ -657,19 +653,24 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiables(UUID networkUuid, int variantNum,
                                                                                   TableMapping tableMapping) {
+        List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
-            return getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
+            identifiables = getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, tableMapping.getResourceType().toString());
+        extensionHandler.insertExtensionsInEquipments(networkUuid, identifiables, extensions);
+        return identifiables;
     }
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInContainer(UUID networkUuid, int variantNum, String containerId,
                                                                                              Set<String> containerColumns,
                                                                                              TableMapping tableMapping) {
+        List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesInContainerQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), containerColumns));
             preparedStmt.setObject(1, networkUuid);
@@ -677,10 +678,14 @@ public class NetworkStoreRepository {
             for (int i = 0; i < containerColumns.size(); i++) {
                 preparedStmt.setString(3 + i, containerId);
             }
-            return getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
+            identifiables = getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        List<String> equipmentsIds = identifiables.stream().map(Resource::getId).toList();
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensionsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
+        extensionHandler.insertExtensionsInEquipments(networkUuid, identifiables, extensions);
+        return identifiables;
     }
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInVoltageLevel(UUID networkUuid, int variantNum, String voltageLevelId, TableMapping tableMapping) {
@@ -707,7 +712,7 @@ public class NetworkStoreRepository {
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
                         values.add(resource.getAttributes().getContainerIds().iterator().next());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -716,6 +721,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        extensionHandler.updateExtensions(networkUuid, resources);
     }
 
     public void updateInjectionsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources, String tableName) {
@@ -731,7 +737,7 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -757,7 +763,7 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -783,13 +789,14 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
                 }
             }
         });
+        extensionHandler.updateExtensions(networkUuid, resources);
     }
 
     public void deleteIdentifiable(UUID networkUuid, int variantNum, String id, String tableName) {
@@ -803,6 +810,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        extensionHandler.deleteExtensions(networkUuid, variantNum, id);
     }
 
     // substation
@@ -850,7 +858,7 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -1217,7 +1225,9 @@ public class NetworkStoreRepository {
         createIdentifiables(networkUuid, resources, mappings.getTwoWindingsTransformerMappings());
 
         // Now that twowindingstransformers are created, we will insert in the database the corresponding temporary limits.
-        insertTemporaryLimits(getTemporaryLimitsFromEquipments(networkUuid, resources));
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        insertTemporaryLimits(limitsInfos);
+        insertPermanentLimits(limitsInfos);
 
         // Now that twowindingstransformers are created, we will insert in the database the corresponding tap Changer steps.
         insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
@@ -1230,8 +1240,8 @@ public class NetworkStoreRepository {
     public List<Resource<TwoWindingsTransformerAttributes>> getTwoWindingsTransformers(UUID networkUuid, int variantNum) {
         List<Resource<TwoWindingsTransformerAttributes>> twoWindingsTransformers = getIdentifiables(networkUuid, variantNum, mappings.getTwoWindingsTransformerMappings());
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.TWO_WINDINGS_TRANSFORMER.toString());
-        insertTemporaryLimitsInEquipments(networkUuid, twoWindingsTransformers, temporaryLimits);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfos(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.TWO_WINDINGS_TRANSFORMER.toString());
+        insertLimitsInEquipments(networkUuid, twoWindingsTransformers, limitsInfos);
 
         Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.TWO_WINDINGS_TRANSFORMER.toString());
         insertTapChangerStepsInEquipments(networkUuid, twoWindingsTransformers, tapChangerSteps);
@@ -1244,8 +1254,8 @@ public class NetworkStoreRepository {
 
         List<String> equipmentsIds = twoWindingsTransformers.stream().map(Resource::getId).collect(Collectors.toList());
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
-        insertTemporaryLimitsInEquipments(networkUuid, twoWindingsTransformers, temporaryLimits);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
+        insertLimitsInEquipments(networkUuid, twoWindingsTransformers, limitsInfos);
 
         Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerStepsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
         insertTapChangerStepsInEquipments(networkUuid, twoWindingsTransformers, tapChangerSteps);
@@ -1260,7 +1270,10 @@ public class NetworkStoreRepository {
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
         // modified because of the updated equipment's new values.
         deleteTemporaryLimits(networkUuid, resources);
-        insertTemporaryLimits(getTemporaryLimitsFromEquipments(networkUuid, resources));
+        deletePermanentLimits(networkUuid, resources);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        insertTemporaryLimits(limitsInfos);
+        insertPermanentLimits(limitsInfos);
 
         deleteTapChangerSteps(networkUuid, resources);
         insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
@@ -1273,6 +1286,7 @@ public class NetworkStoreRepository {
     public void deleteTwoWindingsTransformer(UUID networkUuid, int variantNum, String twoWindingsTransformerId) {
         deleteIdentifiable(networkUuid, variantNum, twoWindingsTransformerId, TWO_WINDINGS_TRANSFORMER_TABLE);
         deleteTemporaryLimits(networkUuid, variantNum, twoWindingsTransformerId);
+        deletePermanentLimits(networkUuid, variantNum, twoWindingsTransformerId);
         deleteTapChangerSteps(networkUuid, variantNum, twoWindingsTransformerId);
     }
 
@@ -1282,7 +1296,9 @@ public class NetworkStoreRepository {
         createIdentifiables(networkUuid, resources, mappings.getThreeWindingsTransformerMappings());
 
         // Now that threewindingstransformers are created, we will insert in the database the corresponding temporary limits.
-        insertTemporaryLimits(getTemporaryLimitsFromEquipments(networkUuid, resources));
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        insertTemporaryLimits(limitsInfos);
+        insertPermanentLimits(limitsInfos);
 
         // Now that threewindingstransformers are created, we will insert in the database the corresponding tap Changer steps.
         insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
@@ -1295,8 +1311,8 @@ public class NetworkStoreRepository {
     public List<Resource<ThreeWindingsTransformerAttributes>> getThreeWindingsTransformers(UUID networkUuid, int variantNum) {
         List<Resource<ThreeWindingsTransformerAttributes>> threeWindingsTransformers = getIdentifiables(networkUuid, variantNum, mappings.getThreeWindingsTransformerMappings());
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.THREE_WINDINGS_TRANSFORMER.toString());
-        insertTemporaryLimitsInEquipments(networkUuid, threeWindingsTransformers, temporaryLimits);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfos(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.THREE_WINDINGS_TRANSFORMER.toString());
+        insertLimitsInEquipments(networkUuid, threeWindingsTransformers, limitsInfos);
 
         Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.THREE_WINDINGS_TRANSFORMER.toString());
         insertTapChangerStepsInEquipments(networkUuid, threeWindingsTransformers, tapChangerSteps);
@@ -1309,8 +1325,8 @@ public class NetworkStoreRepository {
 
         List<String> equipmentsIds = threeWindingsTransformers.stream().map(Resource::getId).collect(Collectors.toList());
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
-        insertTemporaryLimitsInEquipments(networkUuid, threeWindingsTransformers, temporaryLimits);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
+        insertLimitsInEquipments(networkUuid, threeWindingsTransformers, limitsInfos);
 
         Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerStepsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
         insertTapChangerStepsInEquipments(networkUuid, threeWindingsTransformers, tapChangerSteps);
@@ -1325,7 +1341,10 @@ public class NetworkStoreRepository {
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
         // modified because of the updated equipment's new values.
         deleteTemporaryLimits(networkUuid, resources);
-        insertTemporaryLimits(getTemporaryLimitsFromEquipments(networkUuid, resources));
+        deletePermanentLimits(networkUuid, resources);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        insertTemporaryLimits(limitsInfos);
+        insertPermanentLimits(limitsInfos);
 
         deleteTapChangerSteps(networkUuid, resources);
         insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
@@ -1348,7 +1367,7 @@ public class NetworkStoreRepository {
                         values.add(networkUuid);
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values);
+                        bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
                     preparedStmt.executeBatch();
@@ -1362,6 +1381,7 @@ public class NetworkStoreRepository {
     public void deleteThreeWindingsTransformer(UUID networkUuid, int variantNum, String threeWindingsTransformerId) {
         deleteIdentifiable(networkUuid, variantNum, threeWindingsTransformerId, THREE_WINDINGS_TRANSFORMER_TABLE);
         deleteTemporaryLimits(networkUuid, variantNum, threeWindingsTransformerId);
+        deletePermanentLimits(networkUuid, variantNum, threeWindingsTransformerId);
         deleteTapChangerSteps(networkUuid, variantNum, threeWindingsTransformerId);
     }
 
@@ -1371,7 +1391,9 @@ public class NetworkStoreRepository {
         createIdentifiables(networkUuid, resources, mappings.getLineMappings());
 
         // Now that lines are created, we will insert in the database the corresponding temporary limits.
-        insertTemporaryLimits(getTemporaryLimitsFromEquipments(networkUuid, resources));
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        insertTemporaryLimits(limitsInfos);
+        insertPermanentLimits(limitsInfos);
     }
 
     public Optional<Resource<LineAttributes>> getLine(UUID networkUuid, int variantNum, String lineId) {
@@ -1381,9 +1403,9 @@ public class NetworkStoreRepository {
     public List<Resource<LineAttributes>> getLines(UUID networkUuid, int variantNum) {
         List<Resource<LineAttributes>> lines = getIdentifiables(networkUuid, variantNum, mappings.getLineMappings());
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.LINE.toString());
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfos(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.LINE.toString());
 
-        insertTemporaryLimitsInEquipments(networkUuid, lines, temporaryLimits);
+        insertLimitsInEquipments(networkUuid, lines, limitsInfos);
 
         return lines;
     }
@@ -1393,9 +1415,9 @@ public class NetworkStoreRepository {
 
         List<String> equipmentsIds = lines.stream().map(Resource::getId).collect(Collectors.toList());
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
 
-        insertTemporaryLimitsInEquipments(networkUuid, lines, temporaryLimits);
+        insertLimitsInEquipments(networkUuid, lines, limitsInfos);
 
         return lines;
     }
@@ -1407,7 +1429,10 @@ public class NetworkStoreRepository {
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
         // modified because of the updated equipment's new values.
         deleteTemporaryLimits(networkUuid, resources);
-        insertTemporaryLimits(getTemporaryLimitsFromEquipments(networkUuid, resources));
+        deletePermanentLimits(networkUuid, resources);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        insertTemporaryLimits(limitsInfos);
+        insertPermanentLimits(limitsInfos);
     }
 
     public void updateLinesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources) {
@@ -1417,6 +1442,7 @@ public class NetworkStoreRepository {
     public void deleteLine(UUID networkUuid, int variantNum, String lineId) {
         deleteIdentifiable(networkUuid, variantNum, lineId, LINE_TABLE);
         deleteTemporaryLimits(networkUuid, variantNum, lineId);
+        deletePermanentLimits(networkUuid, variantNum, lineId);
     }
 
     // Hvdc line
@@ -1446,9 +1472,9 @@ public class NetworkStoreRepository {
     public List<Resource<DanglingLineAttributes>> getDanglingLines(UUID networkUuid, int variantNum) {
         List<Resource<DanglingLineAttributes>> danglingLines = getIdentifiables(networkUuid, variantNum, mappings.getDanglingLineMappings());
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.DANGLING_LINE.toString());
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfos(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.DANGLING_LINE.toString());
 
-        insertTemporaryLimitsInEquipments(networkUuid, danglingLines, temporaryLimits);
+        insertLimitsInEquipments(networkUuid, danglingLines, limitsInfos);
 
         return danglingLines;
     }
@@ -1462,9 +1488,9 @@ public class NetworkStoreRepository {
 
         List<String> equipmentsIds = danglingLines.stream().map(Resource::getId).collect(Collectors.toList());
 
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
 
-        insertTemporaryLimitsInEquipments(networkUuid, danglingLines, temporaryLimits);
+        insertLimitsInEquipments(networkUuid, danglingLines, limitsInfos);
 
         return danglingLines;
     }
@@ -1473,12 +1499,15 @@ public class NetworkStoreRepository {
         createIdentifiables(networkUuid, resources, mappings.getDanglingLineMappings());
 
         // Now that the dangling lines are created, we will insert in the database the corresponding temporary limits.
-        insertTemporaryLimits(getTemporaryLimitsFromEquipments(networkUuid, resources));
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        insertTemporaryLimits(limitsInfos);
+        insertPermanentLimits(limitsInfos);
     }
 
     public void deleteDanglingLine(UUID networkUuid, int variantNum, String danglingLineId) {
         deleteIdentifiable(networkUuid, variantNum, danglingLineId, DANGLING_LINE_TABLE);
         deleteTemporaryLimits(networkUuid, variantNum, danglingLineId);
+        deletePermanentLimits(networkUuid, variantNum, danglingLineId);
     }
 
     public void updateDanglingLines(UUID networkUuid, List<Resource<DanglingLineAttributes>> resources) {
@@ -1488,7 +1517,10 @@ public class NetworkStoreRepository {
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
         // modified because of the updated equipment's new values.
         deleteTemporaryLimits(networkUuid, resources);
-        insertTemporaryLimits(getTemporaryLimitsFromEquipments(networkUuid, resources));
+        deletePermanentLimits(networkUuid, resources);
+        Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        insertTemporaryLimits(limitsInfos);
+        insertPermanentLimits(limitsInfos);
     }
 
     public void updateDanglingLinesSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1512,6 +1544,7 @@ public class NetworkStoreRepository {
     public void deleteTieLine(UUID networkUuid, int variantNum, String tieLineId) {
         deleteIdentifiable(networkUuid, variantNum, tieLineId, TIE_LINE_TABLE);
         deleteTemporaryLimits(networkUuid, variantNum, tieLineId);
+        deletePermanentLimits(networkUuid, variantNum, tieLineId);
     }
 
     public void updateTieLines(UUID networkUuid, List<Resource<TieLineAttributes>> resources) {
@@ -1584,7 +1617,7 @@ public class NetworkStoreRepository {
                             if (columnIndex == null) {
                                 throw new PowsyblException("Column '" + columnName.toLowerCase() + "' of table '" + tableName + "' not found");
                             }
-                            bindAttributes(resultSet, columnIndex, columnMapping, attributes);
+                            bindAttributes(resultSet, columnIndex, columnMapping, attributes, mapper);
                         });
 
                         Resource<IdentifiableAttributes> resource = new Resource.Builder<>(tableMapping.getResourceType())
@@ -1621,6 +1654,50 @@ public class NetworkStoreRepository {
         }
     }
 
+    public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+        if (valuesForInClause.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(QueryCatalog.buildPermanentLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            preparedStmt.setObject(1, networkUuid.toString());
+            preparedStmt.setInt(2, variantNum);
+            for (int i = 0; i < valuesForInClause.size(); i++) {
+                preparedStmt.setString(3 + i, valuesForInClause.get(i));
+            }
+
+            return innerGetPermanentLimits(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    public Map<OwnerInfo, LimitsInfos> getLimitsInfos(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+        Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits = getPermanentLimits(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+        return mergeLimitsIntoLimitsInfos(temporaryLimits, permanentLimits);
+    }
+
+    public Map<OwnerInfo, LimitsInfos> getLimitsInfosWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimitsWithInClause(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+        Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits = getPermanentLimitsWithInClause(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+        return mergeLimitsIntoLimitsInfos(temporaryLimits, permanentLimits);
+    }
+
+    private Map<OwnerInfo, LimitsInfos> mergeLimitsIntoLimitsInfos(Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits) {
+        Map<OwnerInfo, LimitsInfos> limitsInfos = new HashMap<>();
+        temporaryLimits.forEach((ownerInfo, temporaryLimitAttributes) -> limitsInfos.put(ownerInfo,
+                new LimitsInfos(new ArrayList<>(), temporaryLimitAttributes)));
+        permanentLimits.forEach((ownerInfo, permanentLimitAttributes) -> {
+            if (limitsInfos.containsKey(ownerInfo)) {
+                limitsInfos.get(ownerInfo).getPermanentLimits().addAll(permanentLimitAttributes);
+            } else {
+                limitsInfos.put(ownerInfo, new LimitsInfos(permanentLimitAttributes, new ArrayList<>()));
+            }
+        });
+        return limitsInfos;
+    }
+
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildTemporaryLimitQuery(columnNameForWhereClause));
@@ -1629,6 +1706,19 @@ public class NetworkStoreRepository {
             preparedStmt.setString(3, valueForWhereClause);
 
             return innerGetTemporaryLimits(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(QueryCatalog.buildPermanentLimitQuery(columnNameForWhereClause));
+            preparedStmt.setObject(1, networkUuid.toString());
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setString(3, valueForWhereClause);
+
+            return innerGetPermanentLimits(preparedStmt);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -1647,12 +1737,13 @@ public class NetworkStoreRepository {
                 owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
                 owner.setNetworkUuid(UUID.fromString(resultSet.getString(3)));
                 owner.setVariantNum(resultSet.getInt(4));
-                temporaryLimit.setSide(resultSet.getInt(5));
-                temporaryLimit.setLimitType(LimitType.valueOf(resultSet.getString(6)));
-                temporaryLimit.setName(resultSet.getString(7));
-                temporaryLimit.setValue(resultSet.getDouble(8));
-                temporaryLimit.setAcceptableDuration(resultSet.getInt(9));
-                temporaryLimit.setFictitious(resultSet.getBoolean(10));
+                temporaryLimit.setOperationalLimitsGroupId(resultSet.getString(5));
+                temporaryLimit.setSide(resultSet.getInt(6));
+                temporaryLimit.setLimitType(LimitType.valueOf(resultSet.getString(7)));
+                temporaryLimit.setName(resultSet.getString(8));
+                temporaryLimit.setValue(resultSet.getDouble(9));
+                temporaryLimit.setAcceptableDuration(resultSet.getInt(10));
+                temporaryLimit.setFictitious(resultSet.getBoolean(11));
 
                 map.computeIfAbsent(owner, k -> new ArrayList<>());
                 map.get(owner).add(temporaryLimit);
@@ -1661,8 +1752,33 @@ public class NetworkStoreRepository {
         }
     }
 
-    protected <T extends LimitHolder & IdentifiableAttributes> Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> map = new HashMap<>();
+    private Map<OwnerInfo, List<PermanentLimitAttributes>> innerGetPermanentLimits(PreparedStatement preparedStmt) throws SQLException {
+        try (ResultSet resultSet = preparedStmt.executeQuery()) {
+            Map<OwnerInfo, List<PermanentLimitAttributes>> map = new HashMap<>();
+            while (resultSet.next()) {
+
+                OwnerInfo owner = new OwnerInfo();
+                PermanentLimitAttributes permanentLimit = new PermanentLimitAttributes();
+                // In order, from the QueryCatalog.buildTemporaryLimitQuery SQL query :
+                // equipmentId, equipmentType, networkUuid, variantNum, side, limitType, name, value, acceptableDuration, fictitious
+                owner.setEquipmentId(resultSet.getString(1));
+                owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
+                owner.setNetworkUuid(UUID.fromString(resultSet.getString(3)));
+                owner.setVariantNum(resultSet.getInt(4));
+                permanentLimit.setOperationalLimitsGroupId(resultSet.getString(5));
+                permanentLimit.setSide(resultSet.getInt(6));
+                permanentLimit.setLimitType(LimitType.valueOf(resultSet.getString(7)));
+                permanentLimit.setValue(resultSet.getDouble(8));
+
+                map.computeIfAbsent(owner, k -> new ArrayList<>());
+                map.get(owner).add(permanentLimit);
+            }
+            return map;
+        }
+    }
+
+    protected <T extends LimitHolder & IdentifiableAttributes> Map<OwnerInfo, LimitsInfos> getLimitsInfosFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
+        Map<OwnerInfo, LimitsInfos> map = new HashMap<>();
 
         if (!resources.isEmpty()) {
             for (Resource<T> resource : resources) {
@@ -1673,34 +1789,37 @@ public class NetworkStoreRepository {
                     resource.getVariantNum()
                 );
                 T equipment = resource.getAttributes();
-                map.put(info, equipment.getAllTemporaryLimits());
+                map.put(info, getAllLimitsInfos(equipment));
             }
         }
         return map;
     }
 
-    public void insertTemporaryLimits(Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits) {
+    public void insertTemporaryLimits(Map<OwnerInfo, LimitsInfos> limitsInfos) {
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = limitsInfos.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getTemporaryLimits()));
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertTemporaryLimitsQuery())) {
-                List<Object> values = new ArrayList<>(10);
+                List<Object> values = new ArrayList<>(11);
                 List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> list = new ArrayList<>(temporaryLimits.entrySet());
                 for (List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> subUnit : Lists.partition(list, BATCH_SIZE)) {
                     for (Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>> entry : subUnit) {
                         for (TemporaryLimitAttributes temporaryLimit : entry.getValue()) {
                             values.clear();
                             // In order, from the QueryCatalog.buildInsertTemporaryLimitsQuery SQL query :
-                            // equipmentId, equipmentType, networkUuid, variantNum, side, limitType, name, value, acceptableDuration, fictitious
+                            // equipmentId, equipmentType, networkUuid, variantNum, operationalLimitsGroupId, side, limitType, name, value, acceptableDuration, fictitious
                             values.add(entry.getKey().getEquipmentId());
                             values.add(entry.getKey().getEquipmentType().toString());
                             values.add(entry.getKey().getNetworkUuid());
                             values.add(entry.getKey().getVariantNum());
+                            values.add(temporaryLimit.getOperationalLimitsGroupId());
                             values.add(temporaryLimit.getSide());
                             values.add(temporaryLimit.getLimitType().toString());
                             values.add(temporaryLimit.getName());
                             values.add(temporaryLimit.getValue());
                             values.add(temporaryLimit.getAcceptableDuration());
                             values.add(temporaryLimit.isFictitious());
-                            bindValues(preparedStmt, values);
+                            bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
                         }
                     }
@@ -1712,9 +1831,42 @@ public class NetworkStoreRepository {
         }
     }
 
-    protected <T extends LimitHolder & IdentifiableAttributes> void insertTemporaryLimitsInEquipments(UUID networkUuid, List<Resource<T>> equipments, Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits) {
+    public void insertPermanentLimits(Map<OwnerInfo, LimitsInfos> limitsInfos) {
+        Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits = limitsInfos.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getPermanentLimits()));
+        try (var connection = dataSource.getConnection()) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertPermanentLimitsQuery())) {
+                List<Object> values = new ArrayList<>(8);
+                List<Map.Entry<OwnerInfo, List<PermanentLimitAttributes>>> list = new ArrayList<>(permanentLimits.entrySet());
+                for (List<Map.Entry<OwnerInfo, List<PermanentLimitAttributes>>> subUnit : Lists.partition(list, BATCH_SIZE)) {
+                    for (Map.Entry<OwnerInfo, List<PermanentLimitAttributes>> entry : subUnit) {
+                        for (PermanentLimitAttributes permanentLimit : entry.getValue()) {
+                            values.clear();
+                            // In order, from the QueryCatalog.buildInsertTemporaryLimitsQuery SQL query :
+                            // equipmentId, equipmentType, networkUuid, variantNum, operationalLimitsGroupId, side, limitType, value
+                            values.add(entry.getKey().getEquipmentId());
+                            values.add(entry.getKey().getEquipmentType().toString());
+                            values.add(entry.getKey().getNetworkUuid());
+                            values.add(entry.getKey().getVariantNum());
+                            values.add(permanentLimit.getOperationalLimitsGroupId());
+                            values.add(permanentLimit.getSide());
+                            values.add(permanentLimit.getLimitType().toString());
+                            values.add(permanentLimit.getValue());
+                            bindValues(preparedStmt, values, mapper);
+                            preparedStmt.addBatch();
+                        }
+                    }
+                    preparedStmt.executeBatch();
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
 
-        if (!temporaryLimits.isEmpty() && !equipments.isEmpty()) {
+    protected <T extends LimitHolder & IdentifiableAttributes> void insertLimitsInEquipments(UUID networkUuid, List<Resource<T>> equipments, Map<OwnerInfo, LimitsInfos> limitsInfos) {
+
+        if (!limitsInfos.isEmpty() && !equipments.isEmpty()) {
             for (Resource<T> equipmentAttributesResource : equipments) {
                 OwnerInfo owner = new OwnerInfo(
                     equipmentAttributesResource.getId(),
@@ -1722,10 +1874,13 @@ public class NetworkStoreRepository {
                     networkUuid,
                     equipmentAttributesResource.getVariantNum()
                 );
-                if (temporaryLimits.containsKey(owner)) {
+                if (limitsInfos.containsKey(owner)) {
                     T equipment = equipmentAttributesResource.getAttributes();
-                    for (TemporaryLimitAttributes temporaryLimit : temporaryLimits.get(owner)) {
+                    for (TemporaryLimitAttributes temporaryLimit : limitsInfos.get(owner).getTemporaryLimits()) {
                         insertTemporaryLimitInEquipment(equipment, temporaryLimit);
+                    }
+                    for (PermanentLimitAttributes permanentLimit : limitsInfos.get(owner).getPermanentLimits()) {
+                        insertPermanentLimitInEquipment(equipment, permanentLimit);
                     }
                 }
             }
@@ -1735,22 +1890,52 @@ public class NetworkStoreRepository {
     private <T extends LimitHolder> void insertTemporaryLimitInEquipment(T equipment, TemporaryLimitAttributes temporaryLimit) {
         LimitType type = temporaryLimit.getLimitType();
         int side = temporaryLimit.getSide();
-        if (equipment.getLimits(type, side) == null) {
-            equipment.setLimits(type, side, new LimitsAttributes());
+        String groupId = temporaryLimit.getOperationalLimitsGroupId();
+        if (getLimits(equipment, type, side, groupId) == null) {
+            setLimits(equipment, type, side, new LimitsAttributes(), groupId);
         }
-        if (equipment.getLimits(type, side).getTemporaryLimits() == null) {
-            equipment.getLimits(type, side).setTemporaryLimits(new TreeMap<>());
+        if (getLimits(equipment, type, side, groupId).getTemporaryLimits() == null) {
+            getLimits(equipment, type, side, groupId).setTemporaryLimits(new TreeMap<>());
         }
-        equipment.getLimits(type, side).getTemporaryLimits().put(temporaryLimit.getAcceptableDuration(), temporaryLimit);
+        getLimits(equipment, type, side, groupId).getTemporaryLimits().put(temporaryLimit.getAcceptableDuration(), temporaryLimit);
+    }
+
+    private <T extends LimitHolder> void insertPermanentLimitInEquipment(T equipment, PermanentLimitAttributes permanentLimit) {
+        LimitType type = permanentLimit.getLimitType();
+        int side = permanentLimit.getSide();
+        String groupId = permanentLimit.getOperationalLimitsGroupId();
+        if (getLimits(equipment, type, side, groupId) == null) {
+            setLimits(equipment, type, side, new LimitsAttributes(), groupId);
+        }
+        getLimits(equipment, type, side, groupId).setPermanentLimit(permanentLimit.getValue());
     }
 
     private void deleteTemporaryLimits(UUID networkUuid, int variantNum, String equipmentId) {
         deleteTemporaryLimits(networkUuid, variantNum, List.of(equipmentId));
     }
 
+    private void deletePermanentLimits(UUID networkUuid, int variantNum, String equipmentId) {
+        deletePermanentLimits(networkUuid, variantNum, List.of(equipmentId));
+    }
+
     private void deleteTemporaryLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
+                preparedStmt.setObject(1, networkUuid.toString());
+                preparedStmt.setInt(2, variantNum);
+                for (int i = 0; i < equipmentIds.size(); i++) {
+                    preparedStmt.setString(3 + i, equipmentIds.get(i));
+                }
+                preparedStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private void deletePermanentLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
+        try (var connection = dataSource.getConnection()) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setObject(1, networkUuid.toString());
                 preparedStmt.setInt(2, variantNum);
                 for (int i = 0; i < equipmentIds.size(); i++) {
@@ -1778,6 +1963,21 @@ public class NetworkStoreRepository {
         resourceIdsByVariant.forEach((k, v) -> deleteTemporaryLimits(networkUuid, k, v));
     }
 
+    private <T extends IdentifiableAttributes> void deletePermanentLimits(UUID networkUuid, List<Resource<T>> resources) {
+        Map<Integer, List<String>> resourceIdsByVariant = new HashMap<>();
+        for (Resource<T> resource : resources) {
+            List<String> resourceIds = resourceIdsByVariant.get(resource.getVariantNum());
+            if (resourceIds != null) {
+                resourceIds.add(resource.getId());
+            } else {
+                resourceIds = new ArrayList<>();
+                resourceIds.add(resource.getId());
+            }
+            resourceIdsByVariant.put(resource.getVariantNum(), resourceIds);
+        }
+        resourceIdsByVariant.forEach((k, v) -> deletePermanentLimits(networkUuid, k, v));
+    }
+
     // Reactive Capability Curve Points
 
     public void insertReactiveCapabilityCurvePoints(Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints) {
@@ -1798,7 +1998,7 @@ public class NetworkStoreRepository {
                             values.add(reactiveCapabilityCurvePoint.getMinQ());
                             values.add(reactiveCapabilityCurvePoint.getMaxQ());
                             values.add(reactiveCapabilityCurvePoint.getP());
-                            bindValues(preparedStmt, values);
+                            bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
                         }
                     }
@@ -2109,7 +2309,7 @@ public class NetworkStoreRepository {
                             values.add(tapChangerStep.getG());
                             values.add(tapChangerStep.getB());
                             values.add(tapChangerStep.getAlpha());
-                            bindValues(preparedStmt, values);
+                            bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
                         }
                     }
@@ -2211,5 +2411,64 @@ public class NetworkStoreRepository {
             resourceIdsByVariant.put(resource.getVariantNum(), resourceIds);
         }
         resourceIdsByVariant.forEach((k, v) -> deleteTapChangerSteps(networkUuid, k, v));
+    }
+
+    private static final String EXCEPTION_UNKNOWN_LIMIT_TYPE = "Unknown limit type";
+
+    private void fillLimitsInfosByTypeAndSide(LimitHolder equipment, LimitsInfos result, LimitType type, int side) {
+        Map<String, OperationalLimitsGroupAttributes> operationalLimitsGroups = equipment.getOperationalLimitsGroups(side);
+        if (operationalLimitsGroups != null) {
+            for (Map.Entry<String, OperationalLimitsGroupAttributes> entry : operationalLimitsGroups.entrySet()) {
+                LimitsAttributes limits = getLimits(equipment, type, side, entry.getKey());
+                if (limits != null) {
+                    if (limits.getTemporaryLimits() != null) {
+                        List<TemporaryLimitAttributes> temporaryLimits = new ArrayList<>(
+                                limits.getTemporaryLimits().values());
+                        temporaryLimits.forEach(e -> {
+                            e.setSide(side);
+                            e.setLimitType(type);
+                            e.setOperationalLimitsGroupId(entry.getKey());
+                        });
+                        result.getTemporaryLimits().addAll(temporaryLimits);
+                    }
+                    if (!Double.isNaN(limits.getPermanentLimit())) {
+                        result.getPermanentLimits().add(PermanentLimitAttributes.builder()
+                                .side(side)
+                                .limitType(type)
+                                .value(limits.getPermanentLimit())
+                                .operationalLimitsGroupId(entry.getKey())
+                                .build());
+                    }
+                }
+            }
+        }
+    }
+
+    private LimitsInfos getAllLimitsInfos(LimitHolder equipment) {
+        LimitsInfos result = new LimitsInfos();
+        for (Integer side : equipment.getSideList()) {
+            fillLimitsInfosByTypeAndSide(equipment, result, LimitType.CURRENT, side);
+            fillLimitsInfosByTypeAndSide(equipment, result, LimitType.ACTIVE_POWER, side);
+            fillLimitsInfosByTypeAndSide(equipment, result, LimitType.APPARENT_POWER, side);
+        }
+        return result;
+    }
+
+    private void setLimits(LimitHolder equipment, LimitType type, int side, LimitsAttributes limits, String operationalLimitsGroupId) {
+        switch (type) {
+            case CURRENT -> equipment.setCurrentLimits(side, limits, operationalLimitsGroupId);
+            case APPARENT_POWER -> equipment.setApparentPowerLimits(side, limits, operationalLimitsGroupId);
+            case ACTIVE_POWER -> equipment.setActivePowerLimits(side, limits, operationalLimitsGroupId);
+            default -> throw new IllegalArgumentException(EXCEPTION_UNKNOWN_LIMIT_TYPE);
+        }
+    }
+
+    private LimitsAttributes getLimits(LimitHolder equipment, LimitType type, int side, String operationalLimitsGroupId) {
+        return switch (type) {
+            case CURRENT -> equipment.getCurrentLimits(side, operationalLimitsGroupId);
+            case APPARENT_POWER -> equipment.getApparentPowerLimits(side, operationalLimitsGroupId);
+            case ACTIVE_POWER -> equipment.getActivePowerLimits(side, operationalLimitsGroupId);
+            default -> throw new IllegalArgumentException(EXCEPTION_UNKNOWN_LIMIT_TYPE);
+        };
     }
 }

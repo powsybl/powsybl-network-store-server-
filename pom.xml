@@ -50,7 +50,13 @@
     <properties>
         <sirocco.version>1.0</sirocco.version>
 
-        <powsybl-ws-dependencies.version>2.6.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.9.0</powsybl-ws-dependencies.version>
+
+        <!-- FIXME : to remove when sonar version is updated on github actions -->
+        <!-- https://community.sonarsource.com/t/stackoverflowerror-at-defaultinputcomponent-equals/20324 -->
+        <!-- The versions are very different from this post. But the fix works again. Maybe a similar problem in sonar code -->
+        <!-- The bug was revealed with sonar 3.11.0.3922 on this project. It was working fine with sonar 3.10.0.2594 -->
+        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
 
         <sonar.coverage.jacoco.xmlReportPaths>
             ../network-store-integration-test/target/site/jacoco-aggregate/jacoco.xml,

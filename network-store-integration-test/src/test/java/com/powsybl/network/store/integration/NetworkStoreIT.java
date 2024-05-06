@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.powsybl.cgmes.conformity.CgmesConformity1Catalog;
 import com.powsybl.cgmes.conformity.CgmesConformity1ModifiedCatalog;
+import com.powsybl.cgmes.conversion.CgmesImport;
 import com.powsybl.cgmes.extensions.*;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.datasource.ReadOnlyDataSource;
@@ -17,7 +18,10 @@ import com.powsybl.commons.datasource.ResourceDataSource;
 import com.powsybl.commons.datasource.ResourceSet;
 import com.powsybl.commons.extensions.Extension;
 import com.powsybl.commons.reporter.ReporterModel;
-import com.powsybl.entsoe.util.*;
+import com.powsybl.computation.local.LocalComputationManager;
+import com.powsybl.entsoe.util.EntsoeArea;
+import com.powsybl.entsoe.util.EntsoeAreaImpl;
+import com.powsybl.entsoe.util.EntsoeGeographicalCode;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.extensions.*;
 import com.powsybl.iidm.network.test.*;
@@ -1338,22 +1342,22 @@ public class NetworkStoreIT {
             assertEquals(19, threeWindingsTransformer.getLeg3().getB(), 0.1);
             assertEquals(9, threeWindingsTransformer.getLeg3().getRatedU(), 0.1);
 
-            assertEquals(375, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.ONE).getP(), 0.1);
-            assertEquals(225, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.TWO).getP(), 0.1);
-            assertEquals(200, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.THREE).getP(), 0.1);
+            assertEquals(375, threeWindingsTransformer.getTerminal(ThreeSides.ONE).getP(), 0.1);
+            assertEquals(225, threeWindingsTransformer.getTerminal(ThreeSides.TWO).getP(), 0.1);
+            assertEquals(200, threeWindingsTransformer.getTerminal(ThreeSides.THREE).getP(), 0.1);
 
-            assertEquals(48, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.ONE).getQ(), 0.1);
-            assertEquals(28, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.TWO).getQ(), 0.1);
-            assertEquals(18, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.THREE).getQ(), 0.1);
+            assertEquals(48, threeWindingsTransformer.getTerminal(ThreeSides.ONE).getQ(), 0.1);
+            assertEquals(28, threeWindingsTransformer.getTerminal(ThreeSides.TWO).getQ(), 0.1);
+            assertEquals(18, threeWindingsTransformer.getTerminal(ThreeSides.THREE).getQ(), 0.1);
 
-            assertEquals(1, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.ONE).getNodeBreakerView().getNode());
-            assertEquals(2, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.TWO).getNodeBreakerView().getNode());
-            assertEquals(3, threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.THREE).getNodeBreakerView().getNode());
+            assertEquals(1, threeWindingsTransformer.getTerminal(ThreeSides.ONE).getNodeBreakerView().getNode());
+            assertEquals(2, threeWindingsTransformer.getTerminal(ThreeSides.TWO).getNodeBreakerView().getNode());
+            assertEquals(3, threeWindingsTransformer.getTerminal(ThreeSides.THREE).getNodeBreakerView().getNode());
 
             assertEquals(3, threeWindingsTransformer.getTerminals().size());
-            assertTrue(threeWindingsTransformer.getTerminals().contains(threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.ONE)));
-            assertTrue(threeWindingsTransformer.getTerminals().contains(threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.TWO)));
-            assertTrue(threeWindingsTransformer.getTerminals().contains(threeWindingsTransformer.getTerminal(ThreeWindingsTransformer.Side.THREE)));
+            assertTrue(threeWindingsTransformer.getTerminals().contains(threeWindingsTransformer.getTerminal(ThreeSides.ONE)));
+            assertTrue(threeWindingsTransformer.getTerminals().contains(threeWindingsTransformer.getTerminal(ThreeSides.TWO)));
+            assertTrue(threeWindingsTransformer.getTerminals().contains(threeWindingsTransformer.getTerminal(ThreeSides.THREE)));
 
             PhaseTapChanger phaseTapChanger = threeWindingsTransformer.getLeg1().getPhaseTapChanger();
             assertEqualsPhaseTapChangerStep(phaseTapChanger.getStep(0), -10, 1.5, 0.5, 1., 0.99, 4.);
@@ -1447,15 +1451,15 @@ public class NetworkStoreIT {
             assertEquals(90, twoWindingsTransformer.getRatedU2(), 0.1);
             assertEquals(50, twoWindingsTransformer.getRatedS(), 0.1);
 
-            assertEquals(375, twoWindingsTransformer.getTerminal(TwoWindingsTransformer.Side.ONE).getP(), 0.1);
-            assertEquals(225, twoWindingsTransformer.getTerminal(TwoWindingsTransformer.Side.TWO).getP(), 0.1);
+            assertEquals(375, twoWindingsTransformer.getTerminal(TwoSides.ONE).getP(), 0.1);
+            assertEquals(225, twoWindingsTransformer.getTerminal(TwoSides.TWO).getP(), 0.1);
 
-            assertEquals(48, twoWindingsTransformer.getTerminal(TwoWindingsTransformer.Side.ONE).getQ(), 0.1);
-            assertEquals(28, twoWindingsTransformer.getTerminal(TwoWindingsTransformer.Side.TWO).getQ(), 0.1);
+            assertEquals(48, twoWindingsTransformer.getTerminal(TwoSides.ONE).getQ(), 0.1);
+            assertEquals(28, twoWindingsTransformer.getTerminal(TwoSides.TWO).getQ(), 0.1);
 
             assertEquals(2, twoWindingsTransformer.getTerminals().size());
-            assertTrue(twoWindingsTransformer.getTerminals().contains(twoWindingsTransformer.getTerminal(TwoWindingsTransformer.Side.ONE)));
-            assertTrue(twoWindingsTransformer.getTerminals().contains(twoWindingsTransformer.getTerminal(TwoWindingsTransformer.Side.TWO)));
+            assertTrue(twoWindingsTransformer.getTerminals().contains(twoWindingsTransformer.getTerminal(TwoSides.ONE)));
+            assertTrue(twoWindingsTransformer.getTerminals().contains(twoWindingsTransformer.getTerminal(TwoSides.TWO)));
 
             service.flush(readNetwork);  // flush the network
         }
@@ -2375,8 +2379,8 @@ public class NetworkStoreIT {
             assertEquals(3.5, tieLine2.getDanglingLine2().getG(), ESP);
             assertEquals(5.5, tieLine2.getDanglingLine2().getR(), ESP);
             assertEquals(6.5, tieLine2.getDanglingLine2().getX(), ESP);
-            assertEquals("DL1", tieLine2.getDanglingLine(Branch.Side.ONE).getId());
-            assertEquals("DL2", tieLine2.getDanglingLine(Branch.Side.TWO).getId());
+            assertEquals("DL1", tieLine2.getDanglingLine(TwoSides.ONE).getId());
+            assertEquals("DL2", tieLine2.getDanglingLine(TwoSides.TWO).getId());
 
             Line regularLine = readNetwork.getLine("F_SU1_12 F_SU2_11 2");
 
@@ -2761,17 +2765,17 @@ public class NetworkStoreIT {
                 }
 
                 @Override
-                public void visitLine(Line line, Branch.Side side) {
+                public void visitLine(Line line, TwoSides side) {
                     visitedConnectables.add(line.getId());
                 }
 
                 @Override
-                public void visitTwoWindingsTransformer(TwoWindingsTransformer transformer, Branch.Side side) {
+                public void visitTwoWindingsTransformer(TwoWindingsTransformer transformer, TwoSides side) {
                     visitedConnectables.add(transformer.getId());
                 }
 
                 @Override
-                public void visitThreeWindingsTransformer(ThreeWindingsTransformer transformer, ThreeWindingsTransformer.Side side) {
+                public void visitThreeWindingsTransformer(ThreeWindingsTransformer transformer, ThreeSides side) {
                     visitedConnectables.add(transformer.getId());
                 }
 
@@ -4035,33 +4039,33 @@ public class NetworkStoreIT {
         String filePath = "/BrranchConnectedInOneVLOnlyIssue.uct";
         ReadOnlyDataSource dataSource = getResource(filePath, filePath);
         Network network = new UcteImporter().importData(dataSource, new NetworkFactoryImpl(), null);
-        Set<Branch.Side> visitedLineSides = new HashSet<>();
-        Set<Branch.Side> visited2WTSides = new HashSet<>();
-        Set<ThreeWindingsTransformer.Side> visited3WTSides = new HashSet<>();
+        Set<TwoSides> visitedLineSides = new HashSet<>();
+        Set<TwoSides> visited2WTSides = new HashSet<>();
+        Set<ThreeSides> visited3WTSides = new HashSet<>();
         network.getVoltageLevelStream().findFirst().get().visitEquipments(new DefaultTopologyVisitor() {
             @Override
-            public void visitTwoWindingsTransformer(TwoWindingsTransformer transformer, Branch.Side side) {
+            public void visitTwoWindingsTransformer(TwoWindingsTransformer transformer, TwoSides side) {
                 visited2WTSides.add(side);
             }
 
             @Override
-            public void visitThreeWindingsTransformer(ThreeWindingsTransformer transformer, ThreeWindingsTransformer.Side side) {
+            public void visitThreeWindingsTransformer(ThreeWindingsTransformer transformer, ThreeSides side) {
                 visited3WTSides.add(side);
             }
 
             @Override
-            public void visitLine(Line line, Branch.Side side) {
+            public void visitLine(Line line, TwoSides side) {
                 visitedLineSides.add(side);
             }
         });
 
         assertEquals(2, visitedLineSides.size());
-        assertTrue(visitedLineSides.contains(Branch.Side.ONE));
-        assertTrue(visitedLineSides.contains(Branch.Side.TWO));
+        assertTrue(visitedLineSides.contains(TwoSides.ONE));
+        assertTrue(visitedLineSides.contains(TwoSides.TWO));
 
         assertEquals(2, visited2WTSides.size());
-        assertTrue(visited2WTSides.contains(Branch.Side.ONE));
-        assertTrue(visited2WTSides.contains(Branch.Side.TWO));
+        assertTrue(visited2WTSides.contains(TwoSides.ONE));
+        assertTrue(visited2WTSides.contains(TwoSides.TWO));
 
         assertEquals(0, visited3WTSides.size());
     }
@@ -4553,7 +4557,9 @@ public class NetworkStoreIT {
     public void cgmesControlAreaTieLineTest() {
         try (NetworkStoreService service = createNetworkStoreService()) {
             // import new network in the store
-            service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseAssembled().dataSource());
+            Properties properties = new Properties();
+            properties.put(CgmesImport.IMPORT_CGM_WITH_SUBNETWORKS, "false");
+            service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseAssembled().dataSource(), null, LocalComputationManager.getDefault(), properties);
         }
 
         try (NetworkStoreService service = createNetworkStoreService()) {
@@ -4637,7 +4643,8 @@ public class NetworkStoreIT {
             ReporterModel report = new ReporterModel("test", "test");
 
             service.importNetwork(getResource("test.xiidm", "/"), report);
-            assertTrue(report.getSubReporters().isEmpty());
+            // There are validationWarnings and xiidmImportDone by default with SerDe
+            assertFalse(report.getSubReporters().isEmpty());
 
             service.importNetwork(getResource("uctNetwork.uct", "/"), report);
             assertFalse(report.getSubReporters().isEmpty());

@@ -6,13 +6,14 @@
  */
 package com.powsybl.network.store.server;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.extensions.ConnectablePosition;
 import com.powsybl.network.store.model.*;
 import jakarta.servlet.ServletException;
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,20 +22,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
+import java.time.ZonedDateTime;
+import java.util.*;
 
 import static com.powsybl.network.store.model.NetworkStoreApi.VERSION;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -69,7 +63,9 @@ public class NetworkStoreControllerIT {
 
     @Before
     public void setup() {
-        this.objectMapper.registerModule(new JodaModule());
+        this.objectMapper.registerModule(new JavaTimeModule())
+                .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+                .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
     }
 
     @Test
@@ -89,7 +85,7 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                                              .uuid(NETWORK_UUID)
                                              .variantId("v")
-                                             .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
+                                             .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                                              .build())
                 .build();
         mvc.perform(post("/" + VERSION + "/networks")
@@ -347,7 +343,11 @@ public class NetworkStoreControllerIT {
                 .position1(ConnectablePositionAttributes.builder().label("labPosition1").order(1).direction(ConnectablePosition.Direction.BOTTOM).build())
                 .position2(ConnectablePositionAttributes.builder().label("labPosition2").order(2).direction(ConnectablePosition.Direction.TOP).build())
                 .mergedXnode(MergedXnodeAttributes.builder().rdp(50.).build())
-                .currentLimits1(LimitsAttributes.builder().permanentLimit(20.).build())
+                .selectedOperationalLimitsGroupId1("group1")
+                .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                        .id("group1")
+                        .currentLimits(LimitsAttributes.builder().permanentLimit(20.).temporaryLimits(new TreeMap<>(Map.of(1200, TemporaryLimitAttributes.builder().value(30.).acceptableDuration(1200).build()))).build())
+                        .build()))
                 .build())
             .build();
 
@@ -372,7 +372,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.position2.label").value("labPosition2"))
                 .andExpect(jsonPath("data[0].attributes.position2.direction").value("TOP"))
                 .andExpect(jsonPath("data[0].attributes.mergedXnode.rdp").value(50.0))
-                .andExpect(jsonPath("data[0].attributes.currentLimits1.permanentLimit").value(20.));
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group1\"].currentLimits.permanentLimit").value(20.));
 
         resLine.getAttributes().setP1(100.);  // changing p1 value
         resLine.getAttributes().getProperties().put("property1", "newValue1");  // changing property value
@@ -419,7 +419,11 @@ public class NetworkStoreControllerIT {
                         .position1(null)
                         .position2(null)
                         .mergedXnode(MergedXnodeAttributes.builder().rdp(50.).build())
-                        .currentLimits1(LimitsAttributes.builder().permanentLimit(20.).build())
+                        .selectedOperationalLimitsGroupId1("group1")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
                         .build())
                 .build();
 
@@ -441,7 +445,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.aliasByType[\"aliasDouble\"]").value("valueAliasDouble"))
                 .andExpect(jsonPath("data[0].attributes.aliasesWithoutType").value("alias1"))
                 .andExpect(jsonPath("data[0].attributes.mergedXnode.rdp").value(50.0))
-                .andExpect(jsonPath("data[0].attributes.currentLimits1.permanentLimit").value(20.));
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group1\"].currentLimits.permanentLimit").value(20.));
 
         Resource<LineAttributes> resLine2 = Resource.lineBuilder()
             .id("idLine2")
@@ -472,7 +476,11 @@ public class NetworkStoreControllerIT {
                 .position1(ConnectablePositionAttributes.builder().label("labPosition12").order(4).direction(ConnectablePosition.Direction.BOTTOM).build())
                 .position2(ConnectablePositionAttributes.builder().label("labPosition22").order(9).direction(ConnectablePosition.Direction.TOP).build())
                 .mergedXnode(MergedXnodeAttributes.builder().rdp(80.).build())
-                .currentLimits1(LimitsAttributes.builder().permanentLimit(30.).build())
+                .selectedOperationalLimitsGroupId1("group1")
+                .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                        .id("group1")
+                        .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                        .build()))
                 .build())
             .build();
 
@@ -709,7 +717,11 @@ public class NetworkStoreControllerIT {
                                 .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().minQ(20).maxQ(30).build())
                                 .build())
                         .pairingKey("XN1")
-                        .currentLimits(LimitsAttributes.builder().permanentLimit(5).build())
+                        .selectedOperationalLimitsGroupId("group1")
+                        .operationalLimitsGroups(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
                         .p(100.)
                         .q(200)
                         .build())
@@ -816,7 +828,7 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                         .uuid(NETWORK_UUID)
                         .variantId(VariantManagerConstants.INITIAL_VARIANT_ID)
-                        .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
+                        .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
         mvc.perform(post("/" + VERSION + "/networks")
@@ -856,7 +868,7 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                         .uuid(NETWORK_UUID)
                         .variantId(VariantManagerConstants.INITIAL_VARIANT_ID)
-                        .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
+                        .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
         mvc.perform(post("/" + VERSION + "/networks")
@@ -890,7 +902,7 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                         .uuid(NETWORK_UUID)
                         .variantId("v2")
-                        .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
+                        .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
         mvc.perform(post("/" + VERSION + "/networks")
@@ -905,7 +917,7 @@ public class NetworkStoreControllerIT {
                 .attributes(NetworkAttributes.builder()
                         .uuid(NETWORK_UUID)
                         .variantId("v3")
-                        .caseDate(DateTime.parse("2015-01-01T00:00:00.000Z"))
+                        .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
         mvc.perform(post("/" + VERSION + "/networks")

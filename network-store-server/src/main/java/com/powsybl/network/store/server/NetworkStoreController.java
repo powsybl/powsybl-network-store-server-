@@ -408,6 +408,18 @@ public class NetworkStoreController {
         return getAll(() -> repository.getVoltageLevelDanglingLines(networkId, variantNum, voltageLevelId), null);
     }
 
+    // grounds
+
+    @GetMapping(value = "/{networkId}/{variantNum}/voltage-levels/{voltageLevelId}/grounds", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get grounds connected to voltage level")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get grounds connected to the voltage level"))
+    public ResponseEntity<TopLevelDocument<GroundAttributes>> getVoltageLevelGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                                     @Parameter(description = "Voltage level ID", required = true) @PathVariable("voltageLevelId") String voltageLevelId) {
+        // FIXME: implement
+        return getAll(List::of, null);
+    }
+
     // generator
 
     @PostMapping(value = "/{networkId}/generators")
@@ -1285,6 +1297,60 @@ public class NetworkStoreController {
                                                       @Parameter(description = "dangling line SV resources", required = true) @RequestBody List<Resource<InjectionSvAttributes>> danglingLineResources) {
 
         return updateAll(resources -> repository.updateDanglingLinesSv(networkId, resources), danglingLineResources);
+    }
+
+    // ground
+    @GetMapping(value = "/{networkId}/{variantNum}/grounds", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get dangling lines")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get ground list"))
+    public ResponseEntity<TopLevelDocument<GroundAttributes>> getGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                                     @Parameter(description = "Max number of grounds to get") @RequestParam(required = false) Integer limit) {
+        // FIXME: implement
+        return getAll(List::of, limit);
+    }
+
+    @GetMapping(value = "/{networkId}/{variantNum}/grounds/{groundId}", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get a ground by id")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully get ground"),
+        @ApiResponse(responseCode = "404", description = "Ground has not been found")
+    })
+    public ResponseEntity<TopLevelDocument<GroundAttributes>> getGround(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                                     @Parameter(description = "Ground ID", required = true) @PathVariable("groundId") String groundId) {
+        // FIXME: implement
+        return get(() -> null);
+    }
+
+    @PostMapping(value = "/{networkId}/grounds")
+    @Operation(summary = "Create grounds")
+    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully create grounds"))
+    public ResponseEntity<Void> createGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                    @Parameter(description = "Ground resources", required = true) @RequestBody List<Resource<GroundAttributes>> groundResources) {
+        // FIXME: implement
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping(value = "/{networkId}/grounds")
+    @Operation(summary = "Update grounds")
+    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully update grounds"))
+    public ResponseEntity<Void> updateGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                    @Parameter(description = "Ground resources", required = true) @RequestBody List<Resource<GroundAttributes>> groundResources) {
+        // FIXME: implement
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping(value = "/{networkId}/{variantNum}/grounds/{groundId}", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete a ground by id")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully delete ground")
+    })
+    public ResponseEntity<Void> deleteGround(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                   @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                   @Parameter(description = "Ground ID", required = true) @PathVariable("groundId") String groundId) {
+        // FIXME: implement
+        return ResponseEntity.ok().build();
     }
 
     // buses

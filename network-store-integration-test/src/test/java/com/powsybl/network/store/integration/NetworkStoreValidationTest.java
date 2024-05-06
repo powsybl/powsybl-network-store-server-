@@ -457,7 +457,7 @@ public class NetworkStoreValidationTest {
                 .setRegulating(true)
             .setLoadTapChangingCapabilities(true)
             .add())
-                .getMessage().contains("a target voltage has to be set for a regulating ratio tap changer"));
+                .getMessage().contains("2 windings transformer '2WT': regulation mode of regulating ratio tap changer must be given"));
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newRatioTapChanger()
                 .setTapPosition(1)
                 .beginStep().setR(10).setX(10).setG(10).setB(10).setRho(10).endStep()
@@ -523,7 +523,7 @@ public class NetworkStoreValidationTest {
                 .endStep()
                 .add();
 
-        assertTrue(assertThrows(PowsyblException.class, () -> ratioTapChanger.setTargetV(Double.NaN)).getMessage().contains("a target voltage has to be set for a regulating ratio tap changer"));
+        assertTrue(assertThrows(PowsyblException.class, () -> ratioTapChanger.setTargetV(Double.NaN)).getMessage().contains("2 windings transformer '2WT': a regulation value has to be set for a regulating ratio tap changer"));
         assertTrue(assertThrows(PowsyblException.class, () -> ratioTapChanger.setTargetV(-50).setRegulating(true).setLoadTapChangingCapabilities(true)).getMessage().contains("bad target voltage "));
         assertTrue(assertThrows(PowsyblException.class, () -> ratioTapChanger.setTargetDeadband(Double.NaN)).getMessage().contains("Undefined value for target deadband of regulating"));
         assertTrue(assertThrows(PowsyblException.class, () -> ratioTapChanger.setTapPosition(-1)).getMessage().contains("incorrect tap position "));
