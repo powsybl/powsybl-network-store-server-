@@ -131,7 +131,6 @@ public class Mappings {
     private static final String MINQ = "minQ";
     private static final String MAXQ = "maxQ";
     private static final String TIE_LINE_ID = "tieLineId";
-    private static final String REFERENCE_PRIORITIES = "referencePriorities";
 
     public TableMapping getTableMapping(String table) {
         Objects.requireNonNull(table);
@@ -175,7 +174,6 @@ public class Mappings {
         lineMappings.addColumnMapping("mergedXnode", new ColumnMapping<>(MergedXnodeAttributes.class, LineAttributes::getMergedXnode, LineAttributes::setMergedXnode));
         lineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID1_COLUMN, new ColumnMapping<>(String.class, LineAttributes::getSelectedOperationalLimitsGroupId1, LineAttributes::setSelectedOperationalLimitsGroupId1));
         lineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID2_COLUMN, new ColumnMapping<>(String.class, LineAttributes::getSelectedOperationalLimitsGroupId2, LineAttributes::setSelectedOperationalLimitsGroupId2));
-        lineMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, LineAttributes::getReferencePriorities, LineAttributes::setReferencePriorities));
     }
 
     public TableMapping getLoadMappings() {
@@ -199,7 +197,6 @@ public class Mappings {
         loadMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, LoadAttributes::getAliasesWithoutType, LoadAttributes::setAliasesWithoutType));
         loadMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, LoadAttributes::getPosition, LoadAttributes::setPosition));
         loadMappings.addColumnMapping("loadDetail", new ColumnMapping<>(LoadDetailAttributes.class, LoadAttributes::getLoadDetail, LoadAttributes::setLoadDetail));
-        loadMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, LoadAttributes::getReferencePriorities, LoadAttributes::setReferencePriorities));
     }
 
     public TableMapping getGeneratorMappings() {
@@ -248,7 +245,6 @@ public class Mappings {
         generatorMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, GeneratorAttributes::getAliasesWithoutType, GeneratorAttributes::setAliasesWithoutType));
         generatorMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, GeneratorAttributes::getPosition, GeneratorAttributes::setPosition));
         generatorMappings.addColumnMapping("generatorShortCircuit", new ColumnMapping<>(GeneratorShortCircuitAttributes.class, GeneratorAttributes::getGeneratorShortCircuitAttributes, GeneratorAttributes::setGeneratorShortCircuitAttributes));
-        generatorMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, GeneratorAttributes::getReferencePriorities, GeneratorAttributes::setReferencePriorities));
     }
 
     public TableMapping getSwitchMappings() {
@@ -306,7 +302,6 @@ public class Mappings {
         networkMappings.addColumnMapping("sourceFormat", new ColumnMapping<>(String.class, NetworkAttributes::getSourceFormat, NetworkAttributes::setSourceFormat));
         networkMappings.addColumnMapping("connectedComponentsValid", new ColumnMapping<>(Boolean.class, NetworkAttributes::isConnectedComponentsValid, NetworkAttributes::setConnectedComponentsValid));
         networkMappings.addColumnMapping("synchronousComponentsValid", new ColumnMapping<>(Boolean.class, NetworkAttributes::isSynchronousComponentsValid, NetworkAttributes::setSynchronousComponentsValid));
-        networkMappings.addColumnMapping("cgmesMetadataModels", new ColumnMapping<>(CgmesMetadataModelsAttributes.class, NetworkAttributes::getCgmesMetadataModels, NetworkAttributes::setCgmesMetadataModels));
         networkMappings.addColumnMapping("cimCharacteristics", new ColumnMapping<>(CimCharacteristicsAttributes.class, NetworkAttributes::getCimCharacteristics, NetworkAttributes::setCimCharacteristics));
         networkMappings.addColumnMapping("cgmesControlAreas", new ColumnMapping<>(CgmesControlAreasAttributes.class, NetworkAttributes::getCgmesControlAreas, NetworkAttributes::setCgmesControlAreas));
         networkMappings.addColumnMapping("baseVoltageMapping", new ColumnMapping<>(BaseVoltageMappingAttributes.class, NetworkAttributes::getBaseVoltageMapping, NetworkAttributes::setBaseVoltageMapping));
@@ -376,7 +371,6 @@ public class Mappings {
         batteryMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, BatteryAttributes::getAliasByType, BatteryAttributes::setAliasByType));
         batteryMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, BatteryAttributes::getAliasesWithoutType, BatteryAttributes::setAliasesWithoutType));
         batteryMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, BatteryAttributes::getPosition, BatteryAttributes::setPosition));
-        batteryMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, BatteryAttributes::getReferencePriorities, BatteryAttributes::setReferencePriorities));
     }
 
     public TableMapping getBusbarSectionMappings() {
@@ -392,7 +386,6 @@ public class Mappings {
         busbarSectionMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, BusbarSectionAttributes::getAliasByType, BusbarSectionAttributes::setAliasByType));
         busbarSectionMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, BusbarSectionAttributes::getAliasesWithoutType, BusbarSectionAttributes::setAliasesWithoutType));
         busbarSectionMappings.addColumnMapping(POSITION, new ColumnMapping<>(BusbarSectionPositionAttributes.class, BusbarSectionAttributes::getPosition, BusbarSectionAttributes::setPosition));
-        busbarSectionMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, BusbarSectionAttributes::getReferencePriorities, BusbarSectionAttributes::setReferencePriorities));
     }
 
     public TableMapping getConfiguredBusMappings() {
@@ -437,7 +430,6 @@ public class Mappings {
         danglingLineMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, DanglingLineAttributes::getPosition, DanglingLineAttributes::setPosition));
         danglingLineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID_COLUMN, new ColumnMapping<>(String.class, DanglingLineAttributes::getSelectedOperationalLimitsGroupId, DanglingLineAttributes::setSelectedOperationalLimitsGroupId));
         danglingLineMappings.addColumnMapping(TIE_LINE_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getTieLineId, DanglingLineAttributes::setTieLineId));
-        danglingLineMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, DanglingLineAttributes::getReferencePriorities, DanglingLineAttributes::setReferencePriorities));
     }
 
     private void createTieLineMappings() {
@@ -490,7 +482,6 @@ public class Mappings {
         shuntCompensatorMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, ShuntCompensatorAttributes::getAliasByType, ShuntCompensatorAttributes::setAliasByType));
         shuntCompensatorMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, ShuntCompensatorAttributes::getAliasesWithoutType, ShuntCompensatorAttributes::setAliasesWithoutType));
         shuntCompensatorMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, ShuntCompensatorAttributes::getPosition, ShuntCompensatorAttributes::setPosition));
-        shuntCompensatorMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, ShuntCompensatorAttributes::getReferencePriorities, ShuntCompensatorAttributes::setReferencePriorities));
     }
 
     public TableMapping getVscConverterStationMappings() {
@@ -530,7 +521,6 @@ public class Mappings {
         vscConverterStationMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, VscConverterStationAttributes::getAliasByType, VscConverterStationAttributes::setAliasByType));
         vscConverterStationMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, VscConverterStationAttributes::getAliasesWithoutType, VscConverterStationAttributes::setAliasesWithoutType));
         vscConverterStationMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, VscConverterStationAttributes::getPosition, VscConverterStationAttributes::setPosition));
-        vscConverterStationMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, VscConverterStationAttributes::getReferencePriorities, VscConverterStationAttributes::setReferencePriorities));
     }
 
     public TableMapping getLccConverterStationMappings() {
@@ -552,7 +542,6 @@ public class Mappings {
         lccConverterStationMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, LccConverterStationAttributes::getAliasByType, LccConverterStationAttributes::setAliasByType));
         lccConverterStationMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, LccConverterStationAttributes::getAliasesWithoutType, LccConverterStationAttributes::setAliasesWithoutType));
         lccConverterStationMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, LccConverterStationAttributes::getPosition, LccConverterStationAttributes::setPosition));
-        lccConverterStationMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, LccConverterStationAttributes::getReferencePriorities, LccConverterStationAttributes::setReferencePriorities));
     }
 
     public TableMapping getStaticVarCompensatorMappings() {
@@ -580,7 +569,6 @@ public class Mappings {
         staticVarCompensatorMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, StaticVarCompensatorAttributes::getPosition, StaticVarCompensatorAttributes::setPosition));
         staticVarCompensatorMappings.addColumnMapping("voltagePerReactivePowerControl", new ColumnMapping<>(VoltagePerReactivePowerControlAttributes.class, StaticVarCompensatorAttributes::getVoltagePerReactiveControl, StaticVarCompensatorAttributes::setVoltagePerReactiveControl));
         staticVarCompensatorMappings.addColumnMapping("standbyAutomaton", new ColumnMapping<>(StandbyAutomatonAttributes.class, StaticVarCompensatorAttributes::getStandbyAutomaton, StaticVarCompensatorAttributes::setStandbyAutomaton));
-        staticVarCompensatorMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, StaticVarCompensatorAttributes::getReferencePriorities, StaticVarCompensatorAttributes::setReferencePriorities));
     }
 
     public TableMapping getHvdcLineMappings() {
@@ -810,7 +798,6 @@ public class Mappings {
                 }
                 attributes.getRatioTapChangerAttributes().setRegulationMode(value);
             }));
-        twoWindingsTransformerMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, TwoWindingsTransformerAttributes::getReferencePriorities, TwoWindingsTransformerAttributes::setReferencePriorities));
     }
 
     public TableMapping getThreeWindingsTransformerMappings() {
@@ -1041,7 +1028,6 @@ public class Mappings {
                     attributes.getLeg(i).getRatioTapChangerAttributes().setRegulationMode(value);
                 }));
         });
-        threeWindingsTransformerMappings.addColumnMapping(REFERENCE_PRIORITIES, new ColumnMapping<>(ReferencePrioritiesAttributes.class, ThreeWindingsTransformerAttributes::getReferencePriorities, ThreeWindingsTransformerAttributes::setReferencePriorities));
     }
 
     public Mappings() {

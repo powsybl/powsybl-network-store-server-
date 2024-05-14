@@ -496,12 +496,12 @@ public class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].id").value("idLine"))
             .andExpect(jsonPath("data[0].attributes.p1").value(100.))
             .andExpect(jsonPath("data[0].attributes.properties[\"property1\"]").value("newValue1"))
-            .andExpect(jsonPath("data[1].id").value("idLineWithoutFirstPosition"))
-            .andExpect(jsonPath("data[1].attributes.p1").value(0.))
-            .andExpect(jsonPath("data[1].attributes.properties[\"property1\"]").value("value1"))
-            .andExpect(jsonPath("data[2].id").value("idLine2"))
-            .andExpect(jsonPath("data[2].attributes.p1").value(30.))
-            .andExpect(jsonPath("data[2].attributes.properties[\"property12\"]").value("value12"));
+            .andExpect(jsonPath("data[1].id").value("idLine2"))
+            .andExpect(jsonPath("data[1].attributes.p1").value(30.))
+            .andExpect(jsonPath("data[1].attributes.properties[\"property12\"]").value("value12"))
+            .andExpect(jsonPath("data[2].id").value("idLineWithoutFirstPosition"))
+            .andExpect(jsonPath("data[2].attributes.p1").value(0.))
+            .andExpect(jsonPath("data[2].attributes.properties[\"property1\"]").value("value1"));
 
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl1/lines")
             .contentType(APPLICATION_JSON))
