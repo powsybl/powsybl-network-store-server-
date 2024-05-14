@@ -4,62 +4,62 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
     <changeSet author="lecuyerfra" id="2b86331049277-1">
         <addColumn tableName="line">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-2">
         <addColumn tableName="threewindingstransformer">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-3">
         <addColumn tableName="load">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-4">
         <addColumn tableName="twowindingstransformer">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-5">
         <addColumn tableName="generator">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-6">
         <addColumn tableName="battery">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-7">
         <addColumn tableName="busbarsection">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-8">
         <addColumn tableName="danglingline">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-9">
         <addColumn tableName="shuntcompensator">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-10">
         <addColumn tableName="vscconverterstation">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-11">
         <addColumn tableName="lccconverterstation">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra" id="2b86331049277-12">
         <addColumn tableName="staticvarcompensator">
-            <column name="referencePriorities" type="TEXT"/>
+            <column name="referencepriorities" type="TEXT"/>
         </addColumn>
     </changeSet>
 </databaseChangeLog>
