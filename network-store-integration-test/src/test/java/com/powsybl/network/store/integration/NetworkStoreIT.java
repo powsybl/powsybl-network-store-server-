@@ -5210,4 +5210,34 @@ public class NetworkStoreIT {
             assertEquals(2, twt2.getRatioTapChanger().getHighTapPosition());
         }
     }
+
+    @Test
+    public void testNetworkExtension() {
+        String filePath = "/network_test1_cgmes_metadata_models.xml";
+        ReadOnlyDataSource dataSource = getResource(filePath, filePath);
+
+        try (NetworkStoreService service = createNetworkStoreService()) {
+            // import new network in the store with extension cgmesMetadataModels
+            Network network = service.importNetwork(dataSource);
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService()) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
+            assertEquals(1, networkIds.size());
+
+            // check that the stored network contains the extension cgmesMetadataModels
+            UUID initialNetworkUuid = networkIds.keySet().stream().findFirst().get();
+            Network readNetwork = service.getNetwork(initialNetworkUuid);
+            assertNotNull(readNetwork.getExtensionByName("cgmesMetadataModels"));
+
+            // clone network
+            Network clonedNetwork = service.cloneNetwork(initialNetworkUuid, List.of("InitialState"));
+            UUID clonedNetworkUuid = service.getNetworkUuid(clonedNetwork);
+            Network readClonedNetwork = service.getNetwork(clonedNetworkUuid);
+            assertNotNull(readClonedNetwork.getExtensionByName("cgmesMetadataModels"));
+
+            service.deleteAllNetworks();
+        }
+    }
 }
