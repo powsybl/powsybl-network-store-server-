@@ -1670,7 +1670,7 @@ public class NetworkStoreIT {
                         List.of("dependentOnSsh"), List.of("supersedesSsh"))))
                 .build();
 
-            ((NetworkImpl) readNetwork).getResource().getAttributes().setCgmesMetadataModels(cgmesMetadataModelAttributes);
+            ((NetworkImpl) readNetwork).getResource().getAttributes().getExtensionAttributes().put(CgmesMetadataModels.NAME, cgmesMetadataModelAttributes);
 
             CimCharacteristicsAttributes cimCharacteristicsAttributes = CimCharacteristicsAttributes.builder()
                 .cimVersion(5)
