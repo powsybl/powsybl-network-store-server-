@@ -128,11 +128,14 @@ public class NetworkStoreRepository {
                             bindAttributes(resultSet, columnIndex.getValue(), columnMapping, attributes, mapper);
                             columnIndex.increment();
                         });
-                        return Optional.of(Resource.networkBuilder()
+                        Resource<NetworkAttributes> resource = Resource.networkBuilder()
                                 .id(resultSet.getString(1)) // id is first
                                 .variantNum(variantNum)
                                 .attributes(attributes)
-                                .build());
+                                .build();
+                        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensionAttributes = extensionHandler.getExtensions(uuid, variantNum, EQUIPMENT_ID_COLUMN, resultSet.getString(1));
+                        extensionHandler.insertExtensionsInIdentifiables(uuid, List.of(resource), extensionAttributes);
+                        return Optional.of(resource);
                     }
                 }
                 return Optional.empty();
@@ -208,6 +211,7 @@ public class NetworkStoreRepository {
                 preparedStmt.executeBatch();
             }
         }
+        extensionHandler.insertExtensions(extensionHandler.getExtensionsFromNetworks(resources));
     }
 
     public void updateNetworks(List<Resource<NetworkAttributes>> resources) {
@@ -236,6 +240,7 @@ public class NetworkStoreRepository {
                 }
             }
         });
+        extensionHandler.updateExtensionsFromNetworks(resources);
     }
 
     public void deleteNetwork(UUID uuid) {
@@ -534,7 +539,7 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes> Resource<T> completeResourceInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
         Map<OwnerInfo, Map<String, ExtensionAttributes>> extensionAttributes = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
-        extensionHandler.insertExtensionsInEquipments(networkUuid, List.of((Resource<BatteryAttributes>) resource), extensionAttributes);
+        extensionHandler.insertExtensionsInIdentifiables(networkUuid, List.of(resource), extensionAttributes);
         switch (resource.getType()) {
             case GENERATOR:
                 return completeGeneratorInfos(resource, networkUuid, variantNum, equipmentId);
@@ -637,7 +642,7 @@ public class NetworkStoreRepository {
             throw new UncheckedSqlException(e);
         }
         Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, tableMapping.getResourceType().toString());
-        extensionHandler.insertExtensionsInEquipments(networkUuid, identifiables, extensions);
+        extensionHandler.insertExtensionsInIdentifiables(networkUuid, identifiables, extensions);
         return identifiables;
     }
 
@@ -658,7 +663,7 @@ public class NetworkStoreRepository {
         }
         List<String> equipmentsIds = identifiables.stream().map(Resource::getId).toList();
         Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensionsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
-        extensionHandler.insertExtensionsInEquipments(networkUuid, identifiables, extensions);
+        extensionHandler.insertExtensionsInIdentifiables(networkUuid, identifiables, extensions);
         return identifiables;
     }
 
@@ -695,7 +700,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
-        extensionHandler.updateExtensions(networkUuid, resources);
+        extensionHandler.updateExtensionsFromEquipments(networkUuid, resources);
     }
 
     public void updateInjectionsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources, String tableName) {
@@ -770,7 +775,7 @@ public class NetworkStoreRepository {
                 }
             }
         });
-        extensionHandler.updateExtensions(networkUuid, resources);
+        extensionHandler.updateExtensionsFromEquipments(networkUuid, resources);
     }
 
     public void deleteIdentifiable(UUID networkUuid, int variantNum, String id, String tableName) {
@@ -784,7 +789,7 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
-        extensionHandler.deleteExtensions(networkUuid, variantNum, id);
+        extensionHandler.deleteExtensionsFromIdentifiable(networkUuid, variantNum, id);
     }
 
     // substation

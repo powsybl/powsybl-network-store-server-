@@ -118,7 +118,7 @@ public class ExtensionHandlerTest {
         assertNull(resBatteryB.getAttributes().getExtensionAttributes().get("activePowerControl"));
         assertNull(resBatteryB.getAttributes().getExtensionAttributes().get("operatingStatus"));
 
-        extensionHandler.insertExtensionsInEquipments(NETWORK_UUID, batteries, new HashMap<>());
+        extensionHandler.insertExtensionsInIdentifiables(NETWORK_UUID, batteries, new HashMap<>());
 
         assertEquals(resBatteryA.getAttributes().getExtensionAttributes(), new HashMap<>());
         assertNull(resBatteryA.getAttributes().getExtensionAttributes().get("activePowerControl"));
@@ -127,14 +127,14 @@ public class ExtensionHandlerTest {
         assertNull(resBatteryB.getAttributes().getExtensionAttributes().get("activePowerControl"));
         assertNull(resBatteryB.getAttributes().getExtensionAttributes().get("operatingStatus"));
 
-        extensionHandler.insertExtensionsInEquipments(NETWORK_UUID, batteries, mapA);
+        extensionHandler.insertExtensionsInIdentifiables(NETWORK_UUID, batteries, mapA);
         assertNotNull(resBatteryA.getAttributes().getExtensionAttributes().get("activePowerControl"));
         assertNotNull(resBatteryA.getAttributes().getExtensionAttributes().get("operatingStatus"));
         assertEquals(resBatteryB.getAttributes().getExtensionAttributes(), new HashMap<>());
         assertNull(resBatteryB.getAttributes().getExtensionAttributes().get("activePowerControl"));
         assertNull(resBatteryB.getAttributes().getExtensionAttributes().get("operatingStatus"));
 
-        extensionHandler.insertExtensionsInEquipments(NETWORK_UUID, batteries, mapB);
+        extensionHandler.insertExtensionsInIdentifiables(NETWORK_UUID, batteries, mapB);
         assertNotNull(resBatteryA.getAttributes().getExtensionAttributes().get("activePowerControl"));
         assertNotNull(resBatteryA.getAttributes().getExtensionAttributes().get("operatingStatus"));
         assertNotNull(resBatteryB.getAttributes().getExtensionAttributes().get("activePowerControl"));
@@ -242,17 +242,17 @@ public class ExtensionHandlerTest {
         extensionHandler.insertExtensions(mapA);
         extensionHandler.insertExtensions(mapB);
 
-        extensionHandler.deleteExtensions(NETWORK_UUID, 0, "idBatteryA");
+        extensionHandler.deleteExtensionsFromIdentifiable(NETWORK_UUID, 0, "idBatteryA");
         Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensionsWithInClause(NETWORK_UUID, 0, "equipmentId", List.of("idBatteryA", "idBatteryB"));
         assertEquals(1, extensions.size());
         Resource<BatteryAttributes> batteryB = Resource.batteryBuilder().id("idBatteryB").attributes(new BatteryAttributes()).build();
-        extensionHandler.deleteExtensions(NETWORK_UUID, List.of(batteryB));
+        extensionHandler.deleteExtensionsFromEquipments(NETWORK_UUID, List.of(batteryB));
         extensions = extensionHandler.getExtensionsWithInClause(NETWORK_UUID, 0, "equipmentId", List.of("idBatteryA", "idBatteryB"));
         assertEquals(0, extensions.size());
     }
 
     @Test
-    public void updateExtensionsTest() {
+    public void updateExtensionsFromEquipmentsTest() {
         String equipmentIdA = "idBatteryA";
 
         OwnerInfo infoBatteryA = new OwnerInfo(
@@ -281,7 +281,7 @@ public class ExtensionHandlerTest {
         BatteryAttributes batteryAttributes = new BatteryAttributes();
         batteryAttributes.setExtensionAttributes(extensionAttributesMapA);
         Resource<BatteryAttributes> batteryA = Resource.batteryBuilder().id("idBatteryA").attributes(batteryAttributes).build();
-        extensionHandler.updateExtensions(NETWORK_UUID, List.of(batteryA));
+        extensionHandler.updateExtensionsFromEquipments(NETWORK_UUID, List.of(batteryA));
         extensions = extensionHandler.getExtensions(NETWORK_UUID, 0, "equipmentId", "idBatteryA");
         extensionAttributes = extensions.get(infoBatteryA);
         activePowerControl = (ActivePowerControlAttributes) extensionAttributes.get("activePowerControl");
