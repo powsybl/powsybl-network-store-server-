@@ -174,7 +174,6 @@ public class Mappings {
         lineMappings.addColumnMapping("mergedXnode", new ColumnMapping<>(MergedXnodeAttributes.class, LineAttributes::getMergedXnode, LineAttributes::setMergedXnode));
         lineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID1_COLUMN, new ColumnMapping<>(String.class, LineAttributes::getSelectedOperationalLimitsGroupId1, LineAttributes::setSelectedOperationalLimitsGroupId1));
         lineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID2_COLUMN, new ColumnMapping<>(String.class, LineAttributes::getSelectedOperationalLimitsGroupId2, LineAttributes::setSelectedOperationalLimitsGroupId2));
-
     }
 
     public TableMapping getLoadMappings() {
@@ -303,8 +302,6 @@ public class Mappings {
         networkMappings.addColumnMapping("sourceFormat", new ColumnMapping<>(String.class, NetworkAttributes::getSourceFormat, NetworkAttributes::setSourceFormat));
         networkMappings.addColumnMapping("connectedComponentsValid", new ColumnMapping<>(Boolean.class, NetworkAttributes::isConnectedComponentsValid, NetworkAttributes::setConnectedComponentsValid));
         networkMappings.addColumnMapping("synchronousComponentsValid", new ColumnMapping<>(Boolean.class, NetworkAttributes::isSynchronousComponentsValid, NetworkAttributes::setSynchronousComponentsValid));
-        networkMappings.addColumnMapping("cgmesSvMetadata", new ColumnMapping<>(CgmesSvMetadataAttributes.class, NetworkAttributes::getCgmesSvMetadata, NetworkAttributes::setCgmesSvMetadata));
-        networkMappings.addColumnMapping("cgmesSshMetadata", new ColumnMapping<>(CgmesSshMetadataAttributes.class, NetworkAttributes::getCgmesSshMetadata, NetworkAttributes::setCgmesSshMetadata));
         networkMappings.addColumnMapping("cimCharacteristics", new ColumnMapping<>(CimCharacteristicsAttributes.class, NetworkAttributes::getCimCharacteristics, NetworkAttributes::setCimCharacteristics));
         networkMappings.addColumnMapping("cgmesControlAreas", new ColumnMapping<>(CgmesControlAreasAttributes.class, NetworkAttributes::getCgmesControlAreas, NetworkAttributes::setCgmesControlAreas));
         networkMappings.addColumnMapping("baseVoltageMapping", new ColumnMapping<>(BaseVoltageMappingAttributes.class, NetworkAttributes::getBaseVoltageMapping, NetworkAttributes::setBaseVoltageMapping));
