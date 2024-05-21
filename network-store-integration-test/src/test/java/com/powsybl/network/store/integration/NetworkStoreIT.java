@@ -4568,8 +4568,7 @@ public class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService()) {
             // import new network in the store
             Network network = service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseBE().dataSource());
-            // FIXME to be removed at next powsybl-network-store upgrade
-            // assertNull(network.getExtension(Object.class));
+            assertNull(network.getExtension(Object.class));
             assertNull(network.getExtensionByName(""));
             BaseVoltageMapping baseVoltageMapping = network.getExtension(BaseVoltageMapping.class);
             assertNotNull(baseVoltageMapping);
