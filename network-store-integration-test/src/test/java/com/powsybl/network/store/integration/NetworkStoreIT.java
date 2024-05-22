@@ -4983,7 +4983,7 @@ public class NetworkStoreIT {
             // remove variant "v" and check we have only one variant
             network.getVariantManager().removeVariant("v");
             assertEquals(1, network.getVariantManager().getVariantIds().size());
-            assertEquals(INITIAL_VARIANT_ID, network.getVariantManager().getWorkingVariantId());
+            assertTrue(assertThrows(PowsyblException.class, () -> network.getVariantManager().getWorkingVariantId()).getMessage().contains("Variant index not set"));
 
             // check that we can recreate a new variant with same id "v"
             network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");

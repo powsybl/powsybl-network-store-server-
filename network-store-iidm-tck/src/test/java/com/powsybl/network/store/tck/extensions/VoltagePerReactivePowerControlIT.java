@@ -8,6 +8,7 @@ package com.powsybl.network.store.tck.extensions;
 
 import com.powsybl.iidm.network.tck.extensions.AbstractVoltagePerReactivePowerControlTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -22,5 +23,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
 public class VoltagePerReactivePowerControlIT extends AbstractVoltagePerReactivePowerControlTest {
+
+    @Test
+    public void avoidInvalidTestClassError() { }
 
 }
