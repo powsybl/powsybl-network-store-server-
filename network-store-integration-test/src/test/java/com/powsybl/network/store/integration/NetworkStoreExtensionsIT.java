@@ -415,15 +415,15 @@ public class NetworkStoreExtensionsIT {
         Network network = networkFactory.createNetwork("Extensions network", "test");
 
         Substation s1 = createSubstation(network, "s1", "s1", Country.FR);
-        VoltageLevel v1 = createVoltageLevel(s1, "v1", "v1", TopologyKind.NODE_BREAKER, 380.0, 20);
+        VoltageLevel v1 = createVoltageLevel(s1, "v1", "v1", TopologyKind.NODE_BREAKER, 380.0);
         createBusBarSection(v1, "1.1", "1.1", 0, 1, 1);
         createLoad(v1, "v1load", "v1load", "v1load", 1, ConnectablePosition.Direction.TOP, 2, 0., 0.);
 
-        VoltageLevel v2 = createVoltageLevel(s1, "v2", "v2", TopologyKind.NODE_BREAKER, 225.0, 20);
+        VoltageLevel v2 = createVoltageLevel(s1, "v2", "v2", TopologyKind.NODE_BREAKER, 225.0);
         createBusBarSection(v2, "2.1", "2.1", 0, 1, 1);
 
-        VoltageLevel v3 = createVoltageLevel(s1, "v3", "v3", TopologyKind.NODE_BREAKER, 100.0, 20);
-        createBusBarSection(v2, "3.1", "3.1", 0, 1, 1);
+        VoltageLevel v3 = createVoltageLevel(s1, "v3", "v3", TopologyKind.NODE_BREAKER, 100.0);
+        createBusBarSection(v3, "3.1", "3.1", 0, 1, 1);
 
         TwoWindingsTransformer twt2 = s1.newTwoWindingsTransformer().setId("TWT2")
                 .setName("My two windings transformer").setVoltageLevel1("v1").setVoltageLevel2("v2").setNode1(1)
@@ -687,9 +687,8 @@ public class NetworkStoreExtensionsIT {
             assertNull(vl.getExtension(SlackTerminal.class));
             assertNull(vl.getExtensionByName("slackTerminal"));
             assertTrue(vl.getExtensions().isEmpty());
-            assertThrows(PowsyblException.class, () -> vl.newExtension(SlackTerminalAdder.class)
-                    .withTerminal(null)
-                    .add());
+            SlackTerminalAdder slackTerminalAdder = vl.newExtension(SlackTerminalAdder.class).withTerminal(null);
+            assertThrows(PowsyblException.class, slackTerminalAdder::add);
             assertNull(vl.getExtension(SlackTerminal.class));
             assertNull(vl.getExtensionByName("slackTerminal"));
             assertTrue(vl.getExtensions().isEmpty());
@@ -770,7 +769,6 @@ public class NetworkStoreExtensionsIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Map<UUID, String> networkIds = service.getNetworkIds();
             Network network = service.getNetwork(networkIds.keySet().stream().findFirst().orElseThrow(AssertionError::new));
-            Substation substation = network.getSubstation("SUBSTATION");
             TwoWindingsTransformer twt = network.getTwoWindingsTransformer("NGEN_NHV1");
             assertNotNull(twt.getExtension(TwoWindingsTransformerPhaseAngleClock.class));
             assertNotNull(twt.getExtensionByName("twoWindingsTransformerPhaseAngleClock"));
@@ -895,8 +893,8 @@ public class NetworkStoreExtensionsIT {
 
             LccConverterStation lccConverterStation = readNetwork.getLccConverterStation("LCC2");
 
-            assertThrows(UnsupportedOperationException.class, () -> lccConverterStation.newExtension(ActivePowerControlAdder.class).withParticipate(false).withDroop(1.0f).add())
-                    .getMessage().contains("Cannot set ActivePowerControl");
+            ActivePowerControlAdder activePowerControlAdder = lccConverterStation.newExtension(ActivePowerControlAdder.class).withParticipate(false).withDroop(1.0f);
+            assertThrows(UnsupportedOperationException.class, activePowerControlAdder::add).getMessage().contains("Cannot set ActivePowerControl");
             assertNull(lccConverterStation.getExtension(ActivePowerControl.class));
         }
     }
@@ -920,8 +918,10 @@ public class NetworkStoreExtensionsIT {
 
             Load load = readNetwork.getLoad("load1");
 
-            assertThrows(UnsupportedOperationException.class, () -> load.newExtension(ActivePowerControlAdder.class).withParticipate(false).withDroop(1.0f).add())
-                    .getMessage().contains("Cannot set ActivePowerControl");
+            ActivePowerControlAdder activePowerControlAdder = load.newExtension(ActivePowerControlAdder.class)
+                    .withParticipate(false)
+                    .withDroop(1.0f);
+            assertThrows(UnsupportedOperationException.class, activePowerControlAdder::add).getMessage().contains("Cannot set ActivePowerControl");
             assertNull(load.getExtension(ActivePowerControl.class));
         }
     }

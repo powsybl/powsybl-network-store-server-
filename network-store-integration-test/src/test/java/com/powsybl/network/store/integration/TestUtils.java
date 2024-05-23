@@ -61,7 +61,7 @@ public final class TestUtils {
     }
 
     static VoltageLevel createVoltageLevel(Substation s, String id, String name,
-                                                   TopologyKind topology, double vNom, int nodeCount) {
+                                                   TopologyKind topology, double vNom) {
         VoltageLevel vl = s.newVoltageLevel()
                 .setId(id)
                 .setName(name)
