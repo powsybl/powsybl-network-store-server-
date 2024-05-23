@@ -42,7 +42,7 @@ public final class TestUtils {
         return new NetworkStoreService(restClient, PreloadingStrategy.NONE);
     }
 
-    static String getBaseUrl(int randomServerPort) {
+    private static String getBaseUrl(int randomServerPort) {
         return "http://localhost:" + randomServerPort + "/";
     }
 
