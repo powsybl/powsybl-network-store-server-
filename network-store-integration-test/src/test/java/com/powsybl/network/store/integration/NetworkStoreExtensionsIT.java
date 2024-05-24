@@ -1233,4 +1233,88 @@ public class NetworkStoreExtensionsIT {
             service.deleteAllNetworks();
         }
     }
+
+    @Test
+    public void testBranchObservability() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = BatteryNetworkFactory.create();
+            Line line = network.getLine("NHV1_NHV2_1");
+            line.newExtension(BranchObservabilityAdder.class)
+                .withObservable(true)
+                .withStandardDeviationP1(0.02d)
+                .withStandardDeviationP2(0.04d)
+                .withRedundantP1(true)
+                .withRedundantP2(false)
+                .withStandardDeviationQ1(0.5d)
+                .withStandardDeviationQ2(1.0d)
+                .withRedundantQ1(false)
+                .withRedundantQ2(true)
+                .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            Line line = network.getLine("NHV1_NHV2_1");
+
+            BranchObservability<Line> branchObservability = line.getExtension(BranchObservability.class);
+            assertEquals("branchObservability", branchObservability.getName());
+            assertEquals("NHV1_NHV2_1", branchObservability.getExtendable().getId());
+
+            assertTrue(branchObservability.isObservable());
+            assertEquals(0.02d, branchObservability.getQualityP1().getStandardDeviation(), 0d);
+            assertEquals(0.04d, branchObservability.getQualityP2().getStandardDeviation(), 0d);
+            assertTrue(branchObservability.getQualityP1().isRedundant().isPresent());
+            assertTrue(branchObservability.getQualityP1().isRedundant().get());
+            assertTrue(branchObservability.getQualityP2().isRedundant().isPresent());
+            assertFalse(branchObservability.getQualityP2().isRedundant().get());
+
+            assertEquals(0.5d, branchObservability.getQualityQ1().getStandardDeviation(), 0d);
+            assertEquals(1.0d, branchObservability.getQualityQ2().getStandardDeviation(), 0d);
+            assertTrue(branchObservability.getQualityQ1().isRedundant().isPresent());
+            assertFalse(branchObservability.getQualityQ1().isRedundant().get());
+            assertTrue(branchObservability.getQualityQ2().isRedundant().isPresent());
+            assertTrue(branchObservability.getQualityQ2().isRedundant().get());
+        }
+    }
+
+    @Test
+    public void testInjectionObservability() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = BatteryNetworkFactory.create();
+            Generator generator = network.getGenerator("GEN");
+            generator.newExtension(InjectionObservabilityAdder.class)
+                .withObservable(false)
+                .withStandardDeviationP(0.02d)
+                .withStandardDeviationQ(0.03d)
+                .withStandardDeviationV(0.04d)
+                .withRedundantP(true)
+                .withRedundantQ(false)
+                .withRedundantV(true)
+                .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            Generator generator = network.getGenerator("GEN");
+
+            InjectionObservability<Generator> generatorObservability = generator.getExtension(InjectionObservability.class);
+            assertEquals("injectionObservability", generatorObservability.getName());
+            assertEquals("GEN", generatorObservability.getExtendable().getId());
+
+            assertFalse(generatorObservability.isObservable());
+            assertEquals(0.02d, generatorObservability.getQualityP().getStandardDeviation(), 0d);
+            assertTrue(generatorObservability.getQualityP().isRedundant().isPresent());
+            assertTrue(generatorObservability.getQualityP().isRedundant().get());
+
+            assertEquals(0.03d, generatorObservability.getQualityQ().getStandardDeviation(), 0d);
+            assertTrue(generatorObservability.getQualityQ().isRedundant().isPresent());
+            assertFalse(generatorObservability.getQualityQ().isRedundant().get());
+
+            assertEquals(0.04d, generatorObservability.getQualityV().getStandardDeviation(), 0d);
+            assertTrue(generatorObservability.getQualityV().isRedundant().isPresent());
+            assertTrue(generatorObservability.getQualityV().isRedundant().get());
+        }
+    }
 }
