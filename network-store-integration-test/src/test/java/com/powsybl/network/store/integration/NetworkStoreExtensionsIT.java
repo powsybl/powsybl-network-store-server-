@@ -18,7 +18,10 @@ import com.powsybl.commons.extensions.Extension;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.extensions.*;
-import com.powsybl.iidm.network.test.*;
+import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
+import com.powsybl.iidm.network.test.HvdcTestNetwork;
+import com.powsybl.iidm.network.test.SvcTestCaseFactory;
+import com.powsybl.iidm.network.test.ThreeWindingsTransformerNetworkFactory;
 import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.network.store.iidm.impl.NetworkImpl;
 import com.powsybl.network.store.model.BaseVoltageSourceAttribute;
@@ -1081,8 +1084,7 @@ public class NetworkStoreExtensionsIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             Network network = service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseBE().dataSource());
-            // FIXME to be removed at next powsybl-network-store upgrade
-            // assertNull(network.getExtension(Object.class));
+            assertNull(network.getExtension(Object.class));
             assertNull(network.getExtensionByName(""));
             BaseVoltageMapping baseVoltageMapping = network.getExtension(BaseVoltageMapping.class);
             assertNotNull(baseVoltageMapping);
