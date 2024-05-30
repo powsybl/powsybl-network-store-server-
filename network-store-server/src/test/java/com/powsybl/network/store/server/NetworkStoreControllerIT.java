@@ -807,7 +807,6 @@ public class NetworkStoreControllerIT {
         ground.getAttributes().setP(12);
         ground.getAttributes().setQ(10);
 
-
         mvc.perform(put("/" + VERSION + "/networks/" + NETWORK_UUID + "/grounds")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Collections.singleton(ground))))
