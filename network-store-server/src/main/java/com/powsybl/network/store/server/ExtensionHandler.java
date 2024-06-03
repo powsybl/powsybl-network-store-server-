@@ -9,10 +9,7 @@ package com.powsybl.network.store.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import com.powsybl.network.store.model.ExtensionAttributes;
-import com.powsybl.network.store.model.IdentifiableAttributes;
-import com.powsybl.network.store.model.Resource;
-import com.powsybl.network.store.model.ResourceType;
+import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 import org.springframework.stereotype.Component;
@@ -121,27 +118,7 @@ public class ExtensionHandler {
         }
     }
 
-    public <T extends IdentifiableAttributes> Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
-        Map<OwnerInfo, Map<String, ExtensionAttributes>> map = new HashMap<>();
-
-        if (!resources.isEmpty()) {
-            for (Resource<T> resource : resources) {
-                Map<String, ExtensionAttributes> extensions = resource.getAttributes().getExtensionAttributes();
-                if (extensions != null && !extensions.isEmpty()) {
-                    OwnerInfo info = new OwnerInfo(
-                            resource.getId(),
-                            resource.getType(),
-                            networkUuid,
-                            resource.getVariantNum()
-                    );
-                    map.put(info, extensions);
-                }
-            }
-        }
-        return map;
-    }
-
-    public <T extends IdentifiableAttributes> void insertExtensionsInEquipments(UUID networkUuid, List<Resource<T>> equipments, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
+    public <T extends IdentifiableAttributes> void insertExtensionsInIdentifiables(UUID networkUuid, List<Resource<T>> equipments, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
         if (!extensions.isEmpty() && !equipments.isEmpty()) {
             for (Resource<T> equipmentAttributesResource : equipments) {
                 OwnerInfo owner = new OwnerInfo(
@@ -162,11 +139,11 @@ public class ExtensionHandler {
         }
     }
 
-    public void deleteExtensions(UUID networkUuid, int variantNum, String equipmentId) {
-        deleteExtensions(networkUuid, variantNum, List.of(equipmentId));
+    public void deleteExtensionsFromIdentifiable(UUID networkUuid, int variantNum, String equipmentId) {
+        deleteExtensionsFromIdentifiables(networkUuid, variantNum, List.of(equipmentId));
     }
 
-    public void deleteExtensions(UUID networkUuid, int variantNum, List<String> equipmentIds) {
+    public void deleteExtensionsFromIdentifiables(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setObject(1, networkUuid);
@@ -181,7 +158,37 @@ public class ExtensionHandler {
         }
     }
 
-    public <T extends IdentifiableAttributes> void deleteExtensions(UUID networkUuid, List<Resource<T>> resources) {
+    /**
+     * Extensions do not always exist in the variant and can be added by a
+     * modification for example. Instead of implementing an UPSERT, we delete then insert
+     * the extensions.
+     */
+    public <T extends IdentifiableAttributes> void updateExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
+        deleteExtensionsFromEquipments(networkUuid, resources);
+        insertExtensions(getExtensionsFromEquipments(networkUuid, resources));
+    }
+
+    public <T extends IdentifiableAttributes> Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> map = new HashMap<>();
+
+        if (!resources.isEmpty()) {
+            for (Resource<T> resource : resources) {
+                Map<String, ExtensionAttributes> extensions = resource.getAttributes().getExtensionAttributes();
+                if (extensions != null && !extensions.isEmpty()) {
+                    OwnerInfo info = new OwnerInfo(
+                            resource.getId(),
+                            resource.getType(),
+                            networkUuid,
+                            resource.getVariantNum()
+                    );
+                    map.put(info, extensions);
+                }
+            }
+        }
+        return map;
+    }
+
+    public <T extends IdentifiableAttributes> void deleteExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
         Map<Integer, List<String>> resourceIdsByVariant = new HashMap<>();
         for (Resource<T> resource : resources) {
             List<String> resourceIds = resourceIdsByVariant.get(resource.getVariantNum());
@@ -193,16 +200,37 @@ public class ExtensionHandler {
             }
             resourceIdsByVariant.put(resource.getVariantNum(), resourceIds);
         }
-        resourceIdsByVariant.forEach((k, v) -> deleteExtensions(networkUuid, k, v));
+        resourceIdsByVariant.forEach((k, v) -> deleteExtensionsFromIdentifiables(networkUuid, k, v));
     }
 
-    /**
-     * Extensions do not always exist in the variant and can be added by a
-     * modification for example. Instead of implementing an UPSERT, we delete then insert
-     * the extensions.
-     */
-    public <T extends IdentifiableAttributes> void updateExtensions(UUID networkUuid, List<Resource<T>> resources) {
-        deleteExtensions(networkUuid, resources);
-        insertExtensions(getExtensionsFromEquipments(networkUuid, resources));
+    public void updateExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
+        deleteExtensionsFromNetworks(resources);
+        insertExtensions(getExtensionsFromNetworks(resources));
+    }
+
+    public Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> map = new HashMap<>();
+
+        if (!resources.isEmpty()) {
+            for (Resource<NetworkAttributes> resource : resources) {
+                Map<String, ExtensionAttributes> extensions = resource.getAttributes().getExtensionAttributes();
+                if (extensions != null && !extensions.isEmpty()) {
+                    OwnerInfo info = new OwnerInfo(
+                            resource.getId(),
+                            resource.getType(),
+                            resource.getAttributes().getUuid(),
+                            resource.getVariantNum()
+                    );
+                    map.put(info, extensions);
+                }
+            }
+        }
+        return map;
+    }
+
+    private void deleteExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
+        for (Resource<NetworkAttributes> resource : resources) {
+            deleteExtensionsFromIdentifiable(resource.getAttributes().getUuid(), resource.getVariantNum(), resource.getId());
+        }
     }
 }

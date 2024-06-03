@@ -346,9 +346,8 @@ public class NetworkStoreValidationTest {
                 .newGeneration().setMinP(100).setMaxP(200).setTargetP(500).setVoltageRegulationOn(false).setTargetV(300).add()
                 .add())
                 .getMessage().contains("reactive power setpoint"));
-
         assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.newCurrentLimits().setPermanentLimit(-5).add())
-                .getMessage().contains("permanent limit must be defined and be > 0"));
+                .getMessage().contains("permanent limit must be > 0"));
         assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.newCurrentLimits().setPermanentLimit(10)
                 .beginTemporaryLimit().endTemporaryLimit().add())
                 .getMessage().contains("temporary limit value is not set"));
@@ -378,7 +377,7 @@ public class NetworkStoreValidationTest {
                 .endTemporaryLimit()
                 .add();
 
-        assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.getCurrentLimits().orElseThrow().setPermanentLimit(-50)).getMessage().contains("permanent limit must be defined and be > 0"));
+        assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.getCurrentLimits().orElseThrow().setPermanentLimit(-50)).getMessage().contains("permanent limit must be > 0"));
 
         DanglingLine danglingLine2 = vl1.newDanglingLine().setId("DL2").setNode(2).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1)
                 .newGeneration().setMinP(100).setMaxP(200).setTargetP(500).setVoltageRegulationOn(false).setTargetV(300).setTargetQ(100).add()
