@@ -1314,7 +1314,7 @@ public class NetworkStoreController {
         @ApiResponse(responseCode = "200", description = "Successfully get ground"),
         @ApiResponse(responseCode = "404", description = "Ground has not been found")
     })
-    public ResponseEntity<TopLevelDocument<GroundAttributes>> getGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+    public ResponseEntity<TopLevelDocument<GroundAttributes>> getGround(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                                                      @Parameter(description = "Ground ID", required = true) @PathVariable("groundId") String groundId) {
         return get(() -> repository.getGround(networkId, variantNum, groundId));
