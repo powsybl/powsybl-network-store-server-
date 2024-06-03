@@ -450,14 +450,14 @@ public class Mappings {
     }
 
     private void createGroundMappings() {
-        groundMappings.addColumnMapping("name", new ColumnMapping<>(String.class, GroundAttributes::getName, GroundAttributes::setName));
+        groundMappings.addColumnMapping(NAME_COLUMN, new ColumnMapping<>(String.class, GroundAttributes::getName, GroundAttributes::setName));
         groundMappings.addColumnMapping(VOLTAGE_LEVEL_ID, new ColumnMapping<>(String.class, GroundAttributes::getVoltageLevelId, GroundAttributes::setVoltageLevelId));
-        groundMappings.addColumnMapping("bus", new ColumnMapping<>(String.class, GroundAttributes::getBus, GroundAttributes::setBus));
+        groundMappings.addColumnMapping(BUS, new ColumnMapping<>(String.class, GroundAttributes::getBus, GroundAttributes::setBus));
         groundMappings.addColumnMapping(CONNECTABLE_BUS, new ColumnMapping<>(String.class, GroundAttributes::getConnectableBus, GroundAttributes::setConnectableBus));
         groundMappings.addColumnMapping("p", new ColumnMapping<>(Double.class, GroundAttributes::getP, GroundAttributes::setP));
         groundMappings.addColumnMapping("q", new ColumnMapping<>(Double.class, GroundAttributes::getQ, GroundAttributes::setQ));
         groundMappings.addColumnMapping(FICTITIOUS, new ColumnMapping<>(Boolean.class, GroundAttributes::isFictitious, GroundAttributes::setFictitious));
-        groundMappings.addColumnMapping("node", new ColumnMapping<>(Integer.class, GroundAttributes::getNode, GroundAttributes::setNode));
+        groundMappings.addColumnMapping(NODE, new ColumnMapping<>(Integer.class, GroundAttributes::getNode, GroundAttributes::setNode));
         groundMappings.addColumnMapping(PROPERTIES, new ColumnMapping<>(Map.class, GroundAttributes::getProperties, GroundAttributes::setProperties));
         groundMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, GroundAttributes::getAliasByType, GroundAttributes::setAliasByType));
         groundMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, GroundAttributes::getAliasesWithoutType, GroundAttributes::setAliasesWithoutType));
