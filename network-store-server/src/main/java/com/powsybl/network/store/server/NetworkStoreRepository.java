@@ -1500,6 +1500,32 @@ public class NetworkStoreRepository {
         updateInjectionsSv(networkUuid, resources, DANGLING_LINE_TABLE);
     }
 
+    // Grounds
+
+    public List<Resource<GroundAttributes>> getGrounds(UUID networkUuid, int variantNum) {
+        return getIdentifiables(networkUuid, variantNum, mappings.getGroundMappings());
+    }
+
+    public Optional<Resource<GroundAttributes>> getGround(UUID networkUuid, int variantNum, String groundId) {
+        return getIdentifiable(networkUuid, variantNum, groundId, mappings.getGroundMappings());
+    }
+
+    public void createGrounds(UUID networkUuid, List<Resource<GroundAttributes>> resources) {
+        createIdentifiables(networkUuid, resources, mappings.getGroundMappings());
+    }
+
+    public void deleteGround(UUID networkUuid, int variantNum, String groundId) {
+        deleteIdentifiable(networkUuid, variantNum, groundId, GROUND_TABLE);
+    }
+
+    public void updateGround(UUID networkUuid, List<Resource<GroundAttributes>> resources) {
+        updateIdentifiables(networkUuid, resources, mappings.getGroundMappings());
+    }
+
+    public List<Resource<GroundAttributes>> getVoltageLevelGrounds(UUID networkUuid, int variantNum, String voltageLevelId) {
+        return getIdentifiablesInVoltageLevel(networkUuid, variantNum, voltageLevelId, mappings.getGroundMappings());
+    }
+
     // Tie lines
 
     public List<Resource<TieLineAttributes>> getTieLines(UUID networkUuid, int variantNum) {

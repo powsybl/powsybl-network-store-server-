@@ -52,10 +52,11 @@ public class Mappings {
     static final String LOAD_TABLE = "load";
     static final String LINE_TABLE = "line";
     static final String TIE_LINE_TABLE = "tieLine";
+    static final String GROUND_TABLE = "ground";
 
     static final List<String> ELEMENT_TABLES = List.of(SUBSTATION_TABLE, VOLTAGE_LEVEL_TABLE, BUSBAR_SECTION_TABLE, CONFIGURED_BUS_TABLE, SWITCH_TABLE, GENERATOR_TABLE, BATTERY_TABLE, LOAD_TABLE, SHUNT_COMPENSATOR_TABLE,
             STATIC_VAR_COMPENSATOR_TABLE, VSC_CONVERTER_STATION_TABLE, LCC_CONVERTER_STATION_TABLE, TWO_WINDINGS_TRANSFORMER_TABLE,
-            THREE_WINDINGS_TRANSFORMER_TABLE, LINE_TABLE, HVDC_LINE_TABLE, DANGLING_LINE_TABLE, TIE_LINE_TABLE);
+            THREE_WINDINGS_TRANSFORMER_TABLE, LINE_TABLE, HVDC_LINE_TABLE, DANGLING_LINE_TABLE, TIE_LINE_TABLE, GROUND_TABLE);
 
     private final TableMapping lineMappings = new TableMapping(LINE_TABLE, ResourceType.LINE, Resource::lineBuilder, LineAttributes::new, Set.of(VOLTAGE_LEVEL_ID_1_COLUMN, VOLTAGE_LEVEL_ID_2_COLUMN));
     private final TableMapping loadMappings = new TableMapping(LOAD_TABLE, ResourceType.LOAD, Resource::loadBuilder, LoadAttributes::new, Set.of(VOLTAGE_LEVEL_ID_COLUMN));
@@ -75,6 +76,7 @@ public class Mappings {
     private final TableMapping hvdcLineMappings = new TableMapping(HVDC_LINE_TABLE, ResourceType.HVDC_LINE, Resource::hvdcLineBuilder, HvdcLineAttributes::new, Set.of(VOLTAGE_LEVEL_ID_COLUMN));
     private final TableMapping twoWindingsTransformerMappings = new TableMapping(TWO_WINDINGS_TRANSFORMER_TABLE, ResourceType.TWO_WINDINGS_TRANSFORMER, Resource::twoWindingsTransformerBuilder, TwoWindingsTransformerAttributes::new, Set.of(VOLTAGE_LEVEL_ID_1_COLUMN, VOLTAGE_LEVEL_ID_2_COLUMN));
     private final TableMapping threeWindingsTransformerMappings = new TableMapping(THREE_WINDINGS_TRANSFORMER_TABLE, ResourceType.THREE_WINDINGS_TRANSFORMER, Resource::threeWindingsTransformerBuilder, THREE_WINDINGS_TRANSFORMER_ATTRIBUTES_SUPPLIER, Set.of(VOLTAGE_LEVEL_ID_1_COLUMN, VOLTAGE_LEVEL_ID_2_COLUMN, VOLTAGE_LEVEL_ID_3_COLUMN));
+    private final TableMapping groundMappings = new TableMapping(GROUND_TABLE, ResourceType.GROUND, Resource::groundBuilder, GroundAttributes::new, Set.of(VOLTAGE_LEVEL_ID_COLUMN));
 
     private final TableMapping tieLineMappings = new TableMapping(TIE_LINE_TABLE, ResourceType.TIE_LINE, Resource::tieLineBuilder, TieLineAttributes::new, Collections.emptySet());
     private final List<TableMapping> all = List.of(lineMappings,
@@ -96,7 +98,8 @@ public class Mappings {
                                                    hvdcLineMappings,
                                                    twoWindingsTransformerMappings,
                                                    threeWindingsTransformerMappings,
-                                                   tieLineMappings);
+                                                   tieLineMappings,
+                                                   groundMappings);
 
     private final Map<String, TableMapping> mappingByTable = new LinkedHashMap<>();
 
@@ -433,6 +436,25 @@ public class Mappings {
         danglingLineMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, DanglingLineAttributes::getPosition, DanglingLineAttributes::setPosition));
         danglingLineMappings.addColumnMapping(SELECTED_OPERATIONAL_LIMITS_GROUP_ID_COLUMN, new ColumnMapping<>(String.class, DanglingLineAttributes::getSelectedOperationalLimitsGroupId, DanglingLineAttributes::setSelectedOperationalLimitsGroupId));
         danglingLineMappings.addColumnMapping(TIE_LINE_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getTieLineId, DanglingLineAttributes::setTieLineId));
+    }
+
+    public TableMapping getGroundMappings() {
+        return groundMappings;
+    }
+
+    private void createGroundMappings() {
+        groundMappings.addColumnMapping("name", new ColumnMapping<>(String.class, GroundAttributes::getName, GroundAttributes::setName));
+        groundMappings.addColumnMapping(VOLTAGE_LEVEL_ID, new ColumnMapping<>(String.class, GroundAttributes::getVoltageLevelId, GroundAttributes::setVoltageLevelId));
+        groundMappings.addColumnMapping("bus", new ColumnMapping<>(String.class, GroundAttributes::getBus, GroundAttributes::setBus));
+        groundMappings.addColumnMapping(CONNECTABLE_BUS, new ColumnMapping<>(String.class, GroundAttributes::getConnectableBus, GroundAttributes::setConnectableBus));
+        groundMappings.addColumnMapping("node", new ColumnMapping<>(Integer.class, GroundAttributes::getNode, GroundAttributes::setNode));
+        groundMappings.addColumnMapping("p", new ColumnMapping<>(Double.class, GroundAttributes::getP, GroundAttributes::setP));
+        groundMappings.addColumnMapping("q", new ColumnMapping<>(Double.class, GroundAttributes::getQ, GroundAttributes::setQ));
+        groundMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, GroundAttributes::getPosition, GroundAttributes::setPosition));
+        groundMappings.addColumnMapping(FICTITIOUS, new ColumnMapping<>(Boolean.class, GroundAttributes::isFictitious, GroundAttributes::setFictitious));
+        groundMappings.addColumnMapping(PROPERTIES, new ColumnMapping<>(Map.class, GroundAttributes::getProperties, GroundAttributes::setProperties));
+        groundMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, GroundAttributes::getAliasByType, GroundAttributes::setAliasByType));
+        groundMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, GroundAttributes::getAliasesWithoutType, GroundAttributes::setAliasesWithoutType));
     }
 
     private void createTieLineMappings() {
@@ -1053,6 +1075,7 @@ public class Mappings {
         createTwoWindingsTransformerMappings();
         createThreeWindingsTransformerMappings();
         createTieLineMappings();
+        createGroundMappings();
         for (TableMapping tableMapping : all) {
             mappingByTable.put(tableMapping.getTable().toLowerCase(), tableMapping);
         }

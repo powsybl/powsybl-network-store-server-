@@ -416,8 +416,8 @@ public class NetworkStoreController {
     public ResponseEntity<TopLevelDocument<GroundAttributes>> getVoltageLevelGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                                                      @Parameter(description = "Voltage level ID", required = true) @PathVariable("voltageLevelId") String voltageLevelId) {
-        // FIXME: implement
-        return getAll(List::of, null);
+        return getAll(() -> repository.getVoltageLevelGrounds(networkId, variantNum, voltageLevelId), null);
+
     }
 
     // generator
@@ -1306,8 +1306,7 @@ public class NetworkStoreController {
     public ResponseEntity<TopLevelDocument<GroundAttributes>> getGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                                                      @Parameter(description = "Max number of grounds to get") @RequestParam(required = false) Integer limit) {
-        // FIXME: implement
-        return getAll(List::of, limit);
+        return getAll(() -> repository.getGrounds(networkId, variantNum), limit);
     }
 
     @GetMapping(value = "/{networkId}/{variantNum}/grounds/{groundId}", produces = APPLICATION_JSON_VALUE)
@@ -1319,8 +1318,7 @@ public class NetworkStoreController {
     public ResponseEntity<TopLevelDocument<GroundAttributes>> getGround(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                                                      @Parameter(description = "Ground ID", required = true) @PathVariable("groundId") String groundId) {
-        // FIXME: implement
-        return get(() -> null);
+        return get(() -> repository.getGround(networkId, variantNum, groundId));
     }
 
     @PostMapping(value = "/{networkId}/grounds")
@@ -1328,8 +1326,7 @@ public class NetworkStoreController {
     @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully create grounds"))
     public ResponseEntity<Void> createGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                     @Parameter(description = "Ground resources", required = true) @RequestBody List<Resource<GroundAttributes>> groundResources) {
-        // FIXME: implement
-        return ResponseEntity.ok().build();
+        return createAll(resource -> repository.createGrounds(networkId, resource), groundResources);
     }
 
     @PutMapping(value = "/{networkId}/grounds")
@@ -1337,8 +1334,7 @@ public class NetworkStoreController {
     @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully update grounds"))
     public ResponseEntity<Void> updateGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                     @Parameter(description = "Ground resources", required = true) @RequestBody List<Resource<GroundAttributes>> groundResources) {
-        // FIXME: implement
-        return ResponseEntity.ok().build();
+        return updateAll(resources -> repository.updateGround(networkId, resources), groundResources);
     }
 
     @DeleteMapping(value = "/{networkId}/{variantNum}/grounds/{groundId}", produces = APPLICATION_JSON_VALUE)
@@ -1349,7 +1345,7 @@ public class NetworkStoreController {
     public ResponseEntity<Void> deleteGround(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                    @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                    @Parameter(description = "Ground ID", required = true) @PathVariable("groundId") String groundId) {
-        // FIXME: implement
+        repository.deleteGround(networkId, variantNum, groundId);
         return ResponseEntity.ok().build();
     }
 
