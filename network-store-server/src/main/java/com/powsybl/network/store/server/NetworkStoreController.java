@@ -1348,6 +1348,15 @@ public class NetworkStoreController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping(value = "/{networkId}/grounds/sv")
+    @Operation(summary = "Update grounds SV")
+    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully update grounds SV"))
+    public ResponseEntity<Void> updatesGroundsSv(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                      @Parameter(description = "ground SV resources", required = true) @RequestBody List<Resource<InjectionSvAttributes>> groundResources) {
+
+        return updateAll(resources -> repository.updateGroundsSv(networkId, resources), groundResources);
+    }
+
     // buses
 
     @PostMapping(value = "/{networkId}/configured-buses")

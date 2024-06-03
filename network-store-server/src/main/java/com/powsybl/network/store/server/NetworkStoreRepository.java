@@ -1484,6 +1484,10 @@ public class NetworkStoreRepository {
         updateIdentifiables(networkUuid, resources, mappings.getGroundMappings(), VOLTAGE_LEVEL_ID_COLUMN);
     }
 
+    public void updateGroundsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
+        updateInjectionsSv(networkUuid, resources, GROUND_TABLE);
+    }
+
     public void deleteGround(UUID networkUuid, int variantNum, String groundId) {
         deleteIdentifiable(networkUuid, variantNum, groundId, GROUND_TABLE);
     }
