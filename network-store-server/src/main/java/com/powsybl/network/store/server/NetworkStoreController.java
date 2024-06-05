@@ -1300,7 +1300,7 @@ public class NetworkStoreController {
 
     // ground
     @GetMapping(value = "/{networkId}/{variantNum}/grounds", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Get dangling lines")
+    @Operation(summary = "Get grounds")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get ground list"))
     public ResponseEntity<TopLevelDocument<GroundAttributes>> getGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1346,15 +1346,6 @@ public class NetworkStoreController {
                                                    @Parameter(description = "Ground ID", required = true) @PathVariable("groundId") String groundId) {
         repository.deleteGround(networkId, variantNum, groundId);
         return ResponseEntity.ok().build();
-    }
-
-    @PutMapping(value = "/{networkId}/grounds/sv")
-    @Operation(summary = "Update grounds SV")
-    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully update grounds SV"))
-    public ResponseEntity<Void> updatesGroundsSv(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                      @Parameter(description = "ground SV resources", required = true) @RequestBody List<Resource<InjectionSvAttributes>> groundResources) {
-
-        return updateAll(resources -> repository.updateGroundsSv(networkId, resources), groundResources);
     }
 
     // buses
