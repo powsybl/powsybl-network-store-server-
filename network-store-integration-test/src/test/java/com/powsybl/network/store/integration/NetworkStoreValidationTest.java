@@ -175,11 +175,13 @@ public class NetworkStoreValidationTest {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
-
-        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newGround().add()).getMessage().contains("Ground id is not set"));
-        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newGround().setId("G1").setBus("b1").setConnectableBus("B1").add())
+        var ground = vl1.newGround();
+        assertTrue(assertThrows(PowsyblException.class, ground::add).getMessage().contains("Ground id is not set"));
+        var ground1 = vl1.newGround().setId("G1").setBus("b1").setConnectableBus("B1");
+        assertTrue(assertThrows(PowsyblException.class, ground1::add)
                 .getMessage().contains("connection bus is different to connectable bus"));
-        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newGround().setId("G1").setNode(1).setConnectableBus("B1").add())
+        var ground2 = vl1.newGround().setId("G1").setNode(1).setConnectableBus("B1");
+        assertTrue(assertThrows(PowsyblException.class, ground2::add)
                 .getMessage().contains("connection node and connection bus are exclusives"));
     }
 
