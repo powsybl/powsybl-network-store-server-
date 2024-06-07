@@ -18,7 +18,10 @@ import com.powsybl.commons.extensions.Extension;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.extensions.*;
-import com.powsybl.iidm.network.test.*;
+import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
+import com.powsybl.iidm.network.test.HvdcTestNetwork;
+import com.powsybl.iidm.network.test.SvcTestCaseFactory;
+import com.powsybl.iidm.network.test.ThreeWindingsTransformerNetworkFactory;
 import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.network.store.iidm.impl.NetworkImpl;
 import com.powsybl.network.store.model.BaseVoltageSourceAttribute;
@@ -1081,8 +1084,7 @@ public class NetworkStoreExtensionsIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             Network network = service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseBE().dataSource());
-            // FIXME to be removed at next powsybl-network-store upgrade
-            // assertNull(network.getExtension(Object.class));
+            assertNull(network.getExtension(Object.class));
             assertNull(network.getExtensionByName(""));
             BaseVoltageMapping baseVoltageMapping = network.getExtension(BaseVoltageMapping.class);
             assertNotNull(baseVoltageMapping);
@@ -1201,6 +1203,59 @@ public class NetworkStoreExtensionsIT {
             assertEquals(115.5, ext.getTargetQ(), 0.0);
             assertTrue(ext.isEnabled());
             assertSame(readNetwork.getTwoWindingsTransformer("a708c3bc-465d-4fe7-b6ef-6fa6408a62b0").getTerminal2(), ext.getRegulatingTerminal());
+        }
+    }
+
+    @Test
+    public void testSubstationPosition() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            Substation substation = network.getSubstation("P1");
+            substation.newExtension(SubstationPositionAdder.class).withCoordinate(new Coordinate(48.0D, 2.0D)).add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            assertEquals(1, service.getNetworkIds().size());
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            SubstationPosition substationPosition = network.getSubstation("P1").getExtension(SubstationPosition.class);
+            assertNotNull(substationPosition);
+            assertEquals(new Coordinate(48.0D, 2.0D), substationPosition.getCoordinate());
+        }
+    }
+
+    @Test
+    public void testLinePosition() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            Line line = network.getLine("NHV1_NHV2_1");
+            DanglingLine danglingLine = network.getVoltageLevel("VLGEN").newDanglingLine().setId("D_LINE")
+                    .setB(33.4)
+                    .setP0(66.9)
+                    .setQ0(55.0)
+                    .setR(7.0)
+                    .setG(34.5)
+                    .setX(23.7)
+                    .setConnectableBus("NGEN")
+                    .add();
+
+            line.newExtension(LinePositionAdder.class).withCoordinates(List.of(new Coordinate(48.0D, 2.0D), new Coordinate(46.5D, 3.0D))).add();
+            danglingLine.newExtension(LinePositionAdder.class).withCoordinates(List.of(new Coordinate(49.5D, 1.5D), new Coordinate(40.5D, 3.5D))).add();
+            assertThrows(PowsyblException.class, () -> network.getVoltageLevel("VLGEN").newExtension(LinePositionAdder.class).withCoordinates(List.of(new Coordinate(48.0D, 2.0D), new Coordinate(46.5D, 3.0D))).add());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            assertEquals(1, service.getNetworkIds().size());
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+
+            LinePosition<Line> linePosition = network.getLine("NHV1_NHV2_1").getExtension(LinePosition.class);
+            assertNotNull(linePosition);
+            assertEquals(List.of(new Coordinate(48.0D, 2.0D), new Coordinate(46.5D, 3.0D)), linePosition.getCoordinates());
+
+            LinePosition<DanglingLine> danglingLinePosition = network.getDanglingLine("D_LINE").getExtension(LinePosition.class);
+            assertNotNull(danglingLinePosition);
+            assertEquals(List.of(new Coordinate(49.5D, 1.5D), new Coordinate(40.5D, 3.5D)), danglingLinePosition.getCoordinates());
         }
     }
 
