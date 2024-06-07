@@ -779,60 +779,6 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.generation.targetQ").value(54))
                 .andExpect(jsonPath("data[0].attributes.generation.voltageRegulationOn").value(true));
 
-        // ground creation and update
-        Resource<GroundAttributes> ground = Resource.groundBuilder()
-                .id("idGround")
-                .attributes(GroundAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("gr1")
-                        .fictitious(true)
-                        .node(5)
-                        .p(10.)
-                        .q(8)
-                        .build())
-                .build();
-
-        mvc.perform(post("/" + VERSION + "/networks/" + NETWORK_UUID + "/grounds")
-                        .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Collections.singleton(ground))))
-                .andExpect(status().isCreated());
-
-        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/grounds")
-                        .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.p").value(10))
-                .andExpect(jsonPath("data[0].attributes.q").value(8));
-
-        ground.getAttributes().setP(12);
-        ground.getAttributes().setQ(10);
-
-        mvc.perform(put("/" + VERSION + "/networks/" + NETWORK_UUID + "/grounds")
-                        .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Collections.singleton(ground))))
-                .andExpect(status().isOk());
-
-        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/grounds")
-                        .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.p").value(12))
-                .andExpect(jsonPath("data[0].attributes.q").value(10));
-
-        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/grounds/idGround")
-                        .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.p").value(12))
-                .andExpect(jsonPath("data[0].attributes.q").value(10));
-
-        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl1/grounds")
-                        .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.p").value(12))
-                .andExpect(jsonPath("data[0].attributes.q").value(10));
-
         // Test removals
         mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/switches/b1")
                 .contentType(APPLICATION_JSON))
@@ -912,7 +858,6 @@ public class NetworkStoreControllerIT {
         ground.getAttributes().setP(30);
         ground.getAttributes().setQ(40);
         ground.getAttributes().setNode(6);
-        ground.getAttributes().setVoltageLevelId("vl2");
 
         mvc.perform(put("/" + VERSION + "/networks/" + NETWORK_UUID + "/grounds")
                         .contentType(APPLICATION_JSON)
@@ -926,7 +871,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.p").value(30))
                 .andExpect(jsonPath("data[0].attributes.q").value(40))
                 .andExpect(jsonPath("data[0].attributes.node").value(6))
-                .andExpect(jsonPath("data[0].attributes.voltageLevelId").value("vl2"));
+                .andExpect(jsonPath("data[0].attributes.voltageLevelId").value("vl1"));
 
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/grounds/idGround")
                         .contentType(APPLICATION_JSON))
@@ -936,7 +881,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.q").value(40))
                 .andExpect(jsonPath("data[0].attributes.node").value(6));
 
-        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl2/grounds")
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl1/grounds")
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))

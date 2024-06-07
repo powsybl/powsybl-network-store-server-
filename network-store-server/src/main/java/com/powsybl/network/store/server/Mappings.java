@@ -435,25 +435,6 @@ public class Mappings {
         danglingLineMappings.addColumnMapping(TIE_LINE_ID, new ColumnMapping<>(String.class, DanglingLineAttributes::getTieLineId, DanglingLineAttributes::setTieLineId));
     }
 
-    public TableMapping getGroundMappings() {
-        return groundMappings;
-    }
-
-    private void createGroundMappings() {
-        groundMappings.addColumnMapping("name", new ColumnMapping<>(String.class, GroundAttributes::getName, GroundAttributes::setName));
-        groundMappings.addColumnMapping(VOLTAGE_LEVEL_ID, new ColumnMapping<>(String.class, GroundAttributes::getVoltageLevelId, GroundAttributes::setVoltageLevelId));
-        groundMappings.addColumnMapping("bus", new ColumnMapping<>(String.class, GroundAttributes::getBus, GroundAttributes::setBus));
-        groundMappings.addColumnMapping(CONNECTABLE_BUS, new ColumnMapping<>(String.class, GroundAttributes::getConnectableBus, GroundAttributes::setConnectableBus));
-        groundMappings.addColumnMapping("node", new ColumnMapping<>(Integer.class, GroundAttributes::getNode, GroundAttributes::setNode));
-        groundMappings.addColumnMapping("p", new ColumnMapping<>(Double.class, GroundAttributes::getP, GroundAttributes::setP));
-        groundMappings.addColumnMapping("q", new ColumnMapping<>(Double.class, GroundAttributes::getQ, GroundAttributes::setQ));
-        groundMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, GroundAttributes::getPosition, GroundAttributes::setPosition));
-        groundMappings.addColumnMapping(FICTITIOUS, new ColumnMapping<>(Boolean.class, GroundAttributes::isFictitious, GroundAttributes::setFictitious));
-        groundMappings.addColumnMapping(PROPERTIES, new ColumnMapping<>(Map.class, GroundAttributes::getProperties, GroundAttributes::setProperties));
-        groundMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, GroundAttributes::getAliasByType, GroundAttributes::setAliasByType));
-        groundMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, GroundAttributes::getAliasesWithoutType, GroundAttributes::setAliasesWithoutType));
-    }
-
     private void createTieLineMappings() {
         tieLineMappings.addColumnMapping("name", new ColumnMapping<>(String.class, TieLineAttributes::getName, TieLineAttributes::setName));
         tieLineMappings.addColumnMapping("danglingLine1Id", new ColumnMapping<>(String.class, TieLineAttributes::getDanglingLine1Id, TieLineAttributes::setDanglingLine1Id));

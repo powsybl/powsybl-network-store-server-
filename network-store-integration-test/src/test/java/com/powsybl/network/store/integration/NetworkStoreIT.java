@@ -3839,6 +3839,7 @@ public class NetworkStoreIT {
             network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
             assertEquals(2, network.getVariantManager().getVariantIds().size());
             network.getVariantManager().setWorkingVariant("v");
+            assertEquals("v", network.getVariantManager().getWorkingVariantId());
 
             // remove variant "v" and check we have only one variant
             network.getVariantManager().removeVariant("v");
