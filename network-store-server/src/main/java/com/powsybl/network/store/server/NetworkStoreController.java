@@ -417,7 +417,6 @@ public class NetworkStoreController {
                                                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                                                      @Parameter(description = "Voltage level ID", required = true) @PathVariable("voltageLevelId") String voltageLevelId) {
         return getAll(() -> repository.getVoltageLevelGrounds(networkId, variantNum, voltageLevelId), null);
-
     }
 
     // generator
@@ -1301,7 +1300,7 @@ public class NetworkStoreController {
 
     // ground
     @GetMapping(value = "/{networkId}/{variantNum}/grounds", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Get dangling lines")
+    @Operation(summary = "Get grounds")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get ground list"))
     public ResponseEntity<TopLevelDocument<GroundAttributes>> getGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
@@ -1334,7 +1333,7 @@ public class NetworkStoreController {
     @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully update grounds"))
     public ResponseEntity<Void> updateGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                     @Parameter(description = "Ground resources", required = true) @RequestBody List<Resource<GroundAttributes>> groundResources) {
-        return updateAll(resources -> repository.updateGround(networkId, resources), groundResources);
+        return updateAll(resources -> repository.updateGrounds(networkId, resources), groundResources);
     }
 
     @DeleteMapping(value = "/{networkId}/{variantNum}/grounds/{groundId}", produces = APPLICATION_JSON_VALUE)

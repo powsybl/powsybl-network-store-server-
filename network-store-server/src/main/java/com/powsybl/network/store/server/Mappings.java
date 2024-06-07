@@ -76,9 +76,9 @@ public class Mappings {
     private final TableMapping hvdcLineMappings = new TableMapping(HVDC_LINE_TABLE, ResourceType.HVDC_LINE, Resource::hvdcLineBuilder, HvdcLineAttributes::new, Set.of(VOLTAGE_LEVEL_ID_COLUMN));
     private final TableMapping twoWindingsTransformerMappings = new TableMapping(TWO_WINDINGS_TRANSFORMER_TABLE, ResourceType.TWO_WINDINGS_TRANSFORMER, Resource::twoWindingsTransformerBuilder, TwoWindingsTransformerAttributes::new, Set.of(VOLTAGE_LEVEL_ID_1_COLUMN, VOLTAGE_LEVEL_ID_2_COLUMN));
     private final TableMapping threeWindingsTransformerMappings = new TableMapping(THREE_WINDINGS_TRANSFORMER_TABLE, ResourceType.THREE_WINDINGS_TRANSFORMER, Resource::threeWindingsTransformerBuilder, THREE_WINDINGS_TRANSFORMER_ATTRIBUTES_SUPPLIER, Set.of(VOLTAGE_LEVEL_ID_1_COLUMN, VOLTAGE_LEVEL_ID_2_COLUMN, VOLTAGE_LEVEL_ID_3_COLUMN));
+    private final TableMapping tieLineMappings = new TableMapping(TIE_LINE_TABLE, ResourceType.TIE_LINE, Resource::tieLineBuilder, TieLineAttributes::new, Collections.emptySet());
     private final TableMapping groundMappings = new TableMapping(GROUND_TABLE, ResourceType.GROUND, Resource::groundBuilder, GroundAttributes::new, Set.of(VOLTAGE_LEVEL_ID_COLUMN));
 
-    private final TableMapping tieLineMappings = new TableMapping(TIE_LINE_TABLE, ResourceType.TIE_LINE, Resource::tieLineBuilder, TieLineAttributes::new, Collections.emptySet());
     private final List<TableMapping> all = List.of(lineMappings,
                                                    loadMappings,
                                                    generatorMappings,
@@ -462,6 +462,25 @@ public class Mappings {
         tieLineMappings.addColumnMapping(PROPERTIES, new ColumnMapping<>(Map.class, TieLineAttributes::getProperties, TieLineAttributes::setProperties));
         tieLineMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, TieLineAttributes::getAliasByType, TieLineAttributes::setAliasByType));
         tieLineMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, TieLineAttributes::getAliasesWithoutType, TieLineAttributes::setAliasesWithoutType));
+    }
+
+    public TableMapping getGroundMappings() {
+        return groundMappings;
+    }
+
+    private void createGroundMappings() {
+        groundMappings.addColumnMapping(NAME_COLUMN, new ColumnMapping<>(String.class, GroundAttributes::getName, GroundAttributes::setName));
+        groundMappings.addColumnMapping(VOLTAGE_LEVEL_ID, new ColumnMapping<>(String.class, GroundAttributes::getVoltageLevelId, GroundAttributes::setVoltageLevelId));
+        groundMappings.addColumnMapping(BUS, new ColumnMapping<>(String.class, GroundAttributes::getBus, GroundAttributes::setBus));
+        groundMappings.addColumnMapping(CONNECTABLE_BUS, new ColumnMapping<>(String.class, GroundAttributes::getConnectableBus, GroundAttributes::setConnectableBus));
+        groundMappings.addColumnMapping("p", new ColumnMapping<>(Double.class, GroundAttributes::getP, GroundAttributes::setP));
+        groundMappings.addColumnMapping("q", new ColumnMapping<>(Double.class, GroundAttributes::getQ, GroundAttributes::setQ));
+        groundMappings.addColumnMapping(FICTITIOUS, new ColumnMapping<>(Boolean.class, GroundAttributes::isFictitious, GroundAttributes::setFictitious));
+        groundMappings.addColumnMapping(NODE, new ColumnMapping<>(Integer.class, GroundAttributes::getNode, GroundAttributes::setNode));
+        groundMappings.addColumnMapping(PROPERTIES, new ColumnMapping<>(Map.class, GroundAttributes::getProperties, GroundAttributes::setProperties));
+        groundMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, GroundAttributes::getAliasByType, GroundAttributes::setAliasByType));
+        groundMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, GroundAttributes::getAliasesWithoutType, GroundAttributes::setAliasesWithoutType));
+        groundMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, GroundAttributes::getPosition, GroundAttributes::setPosition));
     }
 
     public TableMapping getTieLineMappings() {
