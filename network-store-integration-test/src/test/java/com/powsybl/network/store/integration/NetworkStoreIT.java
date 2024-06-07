@@ -1162,6 +1162,40 @@ public class NetworkStoreIT {
     }
 
     @Test
+    public void groundTest() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.createNetwork("test", "test");
+
+            NetworkListener mockedListener = mock(DefaultNetworkListener.class);
+            // Add observer changes to current network
+            network.addListener(mockedListener);
+
+            Substation s1 = network.newSubstation()
+                    .setId("S1")
+                    .add();
+            VoltageLevel vl1 = s1.newVoltageLevel()
+                    .setId("vl1")
+                    .setNominalV(400)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
+            vl1.getBusBreakerView().newBus()
+                    .setId("b1")
+                    .add();
+            Ground ground = vl1.newGround()
+                    .setId("ground")
+                    .setFictitious(true)
+                    .setConnectableBus("b1")
+                    .setBus("b1")
+                    .add();
+
+            verify(mockedListener, times(1)).onCreation(ground);
+            assertTrue(ground.isFictitious());
+            ground.setFictitious(false);
+            assertFalse(ground.isFictitious());
+        }
+    }
+
+    @Test
     public void hvdcLineTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
