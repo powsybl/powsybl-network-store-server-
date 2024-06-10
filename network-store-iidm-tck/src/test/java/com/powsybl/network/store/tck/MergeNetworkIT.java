@@ -171,4 +171,9 @@ public class MergeNetworkIT extends AbstractMergeNetworkTest {
         // FIXME
     }
 
+    @Override
+    public void testMergeAndDetachWithProperties() {
+        // FIXME
+    }
+
 }

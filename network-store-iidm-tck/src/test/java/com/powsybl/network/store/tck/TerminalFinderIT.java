@@ -27,12 +27,12 @@ public class TerminalFinderIT extends AbstractTerminalFinderTest {
     @Override
     @Test
     public void testLineTerminal1() {
-        // FIXME
+        // FIXME remove this when we fix order differences on getConnectedTerminals
     }
 
     @Override
     @Test
     public void testLineTerminal2() {
-        // FIXME
+        // FIXME remove this when we fix order differences on getConnectedTerminals
     }
 }

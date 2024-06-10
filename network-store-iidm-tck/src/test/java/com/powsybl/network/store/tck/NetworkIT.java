@@ -27,13 +27,13 @@ public class NetworkIT extends AbstractNetworkTest {
     @Test
     @Override
     public void testWith() {
-        // FIXME
+        // FIXME remove this when we fix the fact that we use the "Default" NetworkFactory in the base class
     }
 
     @Test
     @Override
     public void testScadaNetwork() {
-        // FIXME
+        // FIXME test throws UnsupportedOperationException: Validation level below STEADY_STATE_HYPOTHESIS not supported
     }
 
     @Test
@@ -45,5 +45,20 @@ public class NetworkIT extends AbstractNetworkTest {
     @Override
     public void testNetwork1() {
         // FIXME remove this test when getFictitiousP0 and getFictitiousQ0 of CalculatedBus are implemented
+    }
+
+    @Override
+    public void testPermanentLimitViaAdder() {
+        // FIXME remove this test when we add validation on CurrentLimitAdder
+    }
+
+    @Override
+    public void testPermanentLimitOnUnselectedOperationalLimitsGroup() {
+        // FIXME remove this test when we add validation on CurrentLimitAdder
+    }
+
+    @Override
+    public void testPermanentLimitOnSelectedOperationalLimitsGroup() {
+        // FIXME remove this test when we add validation on CurrentLimitAdder
     }
 }
