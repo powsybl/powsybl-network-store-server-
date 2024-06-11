@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractActivePowerLimitsTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -22,9 +21,6 @@ import org.springframework.test.context.junit4.SpringRunner;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
 })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class ActivePowerLimitsIT extends AbstractActivePowerLimitsTest {
-
-    @Test
-    public void avoidInvalidTestClassError() { }
+class ActivePowerLimitsIT extends AbstractActivePowerLimitsTest {
 
 }

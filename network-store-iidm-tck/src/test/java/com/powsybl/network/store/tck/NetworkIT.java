@@ -22,7 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
     })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class NetworkIT extends AbstractNetworkTest {
+class NetworkIT extends AbstractNetworkTest {
 
     @Test
     @Override
@@ -42,21 +42,25 @@ public class NetworkIT extends AbstractNetworkTest {
         // FIXME remove this test when we use the release containing this PR : https://github.com/powsybl/powsybl-core/pull/3020
     }
 
+    @Test
     @Override
     public void testNetwork1() {
         // FIXME remove this test when getFictitiousP0 and getFictitiousQ0 of CalculatedBus are implemented
     }
 
+    @Test
     @Override
     public void testPermanentLimitViaAdder() {
         // FIXME remove this test when we add validation on CurrentLimitAdder
     }
 
+    @Test
     @Override
     public void testPermanentLimitOnUnselectedOperationalLimitsGroup() {
         // FIXME remove this test when we add validation on CurrentLimitAdder
     }
 
+    @Test
     @Override
     public void testPermanentLimitOnSelectedOperationalLimitsGroup() {
         // FIXME remove this test when we add validation on CurrentLimitAdder

@@ -18,7 +18,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
@@ -26,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
     })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class NodeBreakerIT extends AbstractNodeBreakerTest {
+class NodeBreakerIT extends AbstractNodeBreakerTest {
 
     @Test
     @Override

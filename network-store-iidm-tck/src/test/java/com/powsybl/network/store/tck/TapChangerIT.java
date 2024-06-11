@@ -22,7 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
     })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class TapChangerIT extends AbstractTapChangerTest {
+class TapChangerIT extends AbstractTapChangerTest {
 
     // TODO remove this test when TapChanger.getNeutralPosition et getNeutralStep are implemented
     @Override

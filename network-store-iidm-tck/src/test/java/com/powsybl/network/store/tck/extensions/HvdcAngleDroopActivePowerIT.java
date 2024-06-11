@@ -22,7 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
 })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class HvdcAngleDroopActivePowerIT extends AbstractHvdcAngleDroopActivePowerTest {
+class HvdcAngleDroopActivePowerIT extends AbstractHvdcAngleDroopActivePowerTest {
 
     @Test
     @Override

@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
     })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class LoadIT extends AbstractLoadTest {
+class LoadIT extends AbstractLoadTest {
 
     //TODO remove this test when ZipLoadModelAdder is implemented
     @Override

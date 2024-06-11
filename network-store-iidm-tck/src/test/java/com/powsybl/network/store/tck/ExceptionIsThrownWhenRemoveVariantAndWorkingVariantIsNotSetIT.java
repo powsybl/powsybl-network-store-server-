@@ -22,11 +22,11 @@ import org.springframework.test.context.junit4.SpringRunner;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
     })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class ExceptionIsThrownWhenRemoveVariantAndWorkingVariantIsNotSetIT extends AbstractExceptionIsThrownWhenRemoveVariantAndWorkingVariantIsNotSetTest {
+class ExceptionIsThrownWhenRemoveVariantAndWorkingVariantIsNotSetIT extends AbstractExceptionIsThrownWhenRemoveVariantAndWorkingVariantIsNotSetTest {
 
     @Override
     @Test
-    public void test() throws InterruptedException {
+    public void test() {
         // FIXME delete this test when multi-thread access is supported
     }
 
