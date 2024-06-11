@@ -387,7 +387,6 @@ public class NetworkStoreRepository {
     public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId) {
         String nonNullTargetVariantId = targetVariantId == null ? "variant-" + UUID.randomUUID() : targetVariantId;
         LOGGER.info("Cloning network {} variant {} to variant {}", uuid, sourceVariantNum, targetVariantNum);
-
         var stopwatch = Stopwatch.createStarted();
 
         try (var connection = dataSource.getConnection()) {
@@ -1462,6 +1461,30 @@ public class NetworkStoreRepository {
 
     public Optional<Resource<DanglingLineAttributes>> getDanglingLine(UUID networkUuid, int variantNum, String danglingLineId) {
         return getIdentifiable(networkUuid, variantNum, danglingLineId, mappings.getDanglingLineMappings());
+    }
+
+    public void createGrounds(UUID networkUuid, List<Resource<GroundAttributes>> resources) {
+        createIdentifiables(networkUuid, resources, mappings.getGroundMappings());
+    }
+
+    public Optional<Resource<GroundAttributes>> getGround(UUID networkUuid, int variantNum, String groundId) {
+        return getIdentifiable(networkUuid, variantNum, groundId, mappings.getGroundMappings());
+    }
+
+    public List<Resource<GroundAttributes>> getGrounds(UUID networkUuid, int variantNum) {
+        return getIdentifiables(networkUuid, variantNum, mappings.getGroundMappings());
+    }
+
+    public List<Resource<GroundAttributes>> getVoltageLevelGrounds(UUID networkUuid, int variantNum, String voltageLevelId) {
+        return getIdentifiablesInVoltageLevel(networkUuid, variantNum, voltageLevelId, mappings.getGroundMappings());
+    }
+
+    public void updateGrounds(UUID networkUuid, List<Resource<GroundAttributes>> resources) {
+        updateIdentifiables(networkUuid, resources, mappings.getGroundMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+    }
+
+    public void deleteGround(UUID networkUuid, int variantNum, String groundId) {
+        deleteIdentifiable(networkUuid, variantNum, groundId, GROUND_TABLE);
     }
 
     public List<Resource<DanglingLineAttributes>> getVoltageLevelDanglingLines(UUID networkUuid, int variantNum, String voltageLevelId) {

@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
 })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class MeasurementsIT extends AbstractMeasurementsTest {
+class MeasurementsIT extends AbstractMeasurementsTest {
 
     //FIXME delete this test when we implement the remove for extensions
     @Override
