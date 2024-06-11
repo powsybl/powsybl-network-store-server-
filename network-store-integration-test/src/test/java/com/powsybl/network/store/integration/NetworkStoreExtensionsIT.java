@@ -1288,4 +1288,145 @@ public class NetworkStoreExtensionsIT {
             service.deleteAllNetworks();
         }
     }
+
+    @Test
+    public void testMeasurements() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            twoWindingsTransformer.newExtension(MeasurementsAdder.class).add();
+            twoWindingsTransformer.getExtension(Measurements.class)
+                    .newMeasurement()
+                    .setId("Measurement_ID_1")
+                    .setValue(10)
+                    .setValid(true)
+                    .putProperty("source", "test")
+                    .putProperty("other", "test3")
+                    .setSide(ThreeSides.ONE)
+                    .setStandardDeviation(1)
+                    .setType(Measurement.Type.CURRENT)
+                    .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            Measurements measurements = twoWindingsTransformer.getExtension(Measurements.class);
+            assertNotNull(measurements);
+
+            assertNull(measurements.getMeasurement("Measurement_ID_2"));
+
+            Measurement measurement = measurements.getMeasurement("Measurement_ID_1");
+            assertNotNull(measurement);
+            assertEquals(Measurement.Type.CURRENT, measurement.getType());
+            assertEquals(10, measurement.getValue(), 0.0);
+            assertEquals(ThreeSides.ONE, measurement.getSide());
+            assertEquals(1, measurement.getStandardDeviation(), 0.0);
+            assertEquals("test", measurement.getProperty("source"));
+            assertEquals("test3", measurement.getProperty("other"));
+            assertNull(measurement.getProperty("doesnt exist"));
+
+            assertEquals(1, measurements.getMeasurements(Measurement.Type.CURRENT).size());
+            Measurement measurementFromType = (Measurement) measurements.getMeasurements(Measurement.Type.CURRENT).stream().findFirst().orElseThrow();
+            assertEquals("Measurement_ID_1", measurementFromType.getId());
+            assertEquals(Measurement.Type.CURRENT, measurementFromType.getType());
+            measurementFromType.setStandardDeviation(2);
+            measurementFromType.setValue(12);
+            measurementFromType.setValid(false);
+            measurementFromType.removeProperty("other");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            Measurements measurements = twoWindingsTransformer.getExtension(Measurements.class);
+            assertNotNull(measurements);
+
+            Measurement measurement = measurements.getMeasurement("Measurement_ID_1");
+            assertNotNull(measurement);
+            assertEquals(Measurement.Type.CURRENT, measurement.getType());
+            assertEquals(12, measurement.getValue(), 0.0);
+            assertEquals(2, measurement.getStandardDeviation(), 0.0);
+            assertFalse(measurement.isValid());
+            assertNull(measurement.getProperty("other"));
+            assertNotNull(measurement.getProperty("source"));
+            measurement.remove();
+
+            measurement = measurements.getMeasurement("Measurement_ID_1");
+            assertNull(measurement);
+
+        }
+    }
+
+    @Test
+    public void testDiscreteMeasurements() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            twoWindingsTransformer.newExtension(DiscreteMeasurementsAdder.class).add();
+            twoWindingsTransformer.getExtension(DiscreteMeasurements.class)
+                    .newDiscreteMeasurement()
+                    .setId("Measurement_ID_1")
+                    .setValue(10)
+                    .setValid(true)
+                    .putProperty("source", "test")
+                    .putProperty("other", "test3")
+                    .setTapChanger(DiscreteMeasurement.TapChanger.PHASE_TAP_CHANGER)
+                    .setType(DiscreteMeasurement.Type.TAP_POSITION)
+                    .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            DiscreteMeasurements measurements = twoWindingsTransformer.getExtension(DiscreteMeasurements.class);
+            assertNotNull(measurements);
+
+            assertNull(measurements.getDiscreteMeasurement("Measurement_ID_2"));
+
+            DiscreteMeasurement measurement = measurements.getDiscreteMeasurement("Measurement_ID_1");
+            assertNotNull(measurement);
+            assertEquals(DiscreteMeasurement.Type.TAP_POSITION, measurement.getType());
+            assertEquals(10, measurement.getValueAsInt(), 0.0);
+            assertEquals(DiscreteMeasurement.ValueType.INT, measurement.getValueType());
+            assertTrue(measurement.isValid());
+            assertEquals("test", measurement.getProperty("source"));
+            assertEquals("test3", measurement.getProperty("other"));
+            assertEquals(DiscreteMeasurement.TapChanger.PHASE_TAP_CHANGER, measurement.getTapChanger());
+            assertNull(measurement.getProperty("doesnt exist"));
+
+            assertEquals(1, measurements.getDiscreteMeasurements(DiscreteMeasurement.Type.TAP_POSITION).size());
+            DiscreteMeasurement measurementFromType = (DiscreteMeasurement) measurements.getDiscreteMeasurements(DiscreteMeasurement.Type.TAP_POSITION).stream().findFirst().orElseThrow();
+            assertEquals("Measurement_ID_1", measurementFromType.getId());
+            assertEquals(DiscreteMeasurement.Type.TAP_POSITION, measurementFromType.getType());
+            measurementFromType.setValue(false);
+            measurementFromType.setValid(false);
+            measurementFromType.removeProperty("other");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            DiscreteMeasurements measurements = twoWindingsTransformer.getExtension(DiscreteMeasurements.class);
+            assertNotNull(measurements);
+
+            DiscreteMeasurement measurement = measurements.getDiscreteMeasurement("Measurement_ID_1");
+            assertNotNull(measurement);
+            assertEquals(DiscreteMeasurement.Type.TAP_POSITION, measurement.getType());
+            assertEquals(DiscreteMeasurement.ValueType.BOOLEAN, measurement.getValueType());
+            assertFalse(measurement.getValueAsBoolean());
+            assertFalse(measurement.isValid());
+            assertNull(measurement.getProperty("other"));
+            assertNotNull(measurement.getProperty("source"));
+            measurement.remove();
+
+            measurement = measurements.getDiscreteMeasurement("Measurement_ID_1");
+            assertNull(measurement);
+
+        }
+    }
 }
