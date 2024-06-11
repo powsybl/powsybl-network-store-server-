@@ -338,9 +338,9 @@ public class NetworkStoreValidationTest {
                 .getMessage().contains("r is invalid"));
         assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).add())
                 .getMessage().contains("x is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).add())
+        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(Double.NaN).add())
                 .getMessage().contains("g is invalid"));
-        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).add())
+        assertTrue(assertThrows(PowsyblException.class, () -> vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(Double.NaN).add())
                 .getMessage().contains("b is invalid"));
 
         DanglingLine danglingLine1 = vl1.newDanglingLine().setId("DL1").setNode(1).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1).add();

@@ -21,8 +21,6 @@ import org.springframework.test.context.junit4.SpringRunner;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
     })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class FictitiousSwitchIT extends AbstractFictitiousSwitchTest {
-
-
+class FictitiousSwitchIT extends AbstractFictitiousSwitchTest {
 
 }
