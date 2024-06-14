@@ -74,6 +74,8 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- overrides of imports -->
+
             <!-- imports -->
             <dependency>
                 <groupId>com.powsybl</groupId>
