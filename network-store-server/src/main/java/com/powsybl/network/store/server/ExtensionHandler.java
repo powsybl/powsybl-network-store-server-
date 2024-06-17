@@ -45,15 +45,17 @@ public class ExtensionHandler {
                 for (List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> subExtensions : Lists.partition(list, BATCH_SIZE)) {
                     for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
                         for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
-                            values.clear();
-                            values.add(entry.getKey().getEquipmentId());
-                            values.add(entry.getKey().getEquipmentType().toString());
-                            values.add(entry.getKey().getNetworkUuid());
-                            values.add(entry.getKey().getVariantNum());
-                            values.add(extension.getKey());
-                            values.add(extension.getValue());
-                            bindValues(preparedStmt, values, mapper);
-                            preparedStmt.addBatch();
+                            if (extension.getValue().isPersisted()) {
+                                values.clear();
+                                values.add(entry.getKey().getEquipmentId());
+                                values.add(entry.getKey().getEquipmentType().toString());
+                                values.add(entry.getKey().getNetworkUuid());
+                                values.add(entry.getKey().getVariantNum());
+                                values.add(extension.getKey());
+                                values.add(extension.getValue());
+                                bindValues(preparedStmt, values, mapper);
+                                preparedStmt.addBatch();
+                            }
                         }
                     }
                     preparedStmt.executeBatch();
