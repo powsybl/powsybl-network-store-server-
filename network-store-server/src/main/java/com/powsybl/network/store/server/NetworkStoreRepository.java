@@ -387,7 +387,6 @@ public class NetworkStoreRepository {
     public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId) {
         String nonNullTargetVariantId = targetVariantId == null ? "variant-" + UUID.randomUUID() : targetVariantId;
         LOGGER.info("Cloning network {} variant {} to variant {}", uuid, sourceVariantNum, targetVariantNum);
-
         var stopwatch = Stopwatch.createStarted();
 
         try (var connection = dataSource.getConnection()) {
