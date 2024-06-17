@@ -1312,6 +1312,7 @@ public class NetworkStoreExtensionsIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
             TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+
             Measurements measurements = twoWindingsTransformer.getExtension(Measurements.class);
             assertNotNull(measurements);
 
@@ -1356,7 +1357,6 @@ public class NetworkStoreExtensionsIT {
 
             measurement = measurements.getMeasurement("Measurement_ID_1");
             assertNull(measurement);
-
         }
     }
 
@@ -1410,6 +1410,7 @@ public class NetworkStoreExtensionsIT {
 
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+
             TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
             DiscreteMeasurements measurements = twoWindingsTransformer.getExtension(DiscreteMeasurements.class);
             assertNotNull(measurements);
@@ -1426,7 +1427,60 @@ public class NetworkStoreExtensionsIT {
 
             measurement = measurements.getDiscreteMeasurement("Measurement_ID_1");
             assertNull(measurement);
+        }
+    }
 
+    @Test
+    public void test2wtToBeEstimated() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            twoWindingsTransformer.newExtension(TwoWindingsTransformerToBeEstimatedAdder.class)
+                .withRatioTapChangerStatus(true)
+                .withPhaseTapChangerStatus(false)
+                .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            TwoWindingsTransformerToBeEstimated twoWindingsTransformerToBeEstimated = twoWindingsTransformer.getExtension(TwoWindingsTransformerToBeEstimated.class);
+            assertNotNull(twoWindingsTransformerToBeEstimated);
+
+            assertTrue(twoWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger());
+            assertFalse(twoWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger());
+        }
+    }
+
+    @Test
+    public void test3wtToBeEstimated() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = ThreeWindingsTransformerNetworkFactory.create(service.getNetworkFactory());
+            ThreeWindingsTransformer threeWindingsTransformer = network.getThreeWindingsTransformer("3WT");
+            threeWindingsTransformer.newExtension(ThreeWindingsTransformerToBeEstimatedAdder.class)
+                .withRatioTapChanger1Status(true)
+                .withPhaseTapChanger1Status(false)
+                .withRatioTapChanger2Status(false)
+                .withPhaseTapChanger2Status(true)
+                .withRatioTapChanger3Status(true)
+                .withPhaseTapChanger3Status(true)
+                .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            ThreeWindingsTransformer threeWindingsTransformer = network.getThreeWindingsTransformer("3WT");
+            ThreeWindingsTransformerToBeEstimated threeWindingsTransformerToBeEstimated = threeWindingsTransformer.getExtension(ThreeWindingsTransformerToBeEstimated.class);
+            assertNotNull(threeWindingsTransformerToBeEstimated);
+
+            assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger1());
+            assertFalse(threeWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger1());
+            assertFalse(threeWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger2());
+            assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger2());
+            assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger3());
+            assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger3());
         }
     }
 }
