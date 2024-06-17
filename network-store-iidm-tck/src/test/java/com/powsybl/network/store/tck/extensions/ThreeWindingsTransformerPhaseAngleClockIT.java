@@ -21,6 +21,6 @@ import org.springframework.test.context.junit4.SpringRunner;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
 })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class ThreeWindingsTransformerPhaseAngleClockIT extends AbstractThreeWindingsTransformerPhaseAngleClockTest {
+class ThreeWindingsTransformerPhaseAngleClockIT extends AbstractThreeWindingsTransformerPhaseAngleClockTest {
 
 }

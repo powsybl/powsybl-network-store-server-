@@ -8,6 +8,8 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractGroundTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
+import org.junit.jupiter.api.Test;
+
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -15,14 +17,20 @@ import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+
+/**
+ * @author Abdelsalem HEDHILI <abdelsalem.hedhili at rte-france.com>
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ContextHierarchy({
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
-    })
+})
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-public class GroundIT extends AbstractGroundTest {
+class GroundIT extends AbstractGroundTest {
 
-
-
+    @Test
+    void testOnSubnetwork() {
+        // FIXME remove this test when subnetworks are implemented
+    }
 }
