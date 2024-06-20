@@ -18,6 +18,7 @@ import com.powsybl.commons.extensions.Extension;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.extensions.*;
+import com.powsybl.iidm.network.test.BatteryNetworkFactory;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.iidm.network.test.HvdcTestNetwork;
 import com.powsybl.iidm.network.test.SvcTestCaseFactory;
@@ -1286,6 +1287,287 @@ public class NetworkStoreExtensionsIT {
             assertNotNull(readClonedNetwork.getExtensionByName("cgmesMetadataModels"));
 
             service.deleteAllNetworks();
+        }
+    }
+
+    @Test
+    public void testMeasurements() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            twoWindingsTransformer.newExtension(MeasurementsAdder.class).add();
+            twoWindingsTransformer.getExtension(Measurements.class)
+                    .newMeasurement()
+                    .setId("Measurement_ID_1")
+                    .setValue(10)
+                    .setValid(true)
+                    .putProperty("source", "test")
+                    .putProperty("other", "test3")
+                    .setSide(ThreeSides.ONE)
+                    .setStandardDeviation(1)
+                    .setType(Measurement.Type.CURRENT)
+                    .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+
+            Measurements measurements = twoWindingsTransformer.getExtension(Measurements.class);
+            assertNotNull(measurements);
+
+            assertNull(measurements.getMeasurement("Measurement_ID_2"));
+
+            Measurement measurement = measurements.getMeasurement("Measurement_ID_1");
+            assertNotNull(measurement);
+            assertEquals(Measurement.Type.CURRENT, measurement.getType());
+            assertEquals(10, measurement.getValue(), 0.0);
+            assertEquals(ThreeSides.ONE, measurement.getSide());
+            assertEquals(1, measurement.getStandardDeviation(), 0.0);
+            assertEquals("test", measurement.getProperty("source"));
+            assertEquals("test3", measurement.getProperty("other"));
+            assertNull(measurement.getProperty("doesnt exist"));
+
+            assertEquals(1, measurements.getMeasurements(Measurement.Type.CURRENT).size());
+            Measurement measurementFromType = (Measurement) measurements.getMeasurements(Measurement.Type.CURRENT).stream().findFirst().orElseThrow();
+            assertEquals("Measurement_ID_1", measurementFromType.getId());
+            assertEquals(Measurement.Type.CURRENT, measurementFromType.getType());
+            measurementFromType.setStandardDeviation(2);
+            measurementFromType.setValue(12);
+            measurementFromType.setValid(false);
+            measurementFromType.removeProperty("other");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            Measurements measurements = twoWindingsTransformer.getExtension(Measurements.class);
+            assertNotNull(measurements);
+
+            Measurement measurement = measurements.getMeasurement("Measurement_ID_1");
+            assertNotNull(measurement);
+            assertEquals(Measurement.Type.CURRENT, measurement.getType());
+            assertEquals(12, measurement.getValue(), 0.0);
+            assertEquals(2, measurement.getStandardDeviation(), 0.0);
+            assertFalse(measurement.isValid());
+            assertNull(measurement.getProperty("other"));
+            assertNotNull(measurement.getProperty("source"));
+            measurement.remove();
+
+            measurement = measurements.getMeasurement("Measurement_ID_1");
+            assertNull(measurement);
+        }
+    }
+
+    @Test
+    public void testDiscreteMeasurements() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            twoWindingsTransformer.newExtension(DiscreteMeasurementsAdder.class).add();
+            twoWindingsTransformer.getExtension(DiscreteMeasurements.class)
+                    .newDiscreteMeasurement()
+                    .setId("Measurement_ID_1")
+                    .setValue(10)
+                    .setValid(true)
+                    .putProperty("source", "test")
+                    .putProperty("other", "test3")
+                    .setTapChanger(DiscreteMeasurement.TapChanger.PHASE_TAP_CHANGER)
+                    .setType(DiscreteMeasurement.Type.TAP_POSITION)
+                    .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            DiscreteMeasurements measurements = twoWindingsTransformer.getExtension(DiscreteMeasurements.class);
+            assertNotNull(measurements);
+
+            assertNull(measurements.getDiscreteMeasurement("Measurement_ID_2"));
+
+            DiscreteMeasurement measurement = measurements.getDiscreteMeasurement("Measurement_ID_1");
+            assertNotNull(measurement);
+            assertEquals(DiscreteMeasurement.Type.TAP_POSITION, measurement.getType());
+            assertEquals(10, measurement.getValueAsInt(), 0.0);
+            assertEquals(DiscreteMeasurement.ValueType.INT, measurement.getValueType());
+            assertTrue(measurement.isValid());
+            assertEquals("test", measurement.getProperty("source"));
+            assertEquals("test3", measurement.getProperty("other"));
+            assertEquals(DiscreteMeasurement.TapChanger.PHASE_TAP_CHANGER, measurement.getTapChanger());
+            assertNull(measurement.getProperty("doesnt exist"));
+
+            assertEquals(1, measurements.getDiscreteMeasurements(DiscreteMeasurement.Type.TAP_POSITION).size());
+            DiscreteMeasurement measurementFromType = (DiscreteMeasurement) measurements.getDiscreteMeasurements(DiscreteMeasurement.Type.TAP_POSITION).stream().findFirst().orElseThrow();
+            assertEquals("Measurement_ID_1", measurementFromType.getId());
+            assertEquals(DiscreteMeasurement.Type.TAP_POSITION, measurementFromType.getType());
+            measurementFromType.setValue(false);
+            measurementFromType.setValid(false);
+            measurementFromType.removeProperty("other");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            DiscreteMeasurements measurements = twoWindingsTransformer.getExtension(DiscreteMeasurements.class);
+            assertNotNull(measurements);
+
+            DiscreteMeasurement measurement = measurements.getDiscreteMeasurement("Measurement_ID_1");
+            assertNotNull(measurement);
+            assertEquals(DiscreteMeasurement.Type.TAP_POSITION, measurement.getType());
+            assertEquals(DiscreteMeasurement.ValueType.BOOLEAN, measurement.getValueType());
+            assertFalse(measurement.getValueAsBoolean());
+            assertFalse(measurement.isValid());
+            assertNull(measurement.getProperty("other"));
+            assertNotNull(measurement.getProperty("source"));
+            measurement.remove();
+
+            measurement = measurements.getDiscreteMeasurement("Measurement_ID_1");
+            assertNull(measurement);
+        }
+    }
+
+    @Test
+    public void testBranchObservability() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = BatteryNetworkFactory.create(service.getNetworkFactory());
+            Line line = network.getLine("NHV1_NHV2_1");
+            line.newExtension(BranchObservabilityAdder.class)
+                .withObservable(true)
+                .withStandardDeviationP1(0.02d)
+                .withStandardDeviationP2(0.04d)
+                .withRedundantP1(true)
+                .withRedundantP2(false)
+                .withStandardDeviationQ1(0.5d)
+                .withStandardDeviationQ2(1.0d)
+                .withRedundantQ1(false)
+                .withRedundantQ2(true)
+                .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            Line line = network.getLine("NHV1_NHV2_1");
+
+            BranchObservability<Line> branchObservability = line.getExtension(BranchObservability.class);
+            assertEquals("branchObservability", branchObservability.getName());
+            assertEquals("NHV1_NHV2_1", branchObservability.getExtendable().getId());
+
+            assertTrue(branchObservability.isObservable());
+            assertEquals(0.02d, branchObservability.getQualityP1().getStandardDeviation(), 0d);
+            assertEquals(0.04d, branchObservability.getQualityP2().getStandardDeviation(), 0d);
+            assertTrue(branchObservability.getQualityP1().isRedundant().isPresent());
+            assertTrue(branchObservability.getQualityP1().isRedundant().get());
+            assertTrue(branchObservability.getQualityP2().isRedundant().isPresent());
+            assertFalse(branchObservability.getQualityP2().isRedundant().get());
+
+            assertEquals(0.5d, branchObservability.getQualityQ1().getStandardDeviation(), 0d);
+            assertEquals(1.0d, branchObservability.getQualityQ2().getStandardDeviation(), 0d);
+            assertTrue(branchObservability.getQualityQ1().isRedundant().isPresent());
+            assertFalse(branchObservability.getQualityQ1().isRedundant().get());
+            assertTrue(branchObservability.getQualityQ2().isRedundant().isPresent());
+            assertTrue(branchObservability.getQualityQ2().isRedundant().get());
+        }
+    }
+
+    @Test
+    public void testInjectionObservability() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = BatteryNetworkFactory.create(service.getNetworkFactory());
+            Generator generator = network.getGenerator("GEN");
+            generator.newExtension(InjectionObservabilityAdder.class)
+                .withObservable(false)
+                .withStandardDeviationP(0.02d)
+                .withStandardDeviationQ(0.03d)
+                .withStandardDeviationV(0.04d)
+                .withRedundantP(true)
+                .withRedundantQ(false)
+                .withRedundantV(true)
+                .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            Generator generator = network.getGenerator("GEN");
+
+            InjectionObservability<Generator> generatorObservability = generator.getExtension(InjectionObservability.class);
+            assertEquals("injectionObservability", generatorObservability.getName());
+            assertEquals("GEN", generatorObservability.getExtendable().getId());
+
+            assertFalse(generatorObservability.isObservable());
+            assertEquals(0.02d, generatorObservability.getQualityP().getStandardDeviation(), 0d);
+            assertTrue(generatorObservability.getQualityP().isRedundant().isPresent());
+            assertTrue(generatorObservability.getQualityP().isRedundant().get());
+
+            assertEquals(0.03d, generatorObservability.getQualityQ().getStandardDeviation(), 0d);
+            assertTrue(generatorObservability.getQualityQ().isRedundant().isPresent());
+            assertFalse(generatorObservability.getQualityQ().isRedundant().get());
+
+            assertEquals(0.04d, generatorObservability.getQualityV().getStandardDeviation(), 0d);
+            assertTrue(generatorObservability.getQualityV().isRedundant().isPresent());
+            assertTrue(generatorObservability.getQualityV().isRedundant().get());
+        }
+    }
+
+    @Test
+    public void test2wtToBeEstimated() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            twoWindingsTransformer.newExtension(TwoWindingsTransformerToBeEstimatedAdder.class)
+                .withRatioTapChangerStatus(true)
+                .withPhaseTapChangerStatus(false)
+                .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
+            TwoWindingsTransformerToBeEstimated twoWindingsTransformerToBeEstimated = twoWindingsTransformer.getExtension(TwoWindingsTransformerToBeEstimated.class);
+            assertNotNull(twoWindingsTransformerToBeEstimated);
+
+            assertTrue(twoWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger());
+            assertFalse(twoWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger());
+        }
+    }
+
+    @Test
+    public void test3wtToBeEstimated() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = ThreeWindingsTransformerNetworkFactory.create(service.getNetworkFactory());
+            ThreeWindingsTransformer threeWindingsTransformer = network.getThreeWindingsTransformer("3WT");
+            threeWindingsTransformer.newExtension(ThreeWindingsTransformerToBeEstimatedAdder.class)
+                .withRatioTapChanger1Status(true)
+                .withPhaseTapChanger1Status(false)
+                .withRatioTapChanger2Status(false)
+                .withPhaseTapChanger2Status(true)
+                .withRatioTapChanger3Status(true)
+                .withPhaseTapChanger3Status(true)
+                .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            ThreeWindingsTransformer threeWindingsTransformer = network.getThreeWindingsTransformer("3WT");
+            ThreeWindingsTransformerToBeEstimated threeWindingsTransformerToBeEstimated = threeWindingsTransformer.getExtension(ThreeWindingsTransformerToBeEstimated.class);
+            assertNotNull(threeWindingsTransformerToBeEstimated);
+
+            assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger1());
+            assertFalse(threeWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger1());
+            assertFalse(threeWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger2());
+            assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger2());
+            assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger3());
+            assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger3());
         }
     }
 }

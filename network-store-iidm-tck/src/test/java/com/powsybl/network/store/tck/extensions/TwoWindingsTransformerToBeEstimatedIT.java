@@ -1,14 +1,13 @@
 /**
- * Copyright (c) 2021, RTE (http://www.rte-france.com)
+ * Copyright (c) 2024, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.powsybl.network.store.tck.extensions;
 
-import com.powsybl.iidm.network.tck.extensions.AbstractCoordinatedReactiveControlTest;
+import com.powsybl.iidm.network.tck.extensions.AbstractTwoWindingsTransformerToBeEstimatedTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -22,12 +21,5 @@ import org.springframework.test.context.junit4.SpringRunner;
     @ContextConfiguration(classes = {NetworkStoreApplication.class})
 })
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
-class CoordinatedReactivePowerControlIT extends AbstractCoordinatedReactiveControlTest {
-
-    @Test
-    @Override
-    public void variantsCloneTest() {
-        //FIXME remove when we fix primary key constraints violation on DB
-    }
-
+class TwoWindingsTransformerToBeEstimatedIT extends AbstractTwoWindingsTransformerToBeEstimatedTest {
 }
