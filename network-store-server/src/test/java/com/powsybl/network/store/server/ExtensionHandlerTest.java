@@ -8,7 +8,7 @@ package com.powsybl.network.store.server;
 
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.OwnerInfo;
-import com.powsybl.network.store.server.utils.NonPersistedActivePowerControlAttributes;
+import lombok.NoArgsConstructor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -302,7 +302,7 @@ public class ExtensionHandlerTest {
                 Resource.INITIAL_VARIANT_NUM
         );
         Map<String, ExtensionAttributes> extensionAttributesMapA = Map.of(
-                "notPersisted", NonPersistedActivePowerControlAttributes.builder().build(),
+                "notPersisted", new NonPersistedActivePowerControlAttributes(),
                 "activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build()
         );
         Map<OwnerInfo, Map<String, ExtensionAttributes>> mapA = new HashMap<>();
@@ -315,5 +315,13 @@ public class ExtensionHandlerTest {
         assertEquals(1, extensionAttributes.size());
         assertFalse(extensionAttributes.containsKey("notPersisted"));
         assertTrue(extensionAttributes.containsKey("activePowerControl"));
+    }
+
+    @NoArgsConstructor
+    private class NonPersistedActivePowerControlAttributes implements ExtensionAttributes {
+        @Override
+        public boolean isPersisted() {
+            return false;
+        }
     }
 }
