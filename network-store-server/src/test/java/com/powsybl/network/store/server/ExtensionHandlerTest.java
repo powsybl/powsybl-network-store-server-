@@ -292,7 +292,7 @@ public class ExtensionHandlerTest {
     }
 
     @Test
-    public void insertNonPersistedExtensionTest() {
+    public void insertNonPersistentExtensionTest() {
         String equipmentIdA = "idBatteryA";
 
         OwnerInfo infoBatteryA = new OwnerInfo(
@@ -302,7 +302,7 @@ public class ExtensionHandlerTest {
                 Resource.INITIAL_VARIANT_NUM
         );
         Map<String, ExtensionAttributes> extensionAttributesMapA = Map.of(
-                "notPersisted", new NonPersistedActivePowerControlAttributes(),
+                "notPersistent", new NonPersistentExtensionAttributes(),
                 "activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build()
         );
         Map<OwnerInfo, Map<String, ExtensionAttributes>> mapA = new HashMap<>();
@@ -313,12 +313,12 @@ public class ExtensionHandlerTest {
         Map<String, ExtensionAttributes> extensionAttributes = extensions.get(infoBatteryA);
 
         assertEquals(1, extensionAttributes.size());
-        assertFalse(extensionAttributes.containsKey("notPersisted"));
+        assertFalse(extensionAttributes.containsKey("notPersistent"));
         assertTrue(extensionAttributes.containsKey("activePowerControl"));
     }
 
     @NoArgsConstructor
-    private class NonPersistedActivePowerControlAttributes implements ExtensionAttributes {
+    private class NonPersistentExtensionAttributes implements ExtensionAttributes {
         @Override
         public boolean isPersisted() {
             return false;
