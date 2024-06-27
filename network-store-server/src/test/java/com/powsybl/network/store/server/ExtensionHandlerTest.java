@@ -8,6 +8,7 @@ package com.powsybl.network.store.server;
 
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.OwnerInfo;
+import com.powsybl.network.store.server.utils.NonPersistedActivePowerControlAttributes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -288,5 +289,31 @@ public class ExtensionHandlerTest {
         assertFalse(activePowerControl.isParticipate());
         assertEquals(10.0, activePowerControl.getDroop(), 0.1);
         assertEquals(2.0, activePowerControl.getParticipationFactor(), 0.1);
+    }
+
+    @Test
+    public void insertNonPersistedExtensionTest() {
+        String equipmentIdA = "idBatteryA";
+
+        OwnerInfo infoBatteryA = new OwnerInfo(
+                equipmentIdA,
+                ResourceType.BATTERY,
+                NETWORK_UUID,
+                Resource.INITIAL_VARIANT_NUM
+        );
+        Map<String, ExtensionAttributes> extensionAttributesMapA = Map.of(
+                "notPersisted", NonPersistedActivePowerControlAttributes.builder().build(),
+                "activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build()
+        );
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> mapA = new HashMap<>();
+        mapA.put(infoBatteryA, extensionAttributesMapA);
+        extensionHandler.insertExtensions(mapA);
+
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(NETWORK_UUID, 0, "equipmentId", "idBatteryA");
+        Map<String, ExtensionAttributes> extensionAttributes = extensions.get(infoBatteryA);
+
+        assertEquals(1, extensionAttributes.size());
+        assertFalse(extensionAttributes.containsKey("notPersisted"));
+        assertTrue(extensionAttributes.containsKey("activePowerControl"));
     }
 }
