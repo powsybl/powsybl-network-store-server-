@@ -293,24 +293,22 @@ public class ExtensionHandlerTest {
 
     @Test
     public void insertNonPersistentExtensionTest() {
-        String equipmentIdA = "idBatteryA";
+        String equipmentId = "idBattery";
 
-        OwnerInfo infoBatteryA = new OwnerInfo(
-                equipmentIdA,
+        OwnerInfo infoBattery = new OwnerInfo(
+                equipmentId,
                 ResourceType.BATTERY,
                 NETWORK_UUID,
                 Resource.INITIAL_VARIANT_NUM
         );
-        Map<String, ExtensionAttributes> extensionAttributesMapA = Map.of(
+        Map<String, ExtensionAttributes> extensionAttributes = Map.of(
                 "notPersistent", new NonPersistentExtensionAttributes(),
                 "activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build()
         );
-        Map<OwnerInfo, Map<String, ExtensionAttributes>> mapA = new HashMap<>();
-        mapA.put(infoBatteryA, extensionAttributesMapA);
-        extensionHandler.insertExtensions(mapA);
+        extensionHandler.insertExtensions(Map.of(infoBattery, extensionAttributes));
 
-        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(NETWORK_UUID, 0, "equipmentId", "idBatteryA");
-        Map<String, ExtensionAttributes> extensionAttributes = extensions.get(infoBatteryA);
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(NETWORK_UUID, 0, "equipmentId", equipmentId);
+        extensionAttributes = extensions.get(infoBattery);
 
         assertEquals(1, extensionAttributes.size());
         assertFalse(extensionAttributes.containsKey("notPersistent"));
