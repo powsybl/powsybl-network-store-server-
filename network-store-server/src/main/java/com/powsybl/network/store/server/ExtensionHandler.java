@@ -45,7 +45,7 @@ public class ExtensionHandler {
                 for (List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> subExtensions : Lists.partition(list, BATCH_SIZE)) {
                     for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
                         for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
-                            if (extension.getValue().isPersisted()) {
+                            if (extension.getValue().isPersistent()) {
                                 values.clear();
                                 values.add(entry.getKey().getEquipmentId());
                                 values.add(entry.getKey().getEquipmentType().toString());

@@ -318,7 +318,7 @@ public class ExtensionHandlerTest {
     @NoArgsConstructor
     private class NonPersistentExtensionAttributes implements ExtensionAttributes {
         @Override
-        public boolean isPersisted() {
+        public boolean isPersistent() {
             return false;
         }
     }
