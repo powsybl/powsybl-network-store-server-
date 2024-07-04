@@ -731,6 +731,14 @@ public class Mappings {
                 }
                 attributes.getPhaseTapChangerAttributes().setRegulationValue(value);
             }));
+        twoWindingsTransformerMappings.addColumnMapping("phaseTapChangerRelativeNeutralPosition", new ColumnMapping<>(Integer.class,
+                (TwoWindingsTransformerAttributes attributes) -> attributes.getPhaseTapChangerAttributes() != null ? attributes.getPhaseTapChangerAttributes().getRelativeNeutralPosition() : null,
+                (TwoWindingsTransformerAttributes attributes, Integer value) -> {
+                    if (attributes.getPhaseTapChangerAttributes() == null) {
+                        attributes.setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
+                    }
+                    attributes.getPhaseTapChangerAttributes().setRelativeNeutralPosition(value);
+                }));
         // ratioTapChanger
         twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerLowTapPosition", new ColumnMapping<>(Integer.class,
             (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().getLowTapPosition() : null,
@@ -820,6 +828,14 @@ public class Mappings {
                 }
                 attributes.getRatioTapChangerAttributes().setRegulationMode(value);
             }));
+        twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerRelativeNeutralPosition", new ColumnMapping<>(Integer.class,
+                (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().getRelativeNeutralPosition() : null,
+                (TwoWindingsTransformerAttributes attributes, Integer value) -> {
+                    if (attributes.getRatioTapChangerAttributes() == null) {
+                        attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
+                    }
+                    attributes.getRatioTapChangerAttributes().setRelativeNeutralPosition(value);
+                }));
     }
 
     public TableMapping getThreeWindingsTransformerMappings() {
@@ -960,6 +976,14 @@ public class Mappings {
                     }
                     attributes.getLeg(i).getPhaseTapChangerAttributes().setRegulationValue(value);
                 }));
+            threeWindingsTransformerMappings.addColumnMapping("phaseTapChangerRelativeNeutralPosition" + i, new ColumnMapping<>(Integer.class,
+                    (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getPhaseTapChangerAttributes() != null ? attributes.getLeg(i).getPhaseTapChangerAttributes().getRelativeNeutralPosition() : null,
+                    (ThreeWindingsTransformerAttributes attributes, Integer value) -> {
+                        if (attributes.getLeg(i).getPhaseTapChangerAttributes() == null) {
+                            attributes.getLeg(i).setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
+                        }
+                        attributes.getLeg(i).getPhaseTapChangerAttributes().setRelativeNeutralPosition(value);
+                    }));
             // RatioTapChanger
             threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerLowTapPosition" + i, new ColumnMapping<>(Integer.class,
                 (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().getLowTapPosition() : null,
@@ -1049,6 +1073,14 @@ public class Mappings {
                     }
                     attributes.getLeg(i).getRatioTapChangerAttributes().setRegulationMode(value);
                 }));
+            threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerRelativeNeutralPosition" + i, new ColumnMapping<>(Integer.class,
+                    (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().getRelativeNeutralPosition() : null,
+                    (ThreeWindingsTransformerAttributes attributes, Integer value) -> {
+                        if (attributes.getLeg(i).getRatioTapChangerAttributes() == null) {
+                            attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
+                        }
+                        attributes.getLeg(i).getRatioTapChangerAttributes().setRelativeNeutralPosition(value);
+                    }));
         });
     }
 

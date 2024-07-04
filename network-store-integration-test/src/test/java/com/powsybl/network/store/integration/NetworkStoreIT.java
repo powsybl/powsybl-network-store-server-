@@ -1688,7 +1688,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testPhaseTapChanger() {
+    public void testTapChanger() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createTapChangerNetwork(service.getNetworkFactory()));
         }
@@ -1720,6 +1720,13 @@ public class NetworkStoreIT {
             assertEqualsPhaseTapChangerStep(phaseTapChanger.getStep(1), 0, 1.6, 0.6, 1.1, 1., 4.1);
             assertEqualsPhaseTapChangerStep(phaseTapChanger.getStep(2), 10, 1.7, 0.7, 1.2, 1.01, 4.2);
             assertEqualsPhaseTapChangerStep(phaseTapChanger.getCurrentStep(), -10, 1.5, 0.5, 1., 0.99, 4.);
+            assertEquals(1, phaseTapChanger.getNeutralPosition().orElseThrow());
+            assertEquals(phaseTapChanger.getStep(1).getB(), phaseTapChanger.getNeutralStep().orElseThrow().getB(), 0.0);
+            assertEquals(phaseTapChanger.getStep(1).getG(), phaseTapChanger.getNeutralStep().orElseThrow().getG(), 0.0);
+            assertEquals(phaseTapChanger.getStep(1).getR(), phaseTapChanger.getNeutralStep().orElseThrow().getR(), 0.0);
+            assertEquals(phaseTapChanger.getStep(1).getX(), phaseTapChanger.getNeutralStep().orElseThrow().getX(), 0.0);
+            assertEquals(phaseTapChanger.getStep(1).getRho(), phaseTapChanger.getNeutralStep().orElseThrow().getRho(), 0.0);
+            assertEquals(phaseTapChanger.getStep(1).getAlpha(), phaseTapChanger.getNeutralStep().orElseThrow().getAlpha(), 0.0);
 
             phaseTapChanger.setLowTapPosition(-2);
             phaseTapChanger.setRegulationMode(PhaseTapChanger.RegulationMode.ACTIVE_POWER_CONTROL);
@@ -1767,6 +1774,12 @@ public class NetworkStoreIT {
             assertEqualsRatioTapChangerStep(ratioTapChanger.getStep(1), 1.6, 0.6, 1.1, 1., 4.1);
             assertEqualsRatioTapChangerStep(ratioTapChanger.getStep(2), 1.7, 0.7, 1.2, 1.01, 4.2);
             assertEqualsRatioTapChangerStep(ratioTapChanger.getCurrentStep(), 1.5, 0.5, 1., 0.99, 4.);
+            assertEquals(1, ratioTapChanger.getNeutralPosition().orElseThrow());
+            assertEquals(ratioTapChanger.getStep(1).getB(), ratioTapChanger.getNeutralStep().orElseThrow().getB(), 0.0);
+            assertEquals(ratioTapChanger.getStep(1).getG(), ratioTapChanger.getNeutralStep().orElseThrow().getG(), 0.0);
+            assertEquals(ratioTapChanger.getStep(1).getR(), ratioTapChanger.getNeutralStep().orElseThrow().getR(), 0.0);
+            assertEquals(ratioTapChanger.getStep(1).getX(), ratioTapChanger.getNeutralStep().orElseThrow().getX(), 0.0);
+            assertEquals(ratioTapChanger.getStep(1).getRho(), ratioTapChanger.getNeutralStep().orElseThrow().getRho(), 0.0);
 
             ratioTapChanger.setLowTapPosition(-2);
             ratioTapChanger.setRegulating(false);

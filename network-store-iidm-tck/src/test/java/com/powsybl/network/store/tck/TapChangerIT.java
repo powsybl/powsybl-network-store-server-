@@ -24,17 +24,16 @@ import org.springframework.test.context.junit4.SpringRunner;
 @TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
 class TapChangerIT extends AbstractTapChangerTest {
 
-    // TODO remove this test when TapChanger.getNeutralPosition et getNeutralStep are implemented
-    @Override
-    @Test
-    public void baseTestsRatioTapChanger() { }
-
-    // TODO remove this test when TapChanger.getNeutralPosition et getNeutralStep are implemented
+    // TODO remove this test when regulation are handled properly :
+    //  regulating terminal are not deleted from TapChangers when linked terminals are deleted
+    //  and isRegulating is not updated either
     @Override
     @Test
     public void baseTestsPhaseTapChanger() { }
 
-    // TODO remove this test when TapChanger.getNeutralPosition et getNeutralStep are implemented
+    // TODO remove this test when regulation are handled properly :
+    //  regulating terminal are not deleted from TapChangers when linked terminals are deleted
+    //  and isRegulating is not updated either
     @Override
     @Test
     public void undefinedRegulationValueOnlyWarning() { }
