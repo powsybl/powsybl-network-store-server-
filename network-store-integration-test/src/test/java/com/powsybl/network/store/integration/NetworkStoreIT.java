@@ -4076,7 +4076,7 @@ public class NetworkStoreIT {
     @Test
     public void testGetIdentifiablePerf() {
         List<String> lineIds;
-        try (NetworkStoreService service = createNetworkStoreService()) {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = IeeeCdfNetworkFactory.create14(service.getNetworkFactory());
             lineIds = network.getLineStream().map(Identifiable::getId).toList();
             service.flush(network);
@@ -4085,7 +4085,7 @@ public class NetworkStoreIT {
         RestClientMetrics metrics = new RestClientMetrics();
         assertEquals(0, metrics.oneGetterCallCount);
         assertEquals(0, metrics.allGetterCallCount);
-        try (NetworkStoreService service = createNetworkStoreService(metrics)) {
+        try (NetworkStoreService service = createNetworkStoreService(metrics, randomServerPort)) {
             Map<UUID, String> networkIds = service.getNetworkIds();
             UUID networkUuid = networkIds.keySet().stream().findFirst().orElseThrow();
             Network network = service.getNetwork(networkUuid);
