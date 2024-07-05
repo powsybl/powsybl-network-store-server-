@@ -781,4 +781,25 @@ public class NetworkStoreRepositoryTest {
         assertNull(res3WTransformerB.getAttributes().getLeg(3).getRatioTapChangerAttributes());
         assertEquals(1, res3WTransformerB.getAttributes().getLeg(3).getPhaseTapChangerAttributes().getSteps().size());
     }
+
+    @Test
+    public void test() {
+        Resource<LineAttributes> line1 = Resource.lineBuilder()
+                .id("line1")
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .build())
+                .build();
+        Resource<LoadAttributes> load1 = Resource.loadBuilder()
+                .id("load1")
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .build())
+                .build();
+        networkStoreRepository.createLines(NETWORK_UUID, List.of(line1));
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(load1));
+        List<String> identifiablesIds = networkStoreRepository.getIdentifiablesIds(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM);
+        assertEquals(List.of("load1", "line1"), identifiablesIds);
+    }
 }

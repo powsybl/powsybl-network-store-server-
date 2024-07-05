@@ -17,6 +17,7 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.entsoe.util.EntsoeArea;
 import com.powsybl.entsoe.util.EntsoeAreaImpl;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
+import com.powsybl.ieeecdf.converter.IeeeCdfNetworkFactory;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.extensions.*;
 import com.powsybl.iidm.network.test.*;
@@ -4069,6 +4070,64 @@ public class NetworkStoreIT {
             Network network = service.getNetwork(networkUuid);
             TwoWindingsTransformer twt2 = (TwoWindingsTransformer) network.getIdentifiable("NHV2_NLOAD");
             assertEquals(2, twt2.getRatioTapChanger().getHighTapPosition());
+        }
+    }
+
+    @Test
+    public void testGetIdentifiablePerf() {
+        List<String> lineIds;
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = IeeeCdfNetworkFactory.create14(service.getNetworkFactory());
+            lineIds = network.getLineStream().map(Identifiable::getId).toList();
+            service.flush(network);
+        }
+
+        RestClientMetrics metrics = new RestClientMetrics();
+        assertEquals(0, metrics.oneGetterCallCount);
+        assertEquals(0, metrics.allGetterCallCount);
+        try (NetworkStoreService service = createNetworkStoreService(metrics, randomServerPort)) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
+            UUID networkUuid = networkIds.keySet().stream().findFirst().orElseThrow();
+            Network network = service.getNetwork(networkUuid);
+            for (String id : lineIds.stream().limit(3).toList()) {
+                network.getIdentifiable(id);
+            }
+            assertEquals(4, metrics.oneGetterCallCount); // network + 3 lines
+            assertEquals(0, metrics.allGetterCallCount);
+
+            // we are under the threshold, we don't have downloaded the IDs of all existing identifiables
+            // and so on accessing a non-existing identifiable without having download the full collection
+            // need to access the server
+            network.getIdentifiable("FOO");
+            assertEquals(5, metrics.oneGetterCallCount);
+            assertEquals(0, metrics.allGetterCallCount);
+        }
+
+        metrics = new RestClientMetrics();
+        assertEquals(0, metrics.oneGetterCallCount);
+        assertEquals(0, metrics.allGetterCallCount);
+        try (NetworkStoreService service = createNetworkStoreService(metrics, randomServerPort)) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
+            UUID networkUuid = networkIds.keySet().stream().findFirst().orElseThrow();
+            Network network = service.getNetwork(networkUuid);
+
+            for (String id : lineIds.stream().limit(16).toList()) { // only the last one is not get
+                network.getIdentifiable(id);
+            }
+            assertEquals(17, metrics.oneGetterCallCount); // one network + 16 lines
+            assertEquals(0, metrics.allGetterCallCount);
+
+            // no more server access because we have downloaded the IDs of all existing identifiables and we know
+            // that FOO does not exist in the network
+            network.getIdentifiable("FOO");
+            assertEquals(17, metrics.oneGetterCallCount);
+            assertEquals(0, metrics.allGetterCallCount);
+
+            network.getIdentifiable("L13-14-1"); // the last one
+            // it is part of the network and thanks to all IDs download we know that we need to request it from the
+            // server
+            assertEquals(18, metrics.oneGetterCallCount);
+            assertEquals(0, metrics.allGetterCallCount);
         }
     }
 }
