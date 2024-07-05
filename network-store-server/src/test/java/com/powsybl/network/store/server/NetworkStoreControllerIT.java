@@ -498,7 +498,10 @@ public class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].attributes.properties[\"property1\"]").value("newValue1"))
             .andExpect(jsonPath("data[1].id").value("idLine2"))
             .andExpect(jsonPath("data[1].attributes.p1").value(30.))
-            .andExpect(jsonPath("data[1].attributes.properties[\"property12\"]").value("value12"));
+            .andExpect(jsonPath("data[1].attributes.properties[\"property12\"]").value("value12"))
+            .andExpect(jsonPath("data[2].id").value("idLineWithoutFirstPosition"))
+            .andExpect(jsonPath("data[2].attributes.p1").value(0.))
+            .andExpect(jsonPath("data[2].attributes.properties[\"property1\"]").value("value1"));
 
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl1/lines")
             .contentType(APPLICATION_JSON))
@@ -775,6 +778,74 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.generation.maxP").value(33))
                 .andExpect(jsonPath("data[0].attributes.generation.targetQ").value(54))
                 .andExpect(jsonPath("data[0].attributes.generation.voltageRegulationOn").value(true));
+
+        // ground creation and update
+        Resource<GroundAttributes> ground = Resource.groundBuilder()
+                .id("idGround")
+                .attributes(GroundAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("ground1")
+                        .fictitious(true)
+                        .node(5)
+                        .p(10)
+                        .q(20)
+                        .position(ConnectablePositionAttributes.builder()
+                                .direction(ConnectablePosition.Direction.BOTTOM)
+                                .label("label")
+                                .order(1)
+                                .build())
+                        .build())
+                .build();
+
+        mvc.perform(post("/" + VERSION + "/networks/" + NETWORK_UUID + "/grounds")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Collections.singleton(ground))))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/grounds")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("data[0].attributes.p").value(10))
+                .andExpect(jsonPath("data[0].attributes.q").value(20))
+                .andExpect(jsonPath("data[0].attributes.node").value(5))
+                .andExpect(jsonPath("data[0].attributes.fictitious").value(true))
+                .andExpect(jsonPath("data[0].attributes.voltageLevelId").value("vl1"))
+                .andExpect(jsonPath("data[0].attributes.position.order").value(1));
+
+        ground.getAttributes().setP(30);
+        ground.getAttributes().setQ(40);
+        ground.getAttributes().setNode(6);
+
+        mvc.perform(put("/" + VERSION + "/networks/" + NETWORK_UUID + "/grounds")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Collections.singleton(ground))))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/grounds")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("data[0].attributes.p").value(30))
+                .andExpect(jsonPath("data[0].attributes.q").value(40))
+                .andExpect(jsonPath("data[0].attributes.node").value(6))
+                .andExpect(jsonPath("data[0].attributes.voltageLevelId").value("vl1"));
+
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/grounds/idGround")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("data[0].attributes.p").value(30))
+                .andExpect(jsonPath("data[0].attributes.q").value(40))
+                .andExpect(jsonPath("data[0].attributes.node").value(6));
+
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl1/grounds")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("data[0].attributes.p").value(30))
+                .andExpect(jsonPath("data[0].attributes.q").value(40))
+                .andExpect(jsonPath("data[0].attributes.node").value(6));
 
         // Test removals
         mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/switches/b1")
