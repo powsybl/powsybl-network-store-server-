@@ -137,6 +137,11 @@
             <artifactId>powsybl-ucte-converter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.powsybl</groupId>
+            <artifactId>powsybl-ieee-cdf-converter</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Added so that the aggregated jacoco report takes it into account -->
         <dependency>
