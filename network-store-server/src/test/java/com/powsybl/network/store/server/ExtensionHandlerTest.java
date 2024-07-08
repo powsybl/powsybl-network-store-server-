@@ -8,6 +8,7 @@ package com.powsybl.network.store.server;
 
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.OwnerInfo;
+import lombok.NoArgsConstructor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -288,5 +289,37 @@ public class ExtensionHandlerTest {
         assertFalse(activePowerControl.isParticipate());
         assertEquals(10.0, activePowerControl.getDroop(), 0.1);
         assertEquals(2.0, activePowerControl.getParticipationFactor(), 0.1);
+    }
+
+    @Test
+    public void insertNonPersistentExtensionTest() {
+        String equipmentId = "idBattery";
+
+        OwnerInfo infoBattery = new OwnerInfo(
+                equipmentId,
+                ResourceType.BATTERY,
+                NETWORK_UUID,
+                Resource.INITIAL_VARIANT_NUM
+        );
+        Map<String, ExtensionAttributes> extensionAttributes = Map.of(
+                "notPersistent", new NonPersistentExtensionAttributes(),
+                "activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build()
+        );
+        extensionHandler.insertExtensions(Map.of(infoBattery, extensionAttributes));
+
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(NETWORK_UUID, 0, "equipmentId", equipmentId);
+        extensionAttributes = extensions.get(infoBattery);
+
+        assertEquals(1, extensionAttributes.size());
+        assertFalse(extensionAttributes.containsKey("notPersistent"));
+        assertTrue(extensionAttributes.containsKey("activePowerControl"));
+    }
+
+    @NoArgsConstructor
+    private class NonPersistentExtensionAttributes implements ExtensionAttributes {
+        @Override
+        public boolean isPersistent() {
+            return false;
+        }
     }
 }
