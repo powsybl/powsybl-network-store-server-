@@ -134,8 +134,6 @@ public class NetworkStoreRepository {
                                 .variantNum(variantNum)
                                 .attributes(attributes)
                                 .build();
-                        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensionAttributes = extensionHandler.getExtensions(uuid, variantNum, EQUIPMENT_ID_COLUMN, networkId);
-                        extensionHandler.insertExtensionsInIdentifiables(uuid, List.of(resource), extensionAttributes);
                         return Optional.of(resource);
                     }
                 }
@@ -565,8 +563,6 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> Resource<T> completeResourceInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
-        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensionAttributes = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
-        extensionHandler.insertExtensionsInIdentifiables(networkUuid, List.of(resource), extensionAttributes);
         switch (resource.getType()) {
             case GENERATOR:
                 return completeGeneratorInfos(resource, networkUuid, variantNum, equipmentId);
@@ -668,8 +664,6 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
-        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensions(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, tableMapping.getResourceType().toString());
-        extensionHandler.insertExtensionsInIdentifiables(networkUuid, identifiables, extensions);
         return identifiables;
     }
 
@@ -688,9 +682,6 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
-        List<String> equipmentsIds = identifiables.stream().map(Resource::getId).toList();
-        Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions = extensionHandler.getExtensionsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
-        extensionHandler.insertExtensionsInIdentifiables(networkUuid, identifiables, extensions);
         return identifiables;
     }
 
@@ -2500,5 +2491,25 @@ public class NetworkStoreRepository {
             case ACTIVE_POWER -> equipment.getActivePowerLimits(side, operationalLimitsGroupId);
             default -> throw new IllegalArgumentException(EXCEPTION_UNKNOWN_LIMIT_TYPE);
         };
+    }
+
+    public Optional<ExtensionAttributes> getExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
+        return extensionHandler.getExtensionAttributes(networkId, variantNum, identifiableId, extensionName);
+    }
+
+    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionName(UUID networkId, int variantNum, ResourceType type, String extensionName) {
+        return extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(networkId, variantNum, type.toString(), extensionName);
+    }
+
+    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableId(UUID networkId, int variantNum, String identifiableId) {
+        return extensionHandler.getAllExtensionsAttributesByIdentifiableId(networkId, variantNum, identifiableId);
+    }
+
+    public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceType(UUID networkId, int variantNum, ResourceType type) {
+        return extensionHandler.getAllExtensionsAttributesByResourceType(networkId, variantNum, type.toString());
+    }
+
+    public void removeExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
+        extensionHandler.deleteExtensionsFromIdentifiables(networkId, variantNum, Map.of(identifiableId, Set.of(extensionName)));
     }
 }

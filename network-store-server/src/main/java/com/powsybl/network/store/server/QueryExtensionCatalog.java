@@ -13,51 +13,66 @@ import static com.powsybl.network.store.server.QueryCatalog.*;
  */
 public final class QueryExtensionCatalog {
     static final String EXTENSION_TABLE = "extension";
+    static final String EXTENSION_NAME_COLUMN = "name";
+    static final String EXTENSION_VALUE_COLUMN = "value_";
+    static final String EXTENSION_RESOURCE_TYPE_COLUMN = "equipmenttype";
 
     private QueryExtensionCatalog() {
     }
 
     public static String buildCloneExtensionsQuery() {
         return "insert into " + EXTENSION_TABLE + "(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN +
-                ", " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", name, value_) select " +
+                ", " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EXTENSION_NAME_COLUMN + ", " + EXTENSION_VALUE_COLUMN + ") select " +
                 EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN +
-                ", ?, ?, name, value_ from " + EXTENSION_TABLE + " where " + NETWORK_UUID_COLUMN +
+                ", ?, ?, name, " + EXTENSION_VALUE_COLUMN + " from " + EXTENSION_TABLE + " where " + NETWORK_UUID_COLUMN +
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildGetExtensionsQuery(String columnNameForWhereClause) {
-        return "select " + EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + ", " +
-                VARIANT_NUM_COLUMN + ", " +
-                "name, value_ " +
+    public static String buildGetExtensionsQuery() {
+        return "select " + EXTENSION_VALUE_COLUMN + ", " +
                 "from " + EXTENSION_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
-                columnNameForWhereClause + " = ?";
+                EQUIPMENT_ID_COLUMN + " = ? and " +
+                EXTENSION_NAME_COLUMN + " = ?";
     }
 
-    public static String buildGetExtensionsWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
-        if (numberOfValues < 1) {
-            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
-        }
-        return "select " + EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + ", " +
-                VARIANT_NUM_COLUMN + ", " +
-                "name, value_ " +
+    public static String buildGetAllExtensionsAttributesByIdentifiableId() {
+        return "select " + EXTENSION_NAME_COLUMN + ", " +
+                EXTENSION_VALUE_COLUMN + ", " +
                 "from " + EXTENSION_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
-                columnNameForInClause + " in (" +
-                "?, ".repeat(numberOfValues - 1) + "?)";
+                EQUIPMENT_ID_COLUMN + " = ?";
+    }
+
+    public static String buildGetAllExtensionsAttributesByResourceType() {
+        return "select " + EQUIPMENT_ID_COLUMN + ", " +
+                EXTENSION_NAME_COLUMN + ", " +
+                EXTENSION_VALUE_COLUMN + ", " +
+                "from " + EXTENSION_TABLE + " where " +
+                NETWORK_UUID_COLUMN + " = ? and " +
+                VARIANT_NUM_COLUMN + " = ? and " +
+                EQUIPMENT_TYPE_COLUMN + " = ?";
+    }
+
+    public static String buildGetAllExtensionsAttributesByResourceTypeAndExtensionName() {
+        return "select " + EQUIPMENT_ID_COLUMN + ", " +
+                EXTENSION_VALUE_COLUMN + ", " +
+                "from " + EXTENSION_TABLE + " where " +
+                NETWORK_UUID_COLUMN + " = ? and " +
+                VARIANT_NUM_COLUMN + " = ? and " +
+                EXTENSION_RESOURCE_TYPE_COLUMN + " = ? and " +
+                EXTENSION_NAME_COLUMN + " = ?";
     }
 
     public static String buildInsertExtensionsQuery() {
         return "insert into " + EXTENSION_TABLE + "(" +
                 EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + " ," +
-                VARIANT_NUM_COLUMN + ", name, value_)" +
+                VARIANT_NUM_COLUMN + " ," +
+                EXTENSION_NAME_COLUMN + " ," +
+                EXTENSION_VALUE_COLUMN + ")" +
                 " values (?, ?, ?, ?, ?, ?)";
     }
 
@@ -81,5 +96,27 @@ public final class QueryExtensionCatalog {
     public static String buildDeleteExtensionsQuery() {
         return "delete from " + EXTENSION_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ?";
+    }
+
+    public static String buildDeleteExtensionsVariantByIdentifiableIdAndExtensionsNameINQuery(int numberOfValues) {
+        if (numberOfValues < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+
+        StringBuilder sql = new StringBuilder()
+                .append("delete from ").append(EXTENSION_TABLE)
+                .append(" where ")
+                .append(NETWORK_UUID_COLUMN).append(" = ? and ")
+                .append(VARIANT_NUM_COLUMN).append(" = ? and (");
+
+        for (int i = 0; i < numberOfValues; i++) {
+            if (i > 0) {
+                sql.append(" or ");
+            }
+            sql.append("(").append(EQUIPMENT_ID_COLUMN).append(" = ? and ").append("name").append(" = ?)");
+        }
+        sql.append(")");
+
+        return sql.toString();
     }
 }
