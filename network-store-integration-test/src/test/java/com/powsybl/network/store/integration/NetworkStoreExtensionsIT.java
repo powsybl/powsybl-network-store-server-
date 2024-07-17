@@ -18,11 +18,7 @@ import com.powsybl.commons.extensions.Extension;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.extensions.*;
-import com.powsybl.iidm.network.test.BatteryNetworkFactory;
-import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
-import com.powsybl.iidm.network.test.HvdcTestNetwork;
-import com.powsybl.iidm.network.test.SvcTestCaseFactory;
-import com.powsybl.iidm.network.test.ThreeWindingsTransformerNetworkFactory;
+import com.powsybl.iidm.network.test.*;
 import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.network.store.iidm.impl.NetworkImpl;
 import com.powsybl.network.store.model.BaseVoltageSourceAttribute;
@@ -1568,6 +1564,38 @@ public class NetworkStoreExtensionsIT {
             assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger2());
             assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimateRatioTapChanger3());
             assertTrue(threeWindingsTransformerToBeEstimated.shouldEstimatePhaseTapChanger3());
+        }
+    }
+
+    @Test
+    public void testRemoveExtension() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            Generator gen = network.getGenerator("GEN");
+            gen.newExtension(ActivePowerControlAdder.class)
+                    .withParticipate(true)
+                    .withDroop(6.3f)
+                    .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            Generator gen = network.getGenerator("GEN");
+            ActivePowerControl<Generator> activePowerControl = gen.getExtension(ActivePowerControl.class);
+            assertNotNull(activePowerControl);
+
+            gen.removeExtension(ActivePowerControl.class);
+            assertNull(gen.getExtensionByName("activePowerControl"));
+            assertNull(gen.getExtension(ActivePowerControl.class));
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            Generator gen = network.getGenerator("GEN");
+            assertNull(gen.getExtensionByName("activePowerControl"));
+            assertNull(gen.getExtension(ActivePowerControl.class));
         }
     }
 }
