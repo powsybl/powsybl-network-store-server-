@@ -98,10 +98,8 @@ public class NetworkStoreToolsIT extends AbstractNetworkStoreToolsIT {
     public void test() throws IOException {
         // import a xiidm file
         Files.copy(getClass().getResourceAsStream("/test.xiidm"), fileSystem.getPath("/work/test.xiidm"));
-        assertCommand(new String[] {"network-store-import", "--input-file", "/work/test.xiidm"},
-                      0,
-                      "Importing file '/work/test.xiidm'...",
-                      "");
+        assertCommandSuccessful(new String[] {"network-store-import", "--input-file", "/work/test.xiidm"},
+            "Importing file '/work/test.xiidm'..." + System.lineSeparator());
 
         // get network UUID
         UUID networkUuid;
@@ -112,22 +110,16 @@ public class NetworkStoreToolsIT extends AbstractNetworkStoreToolsIT {
         }
 
         // list networks
-        assertCommand(new String[] {"network-store-list"},
-                      0,
-                      networkUuid + " : sim1",
-                      "");
+        assertCommandSuccessful(new String[] {"network-store-list"},
+            networkUuid + " : sim1" + System.lineSeparator());
 
         // apply groovy script
         Files.copy(getClass().getResourceAsStream("/test.groovy"), fileSystem.getPath("/work/test.groovy"));
-        assertCommand(new String[] {"network-store-script", "--network-uuid", networkUuid.toString(), "--script-file", "/work/test.groovy"},
-                      0,
-                      "Applying '/work/test.groovy' on " + networkUuid + "..." + System.lineSeparator() + "id: sim1",
-                      "");
+        assertCommandSuccessful(new String[] {"network-store-script", "--network-uuid", networkUuid.toString(), "--script-file", "/work/test.groovy"},
+            "Applying '/work/test.groovy' on " + networkUuid + "..." + System.lineSeparator() + "id: sim1");
 
         // delete network
-        assertCommand(new String[] {"network-store-delete", "--network-uuid", networkUuid.toString()},
-                      0,
-                      "Deleting " + networkUuid + "...",
-                      "");
+        assertCommandSuccessful(new String[] {"network-store-delete", "--network-uuid", networkUuid.toString()},
+            "Deleting " + networkUuid + "..." + System.lineSeparator());
     }
 }

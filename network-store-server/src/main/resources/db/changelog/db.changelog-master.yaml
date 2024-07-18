@@ -55,3 +55,7 @@ databaseChangeLog:
   - include:
       file: changesets/changelog_20240529T130300Z.xml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/changelog_20240701T114700Z.xml
+      relativeToChangelogFile: true
