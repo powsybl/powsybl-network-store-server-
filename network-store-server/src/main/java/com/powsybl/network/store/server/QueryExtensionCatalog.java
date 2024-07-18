@@ -29,8 +29,8 @@ public final class QueryExtensionCatalog {
     }
 
     public static String buildGetExtensionsQuery() {
-        return "select " + EXTENSION_VALUE_COLUMN + ", " +
-                "from " + EXTENSION_TABLE + " where " +
+        return "select " + EXTENSION_VALUE_COLUMN +
+                " from " + EXTENSION_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 EQUIPMENT_ID_COLUMN + " = ? and " +
@@ -39,8 +39,8 @@ public final class QueryExtensionCatalog {
 
     public static String buildGetAllExtensionsAttributesByIdentifiableId() {
         return "select " + EXTENSION_NAME_COLUMN + ", " +
-                EXTENSION_VALUE_COLUMN + ", " +
-                "from " + EXTENSION_TABLE + " where " +
+                EXTENSION_VALUE_COLUMN +
+                " from " + EXTENSION_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 EQUIPMENT_ID_COLUMN + " = ?";
@@ -49,8 +49,8 @@ public final class QueryExtensionCatalog {
     public static String buildGetAllExtensionsAttributesByResourceType() {
         return "select " + EQUIPMENT_ID_COLUMN + ", " +
                 EXTENSION_NAME_COLUMN + ", " +
-                EXTENSION_VALUE_COLUMN + ", " +
-                "from " + EXTENSION_TABLE + " where " +
+                EXTENSION_VALUE_COLUMN +
+                " from " + EXTENSION_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 EQUIPMENT_TYPE_COLUMN + " = ?";
@@ -58,8 +58,8 @@ public final class QueryExtensionCatalog {
 
     public static String buildGetAllExtensionsAttributesByResourceTypeAndExtensionName() {
         return "select " + EQUIPMENT_ID_COLUMN + ", " +
-                EXTENSION_VALUE_COLUMN + ", " +
-                "from " + EXTENSION_TABLE + " where " +
+                EXTENSION_VALUE_COLUMN +
+                " from " + EXTENSION_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 EXTENSION_RESOURCE_TYPE_COLUMN + " = ? and " +
