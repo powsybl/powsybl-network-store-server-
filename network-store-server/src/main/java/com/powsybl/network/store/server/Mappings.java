@@ -248,6 +248,7 @@ public class Mappings {
         generatorMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, GeneratorAttributes::getAliasesWithoutType, GeneratorAttributes::setAliasesWithoutType));
         generatorMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, GeneratorAttributes::getPosition, GeneratorAttributes::setPosition));
         generatorMappings.addColumnMapping("generatorShortCircuit", new ColumnMapping<>(GeneratorShortCircuitAttributes.class, GeneratorAttributes::getGeneratorShortCircuitAttributes, GeneratorAttributes::setGeneratorShortCircuitAttributes));
+        generatorMappings.addColumnMapping("condenser", new ColumnMapping<>(Boolean.class, GeneratorAttributes::isCondenser, GeneratorAttributes::setCondenser));
     }
 
     public TableMapping getSwitchMappings() {
