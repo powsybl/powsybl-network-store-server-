@@ -7,10 +7,14 @@
 package com.powsybl.network.store.client;
 
 import com.google.auto.service.AutoService;
+import com.powsybl.commons.config.ConfigurationException;
+import com.powsybl.commons.config.ModuleConfig;
 import com.powsybl.commons.config.PlatformConfig;
 import com.powsybl.iidm.network.NetworkFactory;
 import com.powsybl.iidm.network.NetworkFactoryService;
 import com.powsybl.network.store.iidm.impl.NetworkFactoryImpl;
+
+import java.util.Optional;
 
 /**
  *
@@ -28,8 +32,12 @@ public class NetworkFactoryTestService implements NetworkFactoryService {
 
     @Override
     public NetworkFactory createNetworkFactory() {
-        String networkStoreBaseUrl = PlatformConfig.defaultConfig().getModuleConfig("network-store")
-                .getStringProperty("base-url");
+        Optional<ModuleConfig> moduleConfigOpt = PlatformConfig.defaultConfig().getOptionalModuleConfig("network-store");
+        if (moduleConfigOpt.isEmpty()) {
+            throw new ConfigurationException("Module network-store is missing in your configuration file");
+        }
+        ModuleConfig moduleConfig = moduleConfigOpt.get();
+        String networkStoreBaseUrl = moduleConfig.getStringProperty("base-url");
         RestClient restClient = new RestClientImpl(networkStoreBaseUrl);
         return new NetworkFactoryImpl(() -> new RestNetworkStoreClient(restClient));
     }

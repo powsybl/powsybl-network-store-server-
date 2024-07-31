@@ -362,13 +362,13 @@ public class NetworkStoreValidationTest {
                 .add())
                 .getMessage().contains("reactive power setpoint"));
         assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.newCurrentLimits().setPermanentLimit(-5).add())
-                .getMessage().contains("permanent limit must be > 0"));
+                .getMessage().contains("permanent limit must be >= 0"));
         assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.newCurrentLimits().setPermanentLimit(10)
                 .beginTemporaryLimit().endTemporaryLimit().add())
                 .getMessage().contains("temporary limit value is not set"));
         assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.newCurrentLimits().setPermanentLimit(10)
                 .beginTemporaryLimit().setValue(-1).endTemporaryLimit().add())
-                .getMessage().contains("temporary limit value must be > 0"));
+                .getMessage().contains("temporary limit value must be >= 0"));
         assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.newCurrentLimits().setPermanentLimit(10)
                 .beginTemporaryLimit().setValue(10).setAcceptableDuration(-1).endTemporaryLimit().add())
                 .getMessage().contains("acceptable duration must be >= 0"));
@@ -392,7 +392,7 @@ public class NetworkStoreValidationTest {
                 .endTemporaryLimit()
                 .add();
 
-        assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.getCurrentLimits().orElseThrow().setPermanentLimit(-50)).getMessage().contains("permanent limit must be > 0"));
+        assertTrue(assertThrows(PowsyblException.class, () -> danglingLine1.getCurrentLimits().orElseThrow().setPermanentLimit(-50)).getMessage().contains("permanent limit must be >= 0"));
 
         DanglingLine danglingLine2 = vl1.newDanglingLine().setId("DL2").setNode(2).setP0(1).setQ0(1).setR(1).setX(1).setG(1).setB(1)
                 .newGeneration().setMinP(100).setMaxP(200).setTargetP(500).setVoltageRegulationOn(false).setTargetV(300).setTargetQ(100).add()
@@ -544,7 +544,7 @@ public class NetworkStoreValidationTest {
 
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().add()).getMessage().contains("tap position is not set"));
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().setTapPosition(3).add())
-                .getMessage().contains("a phase tap changer shall have at least one step"));
+                .getMessage().contains("phase tap changer should have at least one step"));
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger().setTapPosition(3).beginStep().endStep().add())
                 .getMessage().contains("step alpha is not set"));
         assertTrue(assertThrows(PowsyblException.class, () -> t2e.newPhaseTapChanger()
