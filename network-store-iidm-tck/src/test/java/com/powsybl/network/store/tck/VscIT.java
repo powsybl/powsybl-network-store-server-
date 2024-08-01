@@ -29,16 +29,4 @@ class VscIT extends AbstractVscTest {
     public void testSetterGetterInMultiVariants() {
         //FIXME remove when we fix primary key constraints violation on DB
     }
-
-    @Test
-    @Override
-    public void testRegulatingTerminal() {
-        // FIXME implement VscConverterStation.setRegulatingTerminal
-    }
-
-    @Test
-    @Override
-    public void testVscConverterStationAdder() {
-        // FIXME implement VscConverterStation.setRegulatingTerminal
-    }
 }

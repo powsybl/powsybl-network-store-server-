@@ -30,7 +30,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 class GroundIT extends AbstractGroundTest {
 
     @Test
-    void testOnSubnetwork() {
+    public void testOnSubnetwork() {
         // FIXME remove this test when subnetworks are implemented
     }
 }
