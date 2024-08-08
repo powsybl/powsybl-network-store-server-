@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="0" author="lesoteti">
+        <createTable tableName="regulationpoint">
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="regulationpoint_pkey"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="regulationpoint_pkey"/>
+            </column>
+            <column name="regulatedequipmentid" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="regulationpoint_pkey"/>
+            </column>
+            <column name="regulationmode" type="TEXT"/>
+            <column name="localterminal" type="TEXT"/>
+            <column name="regulatingterminal" type="TEXT"/>
+        </createTable>
+        <addColumn tableName="staticvarcompensator">
+            <column name="regulationpoint" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1" author="lesoteti">
+        <sql>
+            INSERT INTO regulationpoint (networkuuid, variantnum, regulatedequipmentid, regulationmode, localterminal, regulatingterminal)
+            SELECT networkuuid, variantnum, id, regulationmode, id, regulatingterminal
+            FROM staticvarcompensator;
+        </sql>
+    </changeSet>
+    <changeSet id="2" author="lesoteti">
+        <dropColumn columnName="regulationmode" tableName="staticvarcompensator"/>
+        <dropColumn columnName="regulatingterminal" tableName="staticvarcompensator"/>
+    </changeSet>
+
+</databaseChangeLog>
