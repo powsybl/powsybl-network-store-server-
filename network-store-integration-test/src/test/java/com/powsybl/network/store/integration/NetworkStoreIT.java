@@ -2561,7 +2561,7 @@ public class NetworkStoreIT {
             assertEquals("networkTestCase", readNetwork.getId());
 
             assertEquals(16, readNetwork.getBusBreakerView().getBusStream().collect(Collectors.toList()).size());
-            assertEquals(2,readNetwork.getBusBreakerView().getBusStream().filter(b -> b instanceof ConfiguredBusImpl).count());
+            assertEquals(2, readNetwork.getBusBreakerView().getBusStream().filter(b -> b instanceof ConfiguredBusImpl).count());
             Bus bus1 = readNetwork.getBusBreakerView().getBus("BUS5");
             Bus bus2 = readNetwork.getBusBreakerView().getBus("BUS6");
 
