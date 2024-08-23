@@ -190,7 +190,7 @@ public class NetworkStoreIT {
 
             VoltageLevel voltageLevel1 = network.getVoltageLevel("n1_voltageLevel1");
             assertEquals(6, voltageLevel1.getNodeBreakerView().getMaximumNodeIndex());
-            assertArrayEquals(new int[] {5, 2, 0, 1, 3, 6}, voltageLevel1.getNodeBreakerView().getNodes());
+            assertArrayEquals(new int[] {0, 1, 2, 3, 5, 6}, voltageLevel1.getNodeBreakerView().getNodes());
             assertNotNull(voltageLevel1.getNodeBreakerView().getTerminal(2));
             assertNull(voltageLevel1.getNodeBreakerView().getTerminal(4));
             List<Integer> traversedNodes = new ArrayList<>();
@@ -1358,7 +1358,7 @@ public class NetworkStoreIT {
             assertEquals(28, threeWindingsTransformer.getTerminal(ThreeSides.TWO).getQ(), 0.1);
             assertEquals(18, threeWindingsTransformer.getTerminal(ThreeSides.THREE).getQ(), 0.1);
 
-            assertEquals(1, threeWindingsTransformer.getTerminal(ThreeSides.ONE).getNodeBreakerView().getNode());
+            assertEquals(4, threeWindingsTransformer.getTerminal(ThreeSides.ONE).getNodeBreakerView().getNode());
             assertEquals(2, threeWindingsTransformer.getTerminal(ThreeSides.TWO).getNodeBreakerView().getNode());
             assertEquals(3, threeWindingsTransformer.getTerminal(ThreeSides.THREE).getNodeBreakerView().getNode());
 
@@ -2560,8 +2560,8 @@ public class NetworkStoreIT {
 
             assertEquals("networkTestCase", readNetwork.getId());
 
-            assertEquals(13, readNetwork.getBusBreakerView().getBusStream().collect(Collectors.toList()).size());
-            assertEquals(2, readNetwork.getBusBreakerView().getBusStream().filter(b -> b instanceof ConfiguredBusImpl).count());
+            assertEquals(16, readNetwork.getBusBreakerView().getBusStream().collect(Collectors.toList()).size());
+            assertEquals(2,readNetwork.getBusBreakerView().getBusStream().filter(b -> b instanceof ConfiguredBusImpl).count());
             Bus bus1 = readNetwork.getBusBreakerView().getBus("BUS5");
             Bus bus2 = readNetwork.getBusBreakerView().getBus("BUS6");
 
