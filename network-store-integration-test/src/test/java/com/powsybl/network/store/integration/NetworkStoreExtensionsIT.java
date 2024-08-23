@@ -451,9 +451,9 @@ public class NetworkStoreExtensionsIT {
         assertEquals(ConnectablePosition.Direction.TOP, cptwt2.getFeeder2().getDirection());
 
         ThreeWindingsTransformer twt3 = s1.newThreeWindingsTransformer().setId("TWT3")
-                .setName("Three windings transformer 1").setRatedU0(234).newLeg1().setVoltageLevel("v1").setNode(1)
-                .setR(45).setX(35).setG(25).setB(15).setRatedU(5).add().newLeg2().setVoltageLevel("v2").setNode(1)
-                .setR(47).setX(37).setG(27).setB(17).setRatedU(7).add().newLeg3().setVoltageLevel("v3").setNode(1)
+                .setName("Three windings transformer 1").setRatedU0(234).newLeg1().setVoltageLevel("v1").setNode(3)
+                .setR(45).setX(35).setG(25).setB(15).setRatedU(5).add().newLeg2().setVoltageLevel("v2").setNode(2)
+                .setR(47).setX(37).setG(27).setB(17).setRatedU(7).add().newLeg3().setVoltageLevel("v3").setNode(2)
                 .setR(49).setX(39).setG(29).setB(19).setRatedU(9).add().add();
         twt3.newExtension(ConnectablePositionAdder.class).newFeeder1().withName("twt3.1").withOrder(3)
                 .withDirection(ConnectablePosition.Direction.BOTTOM).add().newFeeder2().withName("twt3.2").withOrder(3)
