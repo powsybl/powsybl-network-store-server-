@@ -15,20 +15,23 @@
             <column name="regulatedequipmentid" type="VARCHAR(255)">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="regulationpoint_pkey"/>
             </column>
-            <column name="regulationmode" type="TEXT"/>
-            <column name="localterminal" type="TEXT"/>
-            <column name="regulatingterminal" type="TEXT"/>
+            <column name="regulationmode" type="VARCHAR(50)"/>
+            <column name="localterminalconnectableid" type="VARCHAR(255)"/>
+            <column name="localterminalside" type="VARCHAR(50)"/>
+            <column name="regulatingterminalconnectableid" type="VARCHAR(255)"/>
+            <column name="regulatingterminalside" type="VARCHAR(50)"/>
         </createTable>
         <addColumn tableName="staticvarcompensator">
             <column name="regulationpoint" type="TEXT"/>
         </addColumn>
     </changeSet>
     <changeSet id="1" author="lesoteti">
-        <sql>
-            INSERT INTO regulationpoint (networkuuid, variantnum, regulatedequipmentid, regulationmode, localterminal, regulatingterminal)
-            SELECT networkuuid, variantnum, id, regulationmode, id, regulatingterminal
-            FROM staticvarcompensator;
-        </sql>
+        <sqlFile
+                dbms="postgresql"
+                path="regulationPoint_20240808T110000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
     </changeSet>
     <changeSet id="2" author="lesoteti">
         <dropColumn columnName="regulationmode" tableName="staticvarcompensator"/>
