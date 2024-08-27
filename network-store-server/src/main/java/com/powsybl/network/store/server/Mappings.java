@@ -591,8 +591,6 @@ public class Mappings {
         staticVarCompensatorMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, StaticVarCompensatorAttributes::getPosition, StaticVarCompensatorAttributes::setPosition));
         staticVarCompensatorMappings.addColumnMapping("voltagePerReactivePowerControl", new ColumnMapping<>(VoltagePerReactivePowerControlAttributes.class, StaticVarCompensatorAttributes::getVoltagePerReactiveControl, StaticVarCompensatorAttributes::setVoltagePerReactiveControl));
         staticVarCompensatorMappings.addColumnMapping("standbyAutomaton", new ColumnMapping<>(StandbyAutomatonAttributes.class, StaticVarCompensatorAttributes::getStandbyAutomaton, StaticVarCompensatorAttributes::setStandbyAutomaton));
-        staticVarCompensatorMappings.addColumnMapping(REGULATION_POINT, new ColumnMapping<>(RegulationPointAttributes.class,
-            StaticVarCompensatorAttributes::getRegulationPoint, StaticVarCompensatorAttributes::setRegulationPoint));
     }
 
     public TableMapping getHvdcLineMappings() {
