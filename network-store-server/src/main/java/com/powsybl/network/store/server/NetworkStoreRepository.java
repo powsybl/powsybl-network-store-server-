@@ -2042,7 +2042,7 @@ public class NetworkStoreRepository {
     public void insertRegulationPoints(Map<OwnerInfo, RegulationPointAttributes> regulationPoints) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertRegulationPointsQuery())) {
-                List<Object> values = new ArrayList<>(6);
+                List<Object> values = new ArrayList<>(8);
                 List<Map.Entry<OwnerInfo, RegulationPointAttributes>> list = new ArrayList<>(regulationPoints.entrySet());
                 for (List<Map.Entry<OwnerInfo, RegulationPointAttributes>> subUnit : Lists.partition(list, BATCH_SIZE)) {
                     for (Map.Entry<OwnerInfo, RegulationPointAttributes> attributes : subUnit) {
@@ -2051,10 +2051,14 @@ public class NetworkStoreRepository {
                         values.add(attributes.getKey().getVariantNum());
                         values.add(attributes.getValue().getRegulatedEquipmentId());
                         values.add(attributes.getValue().getRegulationMode());
-                        values.add(attributes.getValue().getLocalTerminal().getConnectableId());
-                        values.add(attributes.getValue().getLocalTerminal().getSide());
-                        values.add(attributes.getValue().getRegulatingTerminal().getConnectableId());
-                        values.add(attributes.getValue().getRegulatingTerminal().getSide());
+                        if (attributes.getValue().getLocalTerminal() != null) {
+                            values.add(attributes.getValue().getLocalTerminal().getConnectableId());
+                            values.add(attributes.getValue().getLocalTerminal().getSide());
+                        }
+                        if (attributes.getValue().getRegulatingTerminal() != null) {
+                            values.add(attributes.getValue().getRegulatingTerminal().getConnectableId());
+                            values.add(attributes.getValue().getRegulatingTerminal().getSide());
+                        }
                         bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
@@ -2245,8 +2249,14 @@ public class NetworkStoreRepository {
                 regulationPointAttributes.setRegulatedEquipmentId(regulatedEquipmentId);
                 regulationPointAttributes.setRegulationMode(resultSet.getString(4));
                 regulationPointAttributes.setIdentifiableType(IdentifiableType.valueOf(type.toString()));
-                regulationPointAttributes.setLocalTerminal(new TerminalRefAttributes(resultSet.getString(5), resultSet.getString(6)));
-                regulationPointAttributes.setRegulatingTerminal(new TerminalRefAttributes(resultSet.getString(7), resultSet.getString(8)));
+                Optional<String> localConnectableId = Optional.ofNullable(resultSet.getString(5));
+                if (localConnectableId.isPresent()) {
+                    regulationPointAttributes.setLocalTerminal(new TerminalRefAttributes(localConnectableId.get(), resultSet.getString(6)));
+                }
+                Optional<String> regulatingConnectableId = Optional.ofNullable(resultSet.getString(7));
+                if (regulatingConnectableId.isPresent()) {
+                    regulationPointAttributes.setRegulatingTerminal(new TerminalRefAttributes(resultSet.getString(7), resultSet.getString(8)));
+                }
                 map.put(owner, regulationPointAttributes);
             }
             return map;

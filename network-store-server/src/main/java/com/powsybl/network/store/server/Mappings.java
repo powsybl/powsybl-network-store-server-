@@ -131,7 +131,6 @@ public class Mappings {
     private static final String SELECTED_OPERATIONAL_LIMITS_GROUP_ID2_COLUMN = "selectedOperationalLimitsGroupId2";
     private static final String VOLTAGE_REGULATOR_ON = "voltageRegulatorOn";
     private static final String REGULATION_TERMINAL = "regulatingTerminal";
-    private static final String REGULATION_POINT = "regulationPoint";
     private static final String MINQ = "minQ";
     private static final String MAXQ = "maxQ";
     private static final String TIE_LINE_ID = "tieLineId";
