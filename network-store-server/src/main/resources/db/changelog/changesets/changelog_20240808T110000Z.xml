@@ -24,6 +24,15 @@
         <addColumn tableName="staticvarcompensator">
             <column name="regulationpoint" type="TEXT"/>
         </addColumn>
+        <addColumn tableName="generator">
+            <column name="regulationpoint" type="TEXT"/>
+        </addColumn>
+        <addColumn tableName="shuntcompensator">
+            <column name="regulationpoint" type="TEXT"/>
+        </addColumn>
+        <addColumn tableName="vscconverterstation">
+            <column name="regulationpoint" type="TEXT"/>
+        </addColumn>
     </changeSet>
     <changeSet id="1" author="lesoteti">
         <sqlFile
@@ -36,6 +45,9 @@
     <changeSet id="2" author="lesoteti">
         <dropColumn columnName="regulationmode" tableName="staticvarcompensator"/>
         <dropColumn columnName="regulatingterminal" tableName="staticvarcompensator"/>
+        <dropColumn columnName="regulatingterminal" tableName="generator"/>
+        <dropColumn columnName="regulatingterminal" tableName="shuntcompensator"/>
+        <dropColumn columnName="regulatingterminal" tableName="vscconverterstation"/>
     </changeSet>
 
 </databaseChangeLog>
