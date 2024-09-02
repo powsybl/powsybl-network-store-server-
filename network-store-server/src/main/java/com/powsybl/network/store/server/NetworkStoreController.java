@@ -42,6 +42,12 @@ public class NetworkStoreController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(TopLevelDocument.empty()));
     }
 
+    private ResponseEntity<ExtensionAttributesTopLevelDocument> getExtensionAttributes(Supplier<Optional<ExtensionAttributes>> f) {
+        return f.get()
+                .map(resource -> ResponseEntity.ok(ExtensionAttributesTopLevelDocument.of(resource)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(ExtensionAttributesTopLevelDocument.empty()));
+    }
+
     private <T extends IdentifiableAttributes> ResponseEntity<Void> createAll(Consumer<List<Resource<T>>> f, List<Resource<T>> resources) {
         f.accept(resources);
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -60,8 +66,8 @@ public class NetworkStoreController {
         } else {
             limitedResources = resources.stream().limit(limit).collect(Collectors.toList());
         }
-        TopLevelDocument<T> document = TopLevelDocument.of(limitedResources)
-                .addMeta("totalCount", Integer.toString(resources.size()));
+        TopLevelDocument<T> document = TopLevelDocument.of(limitedResources);
+        document.addMeta("totalCount", Integer.toString(resources.size()));
         return ResponseEntity.ok()
                 .body(document);
     }
@@ -1438,13 +1444,11 @@ public class NetworkStoreController {
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Successfully get extension attributes"),
                            @ApiResponse(responseCode = "404", description = "The extension attributes has not been found")
     })
-    public ResponseEntity<ExtensionAttributes> getExtensionAttributes(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+    public ResponseEntity<ExtensionAttributesTopLevelDocument> getExtensionAttributes(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                       @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
                                                       @Parameter(description = "Identifiable id", required = true) @PathVariable("identifiableId") String identifiableId,
                                                       @Parameter(description = "Extension name", required = true) @PathVariable("extensionName") String extensionName) {
-        return repository.getExtensionAttributes(networkId, variantNum, identifiableId, extensionName)
-                .map(ea -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(ea))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+        return getExtensionAttributes(() -> repository.getExtensionAttributes(networkId, variantNum, identifiableId, extensionName));
     }
 
     @GetMapping(value = "{networkId}/{variantNum}/types/{type}/extensions/{extensionName}")
