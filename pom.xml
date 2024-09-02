@@ -15,7 +15,7 @@
     <parent>
         <groupId>com.powsybl</groupId>
         <artifactId>powsybl-parent-ws</artifactId>
-        <version>15</version>
+        <version>20</version>
         <relativePath/>
     </parent>
 
@@ -50,7 +50,7 @@
     <properties>
         <sirocco.version>1.0</sirocco.version>
 
-        <powsybl-ws-dependencies.version>2.12.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.13.0</powsybl-ws-dependencies.version>
         <!-- FIXME: powsybl-network-store modules'version is overloaded in the dependencies section.The overloads and this property below have to be removed at next powsybl-ws-dependencies.version upgrade -->
         <powsybl-network-store.version>1.15.0</powsybl-network-store.version>
 
