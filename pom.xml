@@ -49,6 +49,7 @@
 
     <properties>
         <sirocco.version>1.0</sirocco.version>
+        <dropwizard.version>4.2.26</dropwizard.version>
 
         <powsybl-ws-dependencies.version>2.13.0</powsybl-ws-dependencies.version>
         <!-- FIXME: powsybl-network-store modules'version is overloaded in the dependencies section.The overloads and this property below have to be removed at next powsybl-ws-dependencies.version upgrade -->
@@ -116,6 +117,11 @@
                         <artifactId>log4j</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${dropwizard.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
