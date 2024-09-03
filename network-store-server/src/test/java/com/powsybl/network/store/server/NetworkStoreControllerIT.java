@@ -26,7 +26,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -524,9 +523,9 @@ public class NetworkStoreControllerIT {
 
         // generator creation and update
         RegulationPointAttributes regulationPointAttributes = RegulationPointAttributes.builder()
-            .regulatedEquipmentId("gen1")
+            .regulatedEquipmentId("id")
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
-            .localTerminal(TerminalRefAttributes.builder().connectableId("gen1").build())
+            .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
             .build();
         Resource<GeneratorAttributes> generator = Resource.generatorBuilder()
                 .id("id")
@@ -550,7 +549,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
                 .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq"))
                 .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("ONE"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("gen1"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("MIN_MAX"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.minQ").value(10.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.maxQ").value(10.));
@@ -574,7 +573,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
                 .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq2"))
                 .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("TWO"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("gen1"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("CURVE"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.0\"].p").value(50.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.0\"].minQ").value(11.))
@@ -952,9 +951,10 @@ public class NetworkStoreControllerIT {
                         .content(objectMapper.writeValueAsString(Collections.singleton(n1))))
                 .andExpect(status().isCreated());
         RegulationPointAttributes regulationPointAttributes = RegulationPointAttributes.builder()
-            .regulatedEquipmentId("gen1")
+            .regulatedEquipmentId("id")
+            .identifiableType(IdentifiableType.GENERATOR)
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
-            .localTerminal(TerminalRefAttributes.builder().connectableId("gen1").build())
+            .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
             .build();
         Resource<GeneratorAttributes> generator = Resource.generatorBuilder()
                 .id("id")
@@ -1029,12 +1029,6 @@ public class NetworkStoreControllerIT {
                  .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
                  .andExpect(content().json("[{\"id\":\"v2\",\"num\":0},{\"id\":\"v3\",\"num\":1}]"));
 
-        MvcResult result = mvc.perform(get("/" + VERSION + "/networks/" + clonedNetworkUuid + "/" + 1 + "/generators")
-            .contentType(APPLICATION_JSON)).andReturn();
-        System.out.println("---------------------------------------");
-        System.out.println(result.getResponse().getContentAsString());
-        System.out.println("---------------------------------------");
-
         //Check the generator is present in the cloned network
         mvc.perform(get("/" + VERSION + "/networks/" + clonedNetworkUuid + "/" + 1 + "/generators")
                         .contentType(APPLICATION_JSON))
@@ -1042,7 +1036,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
                 .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq"))
                 .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("ONE"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("gen1"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("MIN_MAX"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.minQ").value(10.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.maxQ").value(10.));

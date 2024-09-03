@@ -130,7 +130,6 @@ public class Mappings {
     private static final String SELECTED_OPERATIONAL_LIMITS_GROUP_ID1_COLUMN = "selectedOperationalLimitsGroupId1";
     private static final String SELECTED_OPERATIONAL_LIMITS_GROUP_ID2_COLUMN = "selectedOperationalLimitsGroupId2";
     private static final String VOLTAGE_REGULATOR_ON = "voltageRegulatorOn";
-    private static final String REGULATION_POINT = "regulationPoint";
     private static final String MINQ = "minQ";
     private static final String MAXQ = "maxQ";
     private static final String TIE_LINE_ID = "tieLineId";
@@ -248,7 +247,6 @@ public class Mappings {
         generatorMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, GeneratorAttributes::getPosition, GeneratorAttributes::setPosition));
         generatorMappings.addColumnMapping("generatorShortCircuit", new ColumnMapping<>(GeneratorShortCircuitAttributes.class, GeneratorAttributes::getGeneratorShortCircuitAttributes, GeneratorAttributes::setGeneratorShortCircuitAttributes));
         generatorMappings.addColumnMapping("condenser", new ColumnMapping<>(Boolean.class, GeneratorAttributes::isCondenser, GeneratorAttributes::setCondenser));
-        generatorMappings.addColumnMapping(REGULATION_POINT, new ColumnMapping<>(RegulationPointAttributes.class, GeneratorAttributes::getRegulationPoint, GeneratorAttributes::setRegulationPoint));
     }
 
     public TableMapping getSwitchMappings() {
@@ -504,7 +502,6 @@ public class Mappings {
         shuntCompensatorMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, ShuntCompensatorAttributes::getAliasByType, ShuntCompensatorAttributes::setAliasByType));
         shuntCompensatorMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, ShuntCompensatorAttributes::getAliasesWithoutType, ShuntCompensatorAttributes::setAliasesWithoutType));
         shuntCompensatorMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, ShuntCompensatorAttributes::getPosition, ShuntCompensatorAttributes::setPosition));
-        shuntCompensatorMappings.addColumnMapping(REGULATION_POINT, new ColumnMapping<>(RegulationPointAttributes.class, ShuntCompensatorAttributes::getRegulationPoint, ShuntCompensatorAttributes::setRegulationPoint));
     }
 
     public TableMapping getVscConverterStationMappings() {
@@ -544,7 +541,6 @@ public class Mappings {
         vscConverterStationMappings.addColumnMapping(ALIAS_BY_TYPE, new ColumnMapping<>(Map.class, VscConverterStationAttributes::getAliasByType, VscConverterStationAttributes::setAliasByType));
         vscConverterStationMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, VscConverterStationAttributes::getAliasesWithoutType, VscConverterStationAttributes::setAliasesWithoutType));
         vscConverterStationMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, VscConverterStationAttributes::getPosition, VscConverterStationAttributes::setPosition));
-        vscConverterStationMappings.addColumnMapping(REGULATION_POINT, new ColumnMapping<>(RegulationPointAttributes.class, VscConverterStationAttributes::getRegulationPoint, VscConverterStationAttributes::setRegulationPoint));
     }
 
     public TableMapping getLccConverterStationMappings() {
@@ -591,7 +587,6 @@ public class Mappings {
         staticVarCompensatorMappings.addColumnMapping(POSITION, new ColumnMapping<>(ConnectablePositionAttributes.class, StaticVarCompensatorAttributes::getPosition, StaticVarCompensatorAttributes::setPosition));
         staticVarCompensatorMappings.addColumnMapping("voltagePerReactivePowerControl", new ColumnMapping<>(VoltagePerReactivePowerControlAttributes.class, StaticVarCompensatorAttributes::getVoltagePerReactiveControl, StaticVarCompensatorAttributes::setVoltagePerReactiveControl));
         staticVarCompensatorMappings.addColumnMapping("standbyAutomaton", new ColumnMapping<>(StandbyAutomatonAttributes.class, StaticVarCompensatorAttributes::getStandbyAutomaton, StaticVarCompensatorAttributes::setStandbyAutomaton));
-        staticVarCompensatorMappings.addColumnMapping(REGULATION_POINT, new ColumnMapping<>(RegulationPointAttributes.class, StaticVarCompensatorAttributes::getRegulationPoint, StaticVarCompensatorAttributes::setRegulationPoint));
     }
 
     public TableMapping getHvdcLineMappings() {
