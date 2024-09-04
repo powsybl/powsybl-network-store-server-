@@ -30,18 +30,6 @@
             <column name="equipmenttype"/>
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, regulatedequipmentid, equipmenttype" constraintName="regulationpoint_pkey" tableName="regulationpoint"/>
-        <addColumn tableName="staticvarcompensator">
-            <column name="regulationpoint" type="TEXT"/>
-        </addColumn>
-        <addColumn tableName="generator">
-            <column name="regulationpoint" type="TEXT"/>
-        </addColumn>
-        <addColumn tableName="shuntcompensator">
-            <column name="regulationpoint" type="TEXT"/>
-        </addColumn>
-        <addColumn tableName="vscconverterstation">
-            <column name="regulationpoint" type="TEXT"/>
-        </addColumn>
     </changeSet>
     <changeSet id="1" author="lesoteti">
         <sqlFile
