@@ -489,6 +489,7 @@ public class NetworkStoreExtensionsIT {
             service.flush(createExtensionsNetwork(service.getNetworkFactory()));
         }
 
+        // modify extension
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Map<UUID, String> networkIds = service.getNetworkIds();
             assertEquals(1, networkIds.size());
@@ -516,19 +517,28 @@ public class NetworkStoreExtensionsIT {
             connectablePositionTwt3.getFeeder2().setName("TWT3Modified.2").setOrder(30).setDirection(ConnectablePosition.Direction.BOTTOM);
             connectablePositionTwt3.getFeeder3().setName("TWT3Modified.3").setOrder(30).setDirection(ConnectablePosition.Direction.BOTTOM);
             service.flush(readNetwork);
+        }
 
-            networkIds = service.getNetworkIds();
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
             assertEquals(1, networkIds.size());
 
-            Network readEditedNetwork = service.getNetwork(networkIds.keySet().stream().findFirst().get());
-            assertEquals("Extensions network", readNetwork.getId());
+            Network readModifiedNetwork = service.getNetwork(networkIds.keySet().stream().findFirst().get());
+            assertEquals("Extensions network", readModifiedNetwork.getId());
 
-            load = readEditedNetwork.getLoad("v1load");
-            twt2 = readEditedNetwork.getTwoWindingsTransformer("TWT2");
-            twt3 = readEditedNetwork.getThreeWindingsTransformer("TWT3");
+            Load load = readModifiedNetwork.getLoad("v1load");
+            TwoWindingsTransformer twt2 = readModifiedNetwork.getTwoWindingsTransformer("TWT2");
+            ThreeWindingsTransformer twt3 = readModifiedNetwork.getThreeWindingsTransformer("TWT3");
             assertNotNull(load);
             assertNotNull(twt2);
             assertNotNull(twt3);
+
+            ConnectablePosition connectablePositionload = load.getExtension(ConnectablePosition.class);
+            assertNotNull(connectablePositionload);
+            ConnectablePosition connectablePositionTwt2 = twt2.getExtension(ConnectablePosition.class);
+            assertNotNull(connectablePositionTwt2);
+            ConnectablePosition connectablePositionTwt3 = twt3.getExtension(ConnectablePosition.class);
+            assertNotNull(connectablePositionTwt3);
 
             assertEquals("v1loadModified", connectablePositionload.getFeeder().getName().orElseThrow());
             assertEquals(10, connectablePositionload.getFeeder().getOrder().orElseThrow().intValue());
