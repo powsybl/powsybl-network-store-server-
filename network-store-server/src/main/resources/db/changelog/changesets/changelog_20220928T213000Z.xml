@@ -205,6 +205,7 @@
         </addColumn>
     </changeSet>
     <changeSet author="cboutier" id="1664174319707-3">
+
         <createTable tableName="tapchangerstep">
             <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="tapchangerstep_pkey"/>
