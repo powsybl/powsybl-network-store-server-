@@ -2346,7 +2346,6 @@ public class NetworkStoreRepository {
                 owner.setEquipmentType(type);
                 regulationPointAttributes.setRegulatedEquipmentId(regulatedEquipmentId);
                 regulationPointAttributes.setRegulationMode(resultSet.getString(4));
-                //TODO : fix in network store should be ResourceType enum and not IdentifiableType
                 regulationPointAttributes.setResourceType(type);
                 Optional<String> localConnectableId = Optional.ofNullable(resultSet.getString(5));
                 if (localConnectableId.isPresent()) {
