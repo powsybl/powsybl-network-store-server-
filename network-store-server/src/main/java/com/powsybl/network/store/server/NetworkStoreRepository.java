@@ -480,9 +480,9 @@ public class NetworkStoreRepository {
 
         // Copy of the regulating points (which are not Identifiables objects)
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneRegulationPointsQuery())) {
-            preparedStmt.setString(1, targetUuid.toString());
+            preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setString(3, uuid.toString());
+            preparedStmt.setObject(3, uuid);
             preparedStmt.setInt(4, sourceVariantNum);
             preparedStmt.execute();
         }
@@ -2169,7 +2169,7 @@ public class NetworkStoreRepository {
     public Map<OwnerInfo, RegulationPointAttributes> getRegulationPoints(UUID networkUuid, int variantNum, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulationPointsQuery());
-            preparedStmt.setObject(1, networkUuid.toString());
+            preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setObject(3, type.toString());
 
@@ -2185,7 +2185,7 @@ public class NetworkStoreRepository {
         }
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulationPointsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
-            preparedStmt.setObject(1, networkUuid.toString());
+            preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setObject(3, type.toString());
             for (int i = 0; i < valuesForInClause.size(); i++) {
@@ -2201,7 +2201,7 @@ public class NetworkStoreRepository {
     private void deleteRegulationPoints(UUID networkUuid, int variantNum, List<String> equipmentIds, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulationPointsVariantEquipmentINQuery(equipmentIds.size()))) {
-                preparedStmt.setObject(1, networkUuid.toString());
+                preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.setObject(3, type.toString());
                 for (int i = 0; i < equipmentIds.size(); i++) {
