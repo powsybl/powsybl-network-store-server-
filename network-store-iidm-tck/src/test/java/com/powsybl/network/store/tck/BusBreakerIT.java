@@ -27,13 +27,6 @@ class BusBreakerIT extends AbstractBusBreakerTest {
     @Test
     @Override
     public void testDisconnectConnect() {
-        // FIXME remove this test when getFictitiousP0 and getFictitiousQ0 of CalculatedBus are implemented
+        // FIXME
     }
-
-    @Test
-    @Override
-    public void testSetterGetter() {
-        // FIXME remove this test when getFictitiousP0 and getFictitiousQ0 of CalculatedBus are implemented
-    }
-
 }
