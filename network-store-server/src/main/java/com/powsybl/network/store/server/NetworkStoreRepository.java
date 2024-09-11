@@ -301,6 +301,12 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
+            // Delete of the regulation points (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulationPointsQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the tap changer steps (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepQuery())) {
                 preparedStmt.setObject(1, uuid);
@@ -360,7 +366,7 @@ public class NetworkStoreRepository {
 
             // Delete of the regulation points (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulationPointsVariantQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
             }
@@ -918,7 +924,7 @@ public class NetworkStoreRepository {
         Optional<Resource<GeneratorAttributes>> generatorResource = getIdentifiable(networkUuid, variantNum, generatorId, mappings.getGeneratorMappings());
         if (generatorResource.isPresent()) {
             Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPointsWithInClause(networkUuid, variantNum,
-                REGULATED_EQUIPMENT_ID, Collections.singletonList(generatorResource.get().getId()), ResourceType.STATIC_VAR_COMPENSATOR);
+                REGULATED_EQUIPMENT_ID, Collections.singletonList(generatorResource.get().getId()), ResourceType.GENERATOR);
             if (regulationPointAttributes.size() > 1) {
                 throw new PowsyblException("a generator can only have one regulating point");
             } else if (regulationPointAttributes.size() == 1) {
@@ -1149,8 +1155,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPoints(networkUuid, variantNum, ResourceType.VSC_CONVERTER_STATION);
 
         vscConverterStations.forEach(vscConverterStation -> vscConverterStation.getAttributes().setRegulationPoint(
-            regulationPointAttributes.get(new OwnerInfo(vscConverterStation.getId(), ResourceType.STATIC_VAR_COMPENSATOR, networkUuid, variantNum))));
-
+            regulationPointAttributes.get(new OwnerInfo(vscConverterStation.getId(), ResourceType.VSC_CONVERTER_STATION, networkUuid, variantNum))));
         return vscConverterStations;
     }
 
@@ -1164,10 +1169,10 @@ public class NetworkStoreRepository {
         insertReactiveCapabilityCurvePointsInEquipments(networkUuid, vscConverterStations, reactiveCapabilityCurvePoints);
 
         Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPointsWithInClause(networkUuid, variantNum,
-            REGULATED_EQUIPMENT_ID, equipmentsIds, ResourceType.STATIC_VAR_COMPENSATOR);
+            REGULATED_EQUIPMENT_ID, equipmentsIds, ResourceType.VSC_CONVERTER_STATION);
 
         vscConverterStations.forEach(vscConvertStation -> vscConvertStation.getAttributes().setRegulationPoint(
-            regulationPointAttributes.get(new OwnerInfo(vscConvertStation.getId(), ResourceType.STATIC_VAR_COMPENSATOR, networkUuid, variantNum))));
+            regulationPointAttributes.get(new OwnerInfo(vscConvertStation.getId(), ResourceType.VSC_CONVERTER_STATION, networkUuid, variantNum))));
         return vscConverterStations;
     }
 
