@@ -1087,7 +1087,7 @@ public class NetworkStoreRepository {
             Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPointsWithInClause(networkUuid, variantNum,
                 REGULATED_EQUIPMENT_ID, Collections.singletonList(shuntCompensatorAttributesResource.get().getId()), ResourceType.SHUNT_COMPENSATOR);
             if (regulationPointAttributes.size() > 1) {
-                throw new PowsyblException("a svc can only have one regulating point");
+                throw new PowsyblException("a shunt can only have one regulating point");
             } else if (regulationPointAttributes.size() == 1) {
                 regulationPointAttributes.values().forEach(regulationPointAttribute ->
                     shuntCompensatorAttributesResource.get().getAttributes().setRegulationPoint(regulationPointAttribute));
@@ -1097,11 +1097,27 @@ public class NetworkStoreRepository {
     }
 
     public List<Resource<ShuntCompensatorAttributes>> getShuntCompensators(UUID networkUuid, int variantNum) {
-        return getIdentifiables(networkUuid, variantNum, mappings.getShuntCompensatorMappings());
+        List<Resource<ShuntCompensatorAttributes>> shuntCompensators = getIdentifiables(networkUuid, variantNum, mappings.getShuntCompensatorMappings());
+
+        Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPoints(networkUuid, variantNum, ResourceType.SHUNT_COMPENSATOR);
+
+        shuntCompensators.forEach(shuntCompensator -> shuntCompensator.getAttributes().setRegulationPoint(
+            regulationPointAttributes.get(new OwnerInfo(shuntCompensator.getId(), ResourceType.SHUNT_COMPENSATOR, networkUuid, variantNum))));
+
+        return shuntCompensators;
     }
 
     public List<Resource<ShuntCompensatorAttributes>> getVoltageLevelShuntCompensators(UUID networkUuid, int variantNum, String voltageLevelId) {
-        return getIdentifiablesInVoltageLevel(networkUuid, variantNum, voltageLevelId, mappings.getShuntCompensatorMappings());
+        List<Resource<ShuntCompensatorAttributes>> shuntCompensators = getIdentifiablesInVoltageLevel(networkUuid, variantNum, voltageLevelId, mappings.getShuntCompensatorMappings());
+
+        List<String> equipmentsIds = shuntCompensators.stream().map(Resource::getId).collect(Collectors.toList());
+
+        Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPointsWithInClause(networkUuid, variantNum,
+            REGULATED_EQUIPMENT_ID, equipmentsIds, ResourceType.SHUNT_COMPENSATOR);
+
+        shuntCompensators.forEach(shuntCompensator -> shuntCompensator.getAttributes().setRegulationPoint(
+            regulationPointAttributes.get(new OwnerInfo(shuntCompensator.getId(), ResourceType.SHUNT_COMPENSATOR, networkUuid, variantNum))));
+        return shuntCompensators;
     }
 
     public void updateShuntCompensators(UUID networkUuid, List<Resource<ShuntCompensatorAttributes>> resources) {
