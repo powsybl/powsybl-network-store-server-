@@ -13,7 +13,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.powsybl.commons.PowsyblException;
-import com.powsybl.iidm.network.IdentifiableType;
 import com.powsybl.iidm.network.LimitType;
 import com.powsybl.iidm.network.ReactiveLimitsKind;
 import com.powsybl.network.store.model.*;
@@ -2368,9 +2367,7 @@ public class NetworkStoreRepository {
                 owner.setEquipmentType(type);
                 regulationPointAttributes.setRegulatedEquipmentId(regulatedEquipmentId);
                 regulationPointAttributes.setRegulationMode(resultSet.getString(4));
-                //TODO : fix in network store should be ResourceType enum and not IdentifiableType
-                regulationPointAttributes.setIdentifiableType(type.toString().equals("VSC_CONVERTER_STATION") ?
-                    IdentifiableType.HVDC_CONVERTER_STATION : IdentifiableType.valueOf(type.toString()));
+                regulationPointAttributes.setResourceType(type);
                 Optional<String> localConnectableId = Optional.ofNullable(resultSet.getString(5));
                 if (localConnectableId.isPresent()) {
                     regulationPointAttributes.setLocalTerminal(new TerminalRefAttributes(localConnectableId.get(), resultSet.getString(6)));
