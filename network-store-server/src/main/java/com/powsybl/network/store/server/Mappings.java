@@ -334,6 +334,8 @@ public class Mappings {
         voltageLevelMappings.addColumnMapping("slackTerminal", new ColumnMapping<>(TerminalRefAttributes.class, VoltageLevelAttributes::getSlackTerminal, VoltageLevelAttributes::setSlackTerminal));
         voltageLevelMappings.addColumnMapping("calculatedBusesValid", new ColumnMapping<>(Boolean.class, VoltageLevelAttributes::isCalculatedBusesValid, VoltageLevelAttributes::setCalculatedBusesValid));
         voltageLevelMappings.addColumnMapping("identifiableShortCircuit", new ColumnMapping<>(IdentifiableShortCircuitAttributes.class, VoltageLevelAttributes::getIdentifiableShortCircuitAttributes, VoltageLevelAttributes::setIdentifiableShortCircuitAttributes));
+        voltageLevelMappings.addColumnMapping("nodeToFictitiousP0", new ColumnMapping<>(null, VoltageLevelAttributes::getNodeToFictitiousP0, VoltageLevelAttributes::setNodeToFictitiousP0, Integer.class, Double.class));
+        voltageLevelMappings.addColumnMapping("nodeToFictitiousQ0", new ColumnMapping<>(null, VoltageLevelAttributes::getNodeToFictitiousQ0, VoltageLevelAttributes::setNodeToFictitiousQ0, Integer.class, Double.class));
     }
 
     public TableMapping getBatteryMappings() {
@@ -403,6 +405,8 @@ public class Mappings {
         configuredBusMappings.addColumnMapping(ALIASES_WITHOUT_TYPE, new ColumnMapping<>(Set.class, ConfiguredBusAttributes::getAliasesWithoutType, ConfiguredBusAttributes::setAliasesWithoutType));
         configuredBusMappings.addColumnMapping("v", new ColumnMapping<>(Double.class, ConfiguredBusAttributes::getV, ConfiguredBusAttributes::setV));
         configuredBusMappings.addColumnMapping("angle", new ColumnMapping<>(Double.class, ConfiguredBusAttributes::getAngle, ConfiguredBusAttributes::setAngle));
+        configuredBusMappings.addColumnMapping("fictitiousp0", new ColumnMapping<>(Double.class, ConfiguredBusAttributes::getFictitiousP0, ConfiguredBusAttributes::setFictitiousP0));
+        configuredBusMappings.addColumnMapping("fictitiousq0", new ColumnMapping<>(Double.class, ConfiguredBusAttributes::getFictitiousQ0, ConfiguredBusAttributes::setFictitiousQ0));
     }
 
     public TableMapping getDanglingLineMappings() {
