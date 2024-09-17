@@ -522,6 +522,11 @@ public class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].attributes.voltageLevelId2").value("vl22"));
 
         // generator creation and update
+        RegulationPointAttributes regulationPointAttributes = RegulationPointAttributes.builder()
+            .regulatedEquipmentId("id")
+            .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
+            .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
+            .build();
         Resource<GeneratorAttributes> generator = Resource.generatorBuilder()
                 .id("id")
                 .attributes(GeneratorAttributes.builder()
@@ -529,10 +534,7 @@ public class NetworkStoreControllerIT {
                         .name("gen1")
                         .energySource(EnergySource.HYDRO)
                         .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
-                        .regulatingTerminal(TerminalRefAttributes.builder()
-                                .connectableId("idEq")
-                                .side("ONE")
-                                .build())
+                        .regulationPoint(regulationPointAttributes)
                         .build())
                 .build();
 
@@ -545,14 +547,15 @@ public class NetworkStoreControllerIT {
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.regulatingTerminal.connectableId").value("idEq"))
-                .andExpect(jsonPath("data[0].attributes.regulatingTerminal.side").value("ONE"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("ONE"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("MIN_MAX"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.minQ").value(10.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.maxQ").value(10.));
 
-        generator.getAttributes().getRegulatingTerminal().setConnectableId("idEq2");
-        generator.getAttributes().getRegulatingTerminal().setSide("TWO");
+        generator.getAttributes().getRegulationPoint().getRegulatingTerminal().setConnectableId("idEq2");
+        generator.getAttributes().getRegulationPoint().getRegulatingTerminal().setSide("TWO");
         generator.getAttributes().setReactiveLimits(ReactiveCapabilityCurveAttributes.builder()
             .points(new TreeMap<>(Map.of(
                     50., ReactiveCapabilityCurvePointAttributes.builder().p(50.).minQ(11.).maxQ(76.).build(),
@@ -568,8 +571,9 @@ public class NetworkStoreControllerIT {
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.regulatingTerminal.connectableId").value("idEq2"))
-                .andExpect(jsonPath("data[0].attributes.regulatingTerminal.side").value("TWO"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq2"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("TWO"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("CURVE"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.0\"].p").value(50.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.0\"].minQ").value(11.))
@@ -946,7 +950,12 @@ public class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Collections.singleton(n1))))
                 .andExpect(status().isCreated());
-
+        RegulationPointAttributes regulationPointAttributes = RegulationPointAttributes.builder()
+            .regulatedEquipmentId("id")
+            .resourceType(ResourceType.GENERATOR)
+            .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
+            .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
+            .build();
         Resource<GeneratorAttributes> generator = Resource.generatorBuilder()
                 .id("id")
                 .attributes(GeneratorAttributes.builder()
@@ -954,10 +963,7 @@ public class NetworkStoreControllerIT {
                         .name("gen1")
                         .energySource(EnergySource.HYDRO)
                         .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
-                        .regulatingTerminal(TerminalRefAttributes.builder()
-                                .connectableId("idEq")
-                                .side("ONE")
-                                .build())
+                        .regulationPoint(regulationPointAttributes)
                         .build())
                 .build();
 
@@ -1028,8 +1034,9 @@ public class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.regulatingTerminal.connectableId").value("idEq"))
-                .andExpect(jsonPath("data[0].attributes.regulatingTerminal.side").value("ONE"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("ONE"))
+                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("MIN_MAX"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.minQ").value(10.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.maxQ").value(10.));

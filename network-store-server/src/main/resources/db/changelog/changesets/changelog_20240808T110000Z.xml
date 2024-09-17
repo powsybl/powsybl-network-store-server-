@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="0" author="lesoteti">
+        <createTable tableName="regulationpoint">
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="regulatedequipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmenttype" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="regulationmode" type="VARCHAR(50)"/>
+            <column name="localterminalconnectableid" type="VARCHAR(255)"/>
+            <column name="localterminalside" type="VARCHAR(50)"/>
+            <column name="regulatingterminalconnectableid" type="VARCHAR(255)"/>
+            <column name="regulatingterminalside" type="VARCHAR(50)"/>
+        </createTable>
+        <createIndex indexName="regulationpoint_networkuuid_variantnum_equipmenttype_idx" tableName="regulationpoint">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="equipmenttype"/>
+        </createIndex>
+        <addPrimaryKey columnNames="networkuuid, variantnum, regulatedequipmentid, equipmenttype" constraintName="regulationpoint_pkey" tableName="regulationpoint"/>
+    </changeSet>
+    <changeSet id="1" author="lesoteti">
+        <sqlFile
+                dbms="postgresql"
+                path="regulationPoint_20240808T110000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+    </changeSet>
+    <changeSet id="2" author="lesoteti">
+        <dropColumn columnName="regulationmode" tableName="staticvarcompensator"/>
+        <dropColumn columnName="regulatingterminal" tableName="staticvarcompensator"/>
+        <dropColumn columnName="regulatingterminal" tableName="generator"/>
+        <dropColumn columnName="regulatingterminal" tableName="shuntcompensator"/>
+        <dropColumn columnName="regulatingterminal" tableName="vscconverterstation"/>
+    </changeSet>
+
+</databaseChangeLog>
