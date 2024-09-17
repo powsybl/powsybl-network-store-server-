@@ -39,12 +39,12 @@ class LineIT extends AbstractLineTest {
     @Test
     @Override
     public void testMove1NbNetwork() {
-        // TODO : remove this function as soon as powsybl network store server will use powsybl network store 1.19.0 (it will correct this test)
+        // TODO : remove this function as soon as powsybl network store server will use powsybl network store 1.18.0 (it will correct this test)
     }
 
     @Test
     @Override
     public void testMove2Nb() {
-        // TODO : remove this function as soon as powsybl network store server will use powsybl network store 1.19.0 (it will correct this test)
+        // TODO : remove this function as soon as powsybl network store server will use powsybl network store 1.18.0 (it will correct this test)
     }
 }
