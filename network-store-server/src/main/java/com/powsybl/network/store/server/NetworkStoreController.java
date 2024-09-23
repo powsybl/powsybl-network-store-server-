@@ -1451,7 +1451,7 @@ public class NetworkStoreController {
         return getExtensionAttributes(() -> repository.getExtensionAttributes(networkId, variantNum, identifiableId, extensionName));
     }
 
-    @GetMapping(value = "{networkId}/{variantNum}/types/{type}/extensions/{extensionName}")
+    @GetMapping(value = "{networkId}/{variantNum}/identifiables/types/{type}/extensions/{extensionName}")
     @Operation(summary = "Get all extensions attributes with specific extension name for all identifiables with specific type")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get extension attributes"))
     public ResponseEntity<Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceTypeAndExtensionName(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
@@ -1471,7 +1471,7 @@ public class NetworkStoreController {
 
     }
 
-    @GetMapping(value = "{networkId}/{variantNum}/types/{type}/extensions")
+    @GetMapping(value = "{networkId}/{variantNum}/identifiables/types/{type}/extensions")
     @Operation(summary = "Get all extensions attributes for all identifiables with specific type")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get extension attributes"))
     public ResponseEntity<Map<String, Map<String, ExtensionAttributes>>> getAllExtensionsAttributesByResourceType(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
