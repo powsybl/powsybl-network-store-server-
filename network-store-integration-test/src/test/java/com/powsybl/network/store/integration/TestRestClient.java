@@ -7,10 +7,10 @@
 package com.powsybl.network.store.integration;
 
 import com.powsybl.network.store.client.RestClient;
-import com.powsybl.network.store.model.AbstractTopLevelDocument;
 import com.powsybl.network.store.model.Attributes;
+import com.powsybl.network.store.model.ExtensionAttributes;
+import com.powsybl.network.store.model.IdentifiableAttributes;
 import com.powsybl.network.store.model.Resource;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
@@ -30,15 +30,21 @@ public class TestRestClient extends AbstractForwardingRestClient {
     }
 
     @Override
-    public <T, D extends AbstractTopLevelDocument<T>> Optional<T> getOne(String target, String url, ParameterizedTypeReference<D> parameterizedTypeReference, Object... uriVariables) {
+    public <T extends IdentifiableAttributes> Optional<Resource<T>> getOne(String target, String url, Object... uriVariables) {
         metrics.oneGetterCallCount++;
-        return super.getOne(target, url, parameterizedTypeReference, uriVariables);
+        return super.getOne(target, url, uriVariables);
     }
 
     @Override
-    public <T, D extends AbstractTopLevelDocument<T>> List<T> getAll(String target, String url, ParameterizedTypeReference<D> parameterizedTypeReference, Object... uriVariables) {
+    public Optional<ExtensionAttributes> getOneExtensionAttributes(String url, Object... uriVariables) {
+        metrics.oneGetterCallCount++;
+        return super.getOneExtensionAttributes(url, uriVariables);
+    }
+
+    @Override
+    public <T extends IdentifiableAttributes> List<Resource<T>> getAll(String target, String url, Object... uriVariables) {
         metrics.allGetterCallCount++;
-        return super.getAll(target, url, parameterizedTypeReference, uriVariables);
+        return super.getAll(target, url, uriVariables);
     }
 
     @Override
