@@ -1598,4 +1598,51 @@ public class NetworkStoreExtensionsIT {
             assertNull(gen.getExtension(ActivePowerControl.class));
         }
     }
+
+    @Test
+    public void testRemoveEquipmentWithExtension() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            Generator gen = network.getGenerator("GEN");
+            gen.newExtension(ActivePowerControlAdder.class)
+                    .withParticipate(true)
+                    .withDroop(6.3f)
+                    .add();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            Generator gen = network.getGenerator("GEN");
+            // Load extension in cache
+            assertNotNull(gen.getExtension(ActivePowerControl.class));
+            // Delete identifiable
+            gen.remove();
+            // Recreate identifiable without extension
+            VoltageLevel vl = network.getSubstation("P1").newVoltageLevel()
+                    .setId("VL1")
+                    .setNominalV(400f)
+                    .setTopologyKind(TopologyKind.NODE_BREAKER)
+                    .add();
+            vl.newGenerator()
+                    .setId("GEN")
+                    .setNode(1)
+                    .setMaxP(20)
+                    .setMinP(-20)
+                    .setVoltageRegulatorOn(true)
+                    .setTargetP(100)
+                    .setTargetV(200)
+                    .setTargetQ(100)
+                    .add();
+            // Cache should be emptied when identifiable was removed
+            assertNull(gen.getExtension(ActivePowerControl.class));
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
+            Generator gen = network.getGenerator("GEN");
+            assertNull(gen.getExtension(ActivePowerControl.class));
+        }
+    }
 }
