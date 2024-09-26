@@ -14,13 +14,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -44,6 +42,12 @@ public class NetworkStoreController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(TopLevelDocument.empty()));
     }
 
+    private ResponseEntity<ExtensionAttributesTopLevelDocument> getExtensionAttributes(Supplier<Optional<ExtensionAttributes>> f) {
+        return f.get()
+                .map(resource -> ResponseEntity.ok(ExtensionAttributesTopLevelDocument.of(resource)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(ExtensionAttributesTopLevelDocument.empty()));
+    }
+
     private <T extends IdentifiableAttributes> ResponseEntity<Void> createAll(Consumer<List<Resource<T>>> f, List<Resource<T>> resources) {
         f.accept(resources);
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -62,8 +66,8 @@ public class NetworkStoreController {
         } else {
             limitedResources = resources.stream().limit(limit).collect(Collectors.toList());
         }
-        TopLevelDocument<T> document = TopLevelDocument.of(limitedResources)
-                .addMeta("totalCount", Integer.toString(resources.size()));
+        TopLevelDocument<T> document = TopLevelDocument.of(limitedResources);
+        document.addMeta("totalCount", Integer.toString(resources.size()));
         return ResponseEntity.ok()
                 .body(document);
     }
@@ -1433,5 +1437,57 @@ public class NetworkStoreController {
     public List<String> getIdentifiablesIds(@Parameter(description = "Network ID", required = true) @PathVariable("networkUuid") UUID networkUuid,
                                             @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum) {
         return repository.getIdentifiablesIds(networkUuid, variantNum);
+    }
+
+    @GetMapping(value = "{networkId}/{variantNum}/identifiables/{identifiableId}/extensions/{extensionName}")
+    @Operation(summary = "Get an extension attributes by its identifiable id and extension name")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Successfully get extension attributes"),
+                           @ApiResponse(responseCode = "404", description = "The extension attributes has not been found")
+    })
+    public ResponseEntity<ExtensionAttributesTopLevelDocument> getExtensionAttributes(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                      @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                      @Parameter(description = "Identifiable id", required = true) @PathVariable("identifiableId") String identifiableId,
+                                                      @Parameter(description = "Extension name", required = true) @PathVariable("extensionName") String extensionName) {
+        return getExtensionAttributes(() -> repository.getExtensionAttributes(networkId, variantNum, identifiableId, extensionName));
+    }
+
+    @GetMapping(value = "{networkId}/{variantNum}/identifiables/types/{type}/extensions/{extensionName}")
+    @Operation(summary = "Get all extensions attributes with specific extension name for all identifiables with specific type")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get extension attributes"))
+    public ResponseEntity<Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceTypeAndExtensionName(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                                                     @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                                                     @Parameter(description = "Resource type", required = true) @PathVariable("type") ResourceType type,
+                                                                                                     @Parameter(description = "Extension name", required = true) @PathVariable("extensionName") String extensionName) {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(repository.getAllExtensionsAttributesByResourceTypeAndExtensionName(networkId, variantNum, type, extensionName));
+    }
+
+    @GetMapping(value = "{networkId}/{variantNum}/identifiables/{identifiableId}/extensions")
+    @Operation(summary = "Get all extension attributes for one identifiable with specific identifiable id")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get extension attributes"))
+    public ResponseEntity<Map<String, ExtensionAttributes>> getAllExtensionsAttributesByIdentifiableId(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                             @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                             @Parameter(description = "Identifiable id", required = true) @PathVariable("identifiableId") String identifiableId) {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(repository.getAllExtensionsAttributesByIdentifiableId(networkId, variantNum, identifiableId));
+
+    }
+
+    @GetMapping(value = "{networkId}/{variantNum}/identifiables/types/{type}/extensions")
+    @Operation(summary = "Get all extensions attributes for all identifiables with specific type")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully get extension attributes"))
+    public ResponseEntity<Map<String, Map<String, ExtensionAttributes>>> getAllExtensionsAttributesByResourceType(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                                                  @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                                                  @Parameter(description = "Resource type", required = true) @PathVariable("type") ResourceType type) {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(repository.getAllExtensionsAttributesByResourceType(networkId, variantNum, type));
+    }
+
+    @DeleteMapping(value = "{networkId}/{variantNum}/identifiables/{identifiableId}/extensions/{extensionName}")
+    @Operation(summary = "Delete an extension attributes by extension name and identifiable id")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully deleted extension attributes"))
+    public ResponseEntity<Void> removeExtensionAttributes(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                          @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                          @Parameter(description = "Identifiable id", required = true) @PathVariable("identifiableId") String identifiableId,
+                                          @Parameter(description = "Extension name", required = true) @PathVariable("extensionName") String extensionName) {
+        repository.removeExtensionAttributes(networkId, variantNum, identifiableId, extensionName);
+        return ResponseEntity.ok().build();
     }
 }

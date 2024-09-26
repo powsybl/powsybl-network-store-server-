@@ -9,7 +9,10 @@ package com.powsybl.network.store.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import com.powsybl.network.store.model.*;
+import com.powsybl.network.store.model.ExtensionAttributes;
+import com.powsybl.network.store.model.IdentifiableAttributes;
+import com.powsybl.network.store.model.NetworkAttributes;
+import com.powsybl.network.store.model.Resource;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 import org.springframework.stereotype.Component;
@@ -66,53 +69,51 @@ public class ExtensionHandler {
         }
     }
 
-    public Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
-        if (valuesForInClause.isEmpty()) {
-            return Collections.emptyMap();
-        }
+    public Optional<ExtensionAttributes> getExtensionAttributes(UUID networkUuid, int variantNum, String identifiableId, String extensionName) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetExtensionsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetExtensionsQuery());
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
-            for (int i = 0; i < valuesForInClause.size(); i++) {
-                preparedStmt.setString(3 + i, valuesForInClause.get(i));
-            }
+            preparedStmt.setString(3, identifiableId);
+            preparedStmt.setString(4, extensionName);
 
-            return innerGetExtensions(preparedStmt);
+            return innerGetExtensionAttributes(preparedStmt);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    public Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensions(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetExtensionsQuery(columnNameForWhereClause));
-            preparedStmt.setObject(1, networkUuid);
-            preparedStmt.setInt(2, variantNum);
-            preparedStmt.setString(3, valueForWhereClause);
-
-            return innerGetExtensions(preparedStmt);
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
-    }
-
-    private Map<OwnerInfo, Map<String, ExtensionAttributes>> innerGetExtensions(PreparedStatement preparedStmt) throws SQLException {
+    private Optional<ExtensionAttributes> innerGetExtensionAttributes(PreparedStatement preparedStmt) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
-            Map<OwnerInfo, Map<String, ExtensionAttributes>> map = new HashMap<>();
+            if (resultSet.next()) {
+                return Optional.of(mapper.readValue(resultSet.getString(1), ExtensionAttributes.class));
+            }
+            return Optional.empty();
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionName(UUID networkUuid, int variantNum, String resourceType, String extensionName) {
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByResourceTypeAndExtensionName());
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setString(3, resourceType);
+            preparedStmt.setString(4, extensionName);
+            return innerGetAllExtensionsAttributesByResourceTypeAndExtensionName(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private Map<String, ExtensionAttributes> innerGetAllExtensionsAttributesByResourceTypeAndExtensionName(PreparedStatement preparedStmt) throws SQLException {
+        try (ResultSet resultSet = preparedStmt.executeQuery()) {
+            Map<String, ExtensionAttributes> map = new HashMap<>();
             while (resultSet.next()) {
-
-                OwnerInfo owner = new OwnerInfo();
-                owner.setEquipmentId(resultSet.getString(1));
-                owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
-                owner.setNetworkUuid(UUID.fromString(resultSet.getString(3)));
-                owner.setVariantNum(resultSet.getInt(4));
-
-                String extensionName = resultSet.getString(5);
-                ExtensionAttributes extensionValue = mapper.readValue(resultSet.getString(6), ExtensionAttributes.class);
-
-                map.computeIfAbsent(owner, k -> new HashMap<>());
-                map.get(owner).put(extensionName, extensionValue);
+                String equipmentId = resultSet.getString(1);
+                ExtensionAttributes extensionValue = mapper.readValue(resultSet.getString(2), ExtensionAttributes.class);
+                map.put(equipmentId, extensionValue);
             }
             return map;
         } catch (JsonProcessingException e) {
@@ -120,24 +121,56 @@ public class ExtensionHandler {
         }
     }
 
-    public <T extends IdentifiableAttributes> void insertExtensionsInIdentifiables(UUID networkUuid, List<Resource<T>> equipments, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
-        if (!extensions.isEmpty() && !equipments.isEmpty()) {
-            for (Resource<T> equipmentAttributesResource : equipments) {
-                OwnerInfo owner = new OwnerInfo(
-                        equipmentAttributesResource.getId(),
-                        equipmentAttributesResource.getType(),
-                        networkUuid,
-                        equipmentAttributesResource.getVariantNum()
-                );
-                if (extensions.containsKey(owner)) {
-                    T attributes = equipmentAttributesResource.getAttributes();
-                    extensions.get(owner).forEach((key, value) -> {
-                        if (attributes != null && attributes.getExtensionAttributes() != null) {
-                            attributes.getExtensionAttributes().put(key, value);
-                        }
-                    });
-                }
+    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableId(UUID networkUuid, int variantNum, String identifiableId) {
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByIdentifiableId());
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setString(3, identifiableId);
+            return innerGetAllExtensionsAttributesByIdentifiableId(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private Map<String, ExtensionAttributes> innerGetAllExtensionsAttributesByIdentifiableId(PreparedStatement preparedStmt) throws SQLException {
+        try (ResultSet resultSet = preparedStmt.executeQuery()) {
+            Map<String, ExtensionAttributes> map = new HashMap<>();
+            while (resultSet.next()) {
+                String extensionName = resultSet.getString(1);
+                ExtensionAttributes extensionValue = mapper.readValue(resultSet.getString(2), ExtensionAttributes.class);
+                map.put(extensionName, extensionValue);
             }
+            return map;
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceType(UUID networkUuid, int variantNum, String resourceType) {
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByResourceType());
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setString(3, resourceType);
+            return innerGetAllExtensionsAttributesByResourceType(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private Map<String, Map<String, ExtensionAttributes>> innerGetAllExtensionsAttributesByResourceType(PreparedStatement preparedStmt) throws SQLException {
+        try (ResultSet resultSet = preparedStmt.executeQuery()) {
+            Map<String, Map<String, ExtensionAttributes>> map = new HashMap<>();
+            while (resultSet.next()) {
+                String equipmentId = resultSet.getString(1);
+                String extensionName = resultSet.getString(2);
+                ExtensionAttributes extensionValue = mapper.readValue(resultSet.getString(3), ExtensionAttributes.class);
+                map.computeIfAbsent(equipmentId, k -> new HashMap<>()).put(extensionName, extensionValue);
+            }
+            return map;
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -160,10 +193,35 @@ public class ExtensionHandler {
         }
     }
 
+    public void deleteExtensionsFromIdentifiables(UUID networkUuid, int variantNum, Map<String, Set<String>> extensionNamesByIdentifiableId) {
+        try (var connection = dataSource.getConnection()) {
+            int totalParameters = extensionNamesByIdentifiableId.values().stream().mapToInt(Set::size).sum();
+            if (totalParameters > 0) {
+                try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantByIdentifiableIdAndExtensionsNameINQuery(totalParameters))) {
+                    preparedStmt.setObject(1, networkUuid);
+                    preparedStmt.setInt(2, variantNum);
+
+                    int paramIndex = 3;
+                    for (Map.Entry<String, Set<String>> entry : extensionNamesByIdentifiableId.entrySet()) {
+                        String equipmentId = entry.getKey();
+                        for (String extensionName : entry.getValue()) {
+                            preparedStmt.setString(paramIndex++, equipmentId);
+                            preparedStmt.setString(paramIndex++, extensionName);
+                        }
+                    }
+
+                    preparedStmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
     /**
-     * Extensions do not always exist in the variant and can be added by a
-     * modification for example. Instead of implementing an UPSERT, we delete then insert
-     * the extensions.
+     * Delete extension attributes loaded in the resource and insert the updated extension afterward.
+     * We can't delete all the extensions attributes associated with this resource here as we are not sure that all
+     * extension attributes have been modified/loaded in the resource.
      */
     public <T extends IdentifiableAttributes> void updateExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
         deleteExtensionsFromEquipments(networkUuid, resources);
@@ -191,20 +249,20 @@ public class ExtensionHandler {
     }
 
     public <T extends IdentifiableAttributes> void deleteExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
-        Map<Integer, List<String>> resourceIdsByVariant = new HashMap<>();
+        Map<Integer, Map<String, Set<String>>> extensionsAttributesByVariant = new HashMap<>();
         for (Resource<T> resource : resources) {
-            List<String> resourceIds = resourceIdsByVariant.get(resource.getVariantNum());
-            if (resourceIds != null) {
-                resourceIds.add(resource.getId());
-            } else {
-                resourceIds = new ArrayList<>();
-                resourceIds.add(resource.getId());
-            }
-            resourceIdsByVariant.put(resource.getVariantNum(), resourceIds);
+            extensionsAttributesByVariant
+                    .computeIfAbsent(resource.getVariantNum(), k -> new HashMap<>())
+                    .put(resource.getId(), resource.getAttributes().getExtensionAttributes().keySet());
         }
-        resourceIdsByVariant.forEach((k, v) -> deleteExtensionsFromIdentifiables(networkUuid, k, v));
+        extensionsAttributesByVariant.forEach((k, v) -> deleteExtensionsFromIdentifiables(networkUuid, k, v));
     }
 
+    /**
+     * Delete extension attributes loaded in the resource and insert the updated extension afterward.
+     * We can't delete all the extensions attributes associated with this resource here as we are not sure that all
+     * extension attributes have been modified/loaded in the resource.
+     */
     public void updateExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
         deleteExtensionsFromNetworks(resources);
         insertExtensions(getExtensionsFromNetworks(resources));
@@ -232,7 +290,7 @@ public class ExtensionHandler {
 
     private void deleteExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
         for (Resource<NetworkAttributes> resource : resources) {
-            deleteExtensionsFromIdentifiable(resource.getAttributes().getUuid(), resource.getVariantNum(), resource.getId());
+            deleteExtensionsFromIdentifiables(resource.getAttributes().getUuid(), resource.getVariantNum(), Map.of(resource.getId(), resource.getAttributes().getExtensionAttributes().keySet()));
         }
     }
 }

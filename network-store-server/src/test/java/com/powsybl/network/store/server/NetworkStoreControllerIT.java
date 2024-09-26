@@ -11,7 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.powsybl.iidm.network.*;
+import com.powsybl.iidm.network.extensions.ActivePowerControl;
 import com.powsybl.iidm.network.extensions.ConnectablePosition;
+import com.powsybl.iidm.network.extensions.GeneratorStartup;
 import com.powsybl.network.store.model.*;
 import jakarta.servlet.ServletException;
 import org.junit.Before;
@@ -1050,5 +1052,155 @@ public class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.model.gperSection").value(2))
                 .andExpect(jsonPath("data[0].attributes.model.maximumSectionCount").value(3))
                 .andExpect(jsonPath("data[0].attributes.p").value(100.));
+    }
+
+    @Test
+    public void getExtensionAttributesTest() throws Exception {
+        setupExtensionAttributesTest();
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/id/extensions/" + ActivePowerControl.NAME))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(jsonPath("data[0].extensionName").value(ActivePowerControl.NAME))
+                .andExpect(jsonPath("data[0].participate").value(true))
+                .andExpect(jsonPath("data[0].droop").value(24))
+                .andExpect(jsonPath("data[0].participationFactor").value(0.6))
+                .andExpect(jsonPath("data[0].minTargetP").value(4.0))
+                .andExpect(jsonPath("data[0].maxTargetP").value(6.0));
+    }
+
+    @Test
+    public void getAllExtensionsAttributesByResourceTypeAndExtensionNameTest() throws Exception {
+        setupExtensionAttributesTest();
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/types/" + ResourceType.GENERATOR + "/extensions/" + ActivePowerControl.NAME))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(jsonPath("$.id.extensionName").value(ActivePowerControl.NAME))
+                .andExpect(jsonPath("$.id.participate").value(true))
+                .andExpect(jsonPath("$.id.droop").value(24))
+                .andExpect(jsonPath("$.id.participationFactor").value(0.6))
+                .andExpect(jsonPath("$.id.minTargetP").value(4.0))
+                .andExpect(jsonPath("$.id.maxTargetP").value(6.0))
+                .andExpect(jsonPath("$.id2.extensionName").value(ActivePowerControl.NAME))
+                .andExpect(jsonPath("$.id2.participate").value(false))
+                .andExpect(jsonPath("$.id2.droop").value(12))
+                .andExpect(jsonPath("$.id2.participationFactor").value(0.7))
+                .andExpect(jsonPath("$.id2.minTargetP").value(8.0))
+                .andExpect(jsonPath("$.id2.maxTargetP").value(10.0));
+    }
+
+    @Test
+    public void getAllExtensionsAttributesByIdentifiableIdTest() throws Exception {
+        setupExtensionAttributesTest();
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/id/extensions"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(jsonPath("$.activePowerControl.extensionName").value(ActivePowerControl.NAME))
+                .andExpect(jsonPath("$.activePowerControl.participate").value(true))
+                .andExpect(jsonPath("$.activePowerControl.droop").value(24))
+                .andExpect(jsonPath("$.activePowerControl.participationFactor").value(0.6))
+                .andExpect(jsonPath("$.activePowerControl.minTargetP").value(4.0))
+                .andExpect(jsonPath("$.activePowerControl.maxTargetP").value(6.0))
+                .andExpect(jsonPath("$.startup.extensionName").value(GeneratorStartup.NAME))
+                .andExpect(jsonPath("$.startup.plannedActivePowerSetpoint").value(12.0))
+                .andExpect(jsonPath("$.startup.startupCost").value(34.0))
+                .andExpect(jsonPath("$.startup.marginalCost").value(5.0))
+                .andExpect(jsonPath("$.startup.plannedOutageRate").value(6.0))
+                .andExpect(jsonPath("$.startup.forcedOutageRate").value(8.0));
+    }
+
+    @Test
+    public void getAllExtensionsAttributesByResourceTypeTest() throws Exception {
+        setupExtensionAttributesTest();
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/types/" + ResourceType.GENERATOR + "/extensions"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(jsonPath("$.id.activePowerControl.extensionName").value(ActivePowerControl.NAME))
+                .andExpect(jsonPath("$.id.activePowerControl.participate").value(true))
+                .andExpect(jsonPath("$.id.activePowerControl.droop").value(24))
+                .andExpect(jsonPath("$.id.activePowerControl.participationFactor").value(0.6))
+                .andExpect(jsonPath("$.id.activePowerControl.minTargetP").value(4.0))
+                .andExpect(jsonPath("$.id.activePowerControl.maxTargetP").value(6.0))
+                .andExpect(jsonPath("$.id.startup.extensionName").value(GeneratorStartup.NAME))
+                .andExpect(jsonPath("$.id.startup.plannedActivePowerSetpoint").value(12.0))
+                .andExpect(jsonPath("$.id.startup.startupCost").value(34.0))
+                .andExpect(jsonPath("$.id.startup.marginalCost").value(5.0))
+                .andExpect(jsonPath("$.id.startup.plannedOutageRate").value(6.0))
+                .andExpect(jsonPath("$.id.startup.forcedOutageRate").value(8.0))
+                .andExpect(jsonPath("$.id2.activePowerControl.extensionName").value(ActivePowerControl.NAME))
+                .andExpect(jsonPath("$.id2.activePowerControl.participate").value(false))
+                .andExpect(jsonPath("$.id2.activePowerControl.droop").value(12))
+                .andExpect(jsonPath("$.id2.activePowerControl.participationFactor").value(0.7))
+                .andExpect(jsonPath("$.id2.activePowerControl.minTargetP").value(8.0))
+                .andExpect(jsonPath("$.id2.activePowerControl.maxTargetP").value(10.0))
+                .andExpect(jsonPath("$.id2.startup.extensionName").value(GeneratorStartup.NAME))
+                .andExpect(jsonPath("$.id2.startup.plannedActivePowerSetpoint").value(10.0))
+                .andExpect(jsonPath("$.id2.startup.startupCost").value(23.0))
+                .andExpect(jsonPath("$.id2.startup.marginalCost").value(7.0))
+                .andExpect(jsonPath("$.id2.startup.plannedOutageRate").value(9.0))
+                .andExpect(jsonPath("$.id2.startup.forcedOutageRate").value(10.0));
+
+    }
+
+    @Test
+    public void removeExtensionAttributesTest() throws Exception {
+        setupExtensionAttributesTest();
+        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/id/extensions/" + ActivePowerControl.NAME))
+                .andExpect(status().isOk());
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/id/extensions/" + ActivePowerControl.NAME))
+                .andExpect(status().isNotFound());
+    }
+
+    private void setupExtensionAttributesTest() throws Exception {
+        // Create network
+        Resource<NetworkAttributes> n1 = Resource.networkBuilder()
+                .id("n1")
+                .variantNum(0)
+                .attributes(NetworkAttributes.builder()
+                        .uuid(NETWORK_UUID)
+                        .variantId(VariantManagerConstants.INITIAL_VARIANT_ID)
+                        .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
+                        .build())
+                .build();
+
+        mvc.perform(post("/" + VERSION + "/networks")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Collections.singleton(n1))))
+                .andExpect(status().isCreated());
+        // Create first generator with two extensions
+        Resource<GeneratorAttributes> generator = Resource.generatorBuilder()
+                .id("id")
+                .attributes(GeneratorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("gen1")
+                        .energySource(EnergySource.HYDRO)
+                        .extensionAttributes(Map.of(
+                                ActivePowerControl.NAME, new ActivePowerControlAttributes(true, 24, 0.6, 4, 6),
+                                GeneratorStartup.NAME, new GeneratorStartupAttributes(12, 34, 5, 6, 8)))
+                        .build())
+                .build();
+
+        mvc.perform(post("/" + VERSION + "/networks/" + NETWORK_UUID + "/generators")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Collections.singleton(generator))))
+                .andExpect(status().isCreated());
+
+        // Create second generator with two extensions
+        Resource<GeneratorAttributes> generator2 = Resource.generatorBuilder()
+                .id("id2")
+                .attributes(GeneratorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("gen2")
+                        .energySource(EnergySource.NUCLEAR)
+                        .extensionAttributes(Map.of(
+                                ActivePowerControl.NAME, new ActivePowerControlAttributes(false, 12, 0.7, 8, 10),
+                                GeneratorStartup.NAME, new GeneratorStartupAttributes(10, 23, 7, 9, 10)
+                        ))
+                        .build())
+                .build();
+
+        mvc.perform(post("/" + VERSION + "/networks/" + NETWORK_UUID + "/generators")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Collections.singleton(generator2))))
+                .andExpect(status().isCreated());
     }
 }
