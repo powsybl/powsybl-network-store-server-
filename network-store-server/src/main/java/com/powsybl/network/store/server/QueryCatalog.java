@@ -32,6 +32,7 @@ public final class QueryCatalog {
     static final String VOLTAGE_LEVEL_ID_3_COLUMN = "voltageLevelId3";
     static final String NAME_COLUMN = "name";
     static final String EQUIPMENT_TYPE_COLUMN = "equipmentType";
+    static final String REGULATING_EQUIPMENT_TYPE_COLUMN = "regulatingterminalconnectabletype";
     static final String EQUIPMENT_ID_COLUMN = "equipmentId";
     static final String REGULATED_EQUIPMENT_ID = "regulatedEquipmentId";
     static final String INDEX_COLUMN = "index";
@@ -494,17 +495,18 @@ public final class QueryCatalog {
     public static String buildInsertRegulationPointsQuery() {
         return "insert into " + REGULATION_POINT_TABLE + " (" +
             NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN + ", regulatedEquipmentId, " + EQUIPMENT_TYPE_COLUMN + ", " +
-            REGULATION_MODE + ", localTerminalConnectableId, localTerminalSide, regulatingterminalconnectableid, regulatingterminalside)" +
-            " values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            REGULATION_MODE + ", localTerminalConnectableId, localTerminalSide, regulatingterminalconnectableid, regulatingterminalside, " + REGULATING_EQUIPMENT_TYPE_COLUMN + ")" +
+            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
     public static String buildCloneRegulationPointsQuery() {
         return "insert into " + REGULATION_POINT_TABLE + " (" + NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN +
             ", regulatedEquipmentId, " + EQUIPMENT_TYPE_COLUMN + ", " + REGULATION_MODE +
-            ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide) select ?, ?" +
+            ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide, " +
+            REGULATING_EQUIPMENT_TYPE_COLUMN + ") select ?, ?" +
             ", regulatedEquipmentId, " + EQUIPMENT_TYPE_COLUMN + ", " + REGULATION_MODE +
-            ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide from "
-            + REGULATION_POINT_TABLE + " where " + NETWORK_UUID_COLUMN +
+            ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide, "
+            + REGULATING_EQUIPMENT_TYPE_COLUMN + " from " + REGULATION_POINT_TABLE + " where " + NETWORK_UUID_COLUMN +
             " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
@@ -513,7 +515,8 @@ public final class QueryCatalog {
             NETWORK_UUID_COLUMN + ", " +
             VARIANT_NUM_COLUMN + ", " +
             "regulatedequipmentid, " + REGULATION_MODE + ", localterminalconnectableid, localterminalside, " +
-            "regulatingterminalconnectableid, regulatingterminalside from " + REGULATION_POINT_TABLE + " where " +
+            "regulatingterminalconnectableid, regulatingterminalside, " + REGULATING_EQUIPMENT_TYPE_COLUMN +
+            " from " + REGULATION_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
             EQUIPMENT_TYPE_COLUMN + " = ?";
@@ -526,7 +529,8 @@ public final class QueryCatalog {
         return "select " + NETWORK_UUID_COLUMN + ", " +
             VARIANT_NUM_COLUMN + ", " +
             "regulatedequipmentid, " + REGULATION_MODE + ", localterminalconnectableid, localterminalside, " +
-            "regulatingterminalconnectableid, regulatingterminalside from " + REGULATION_POINT_TABLE + " where " +
+            "regulatingterminalconnectableid, regulatingterminalside, " + REGULATING_EQUIPMENT_TYPE_COLUMN
+            + " from " + REGULATION_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
             EQUIPMENT_TYPE_COLUMN + " = ? and " +
@@ -555,6 +559,23 @@ public final class QueryCatalog {
             EQUIPMENT_TYPE_COLUMN + " = ? and " +
             "regulatedequipmentid in (" +
             "?, ".repeat(numberOfValues - 1) + "?)";
+    }
+
+    public static String buildRegulatingEquipmentsQuery() {
+        return "select " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", regulatedequipmentid, "
+            + "regulatingterminalconnectableid from " + REGULATION_POINT_TABLE + " where " +
+            NETWORK_UUID_COLUMN + " = ? and " +
+            VARIANT_NUM_COLUMN + " = ? and " +
+            REGULATING_EQUIPMENT_TYPE_COLUMN + " = ?";
+    }
+
+    public static String buildRegulatingEquipmentsForOneEquipmentQuery() {
+        return "select regulatedequipmentid "
+            + "from " + REGULATION_POINT_TABLE + " where " +
+            NETWORK_UUID_COLUMN + " = ? and " +
+            VARIANT_NUM_COLUMN + " = ? and " +
+            REGULATING_EQUIPMENT_TYPE_COLUMN + " = ? and " +
+            "regulatingterminalconnectableid = ?";
     }
 
     // Tap Changer Steps

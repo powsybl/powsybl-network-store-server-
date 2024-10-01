@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="2986331049275-4" author="lesoteti">
+        <addColumn tableName="regulationpoint">
+            <column name="regulatingterminalconnectabletype" type="VARCHAR"/>
+        </addColumn>
+        <update tableName="regulationpoint">
+            <column name="regulatingterminalconnectabletype" valueComputed="equipmenttype"/>
+            <where>regulatedequipmentid = regulatingterminalconnectableid</where>
+        </update>
+        <sqlFile
+                path="regulationPoint_regulatingtype_20240808T110000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+        <createIndex indexName="regulationpoint_regulating_equipment_idx" tableName="regulationpoint">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="regulatingterminalconnectabletype"/>
+            <column name="regulatingterminalconnectableid"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

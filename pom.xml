@@ -53,6 +53,8 @@
         <powsybl-network-store.version>1.18.2</powsybl-network-store.version>
 
         <powsybl-ws-dependencies.version>2.15.0</powsybl-ws-dependencies.version>
+        <!-- FIXME: powsybl-network-store modules'version is overloaded in the dependencies section.The overloads and this property below have to be removed at next powsybl-ws-dependencies.version upgrade -->
+        <powsybl-network-store.version>1.19.0-SNAPSHOT</powsybl-network-store.version>
 
         <!-- FIXME : to remove when sonar version is updated on github actions -->
         <!-- https://community.sonarsource.com/t/stackoverflowerror-at-defaultinputcomponent-equals/20324 -->
@@ -103,6 +105,24 @@
                 <version>${powsybl-ws-dependencies.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- FIXME: to be removed at next powsybl-ws-dependencies upgrade  -->
+            <dependency>
+                <groupId>com.powsybl</groupId>
+                <artifactId>powsybl-network-store-iidm-impl</artifactId>
+                <version>${powsybl-network-store.version}</version>
+            </dependency>
+            <!-- FIXME: to be removed at next powsybl-ws-dependencies upgrade  -->
+            <dependency>
+                <groupId>com.powsybl</groupId>
+                <artifactId>powsybl-network-store-client</artifactId>
+                <version>${powsybl-network-store.version}</version>
+            </dependency>
+            <!-- FIXME: to be removed at next powsybl-ws-dependencies upgrade  -->
+            <dependency>
+                <groupId>com.powsybl</groupId>
+                <artifactId>powsybl-network-store-model</artifactId>
+                <version>${powsybl-network-store.version}</version>
             </dependency>
 
             <!-- project specific dependencies (also overrides imports, but separate for clarity) -->

@@ -598,6 +598,7 @@ public class NetworkStoreRepository {
             case DANGLING_LINE -> completeDanglingLineInfos(resource, networkUuid, variantNum, equipmentId);
             case STATIC_VAR_COMPENSATOR -> completeStaticVarCompensatorInfos(resource, networkUuid, variantNum, equipmentId);
             case SHUNT_COMPENSATOR -> completeShuntCompensatorInfos(resource, networkUuid, variantNum, equipmentId);
+            case LOAD -> completeLoadInfos(resource, networkUuid, variantNum, equipmentId);
             default -> resource;
         };
     }
@@ -606,6 +607,12 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentId);
         insertReactiveCapabilityCurvePointsInEquipments(networkUuid, List.of((Resource<GeneratorAttributes>) resource), reactiveCapabilityCurvePoints);
         insertRegulationPointIntoEquipment(networkUuid, variantNum, equipmentId, resource, ResourceType.GENERATOR);
+        insertRegulatingEquipmentsInto(networkUuid, variantNum, equipmentId, resource, ResourceType.GENERATOR);
+        return resource;
+    }
+
+    private <T extends IdentifiableAttributes> Resource<T> completeLoadInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        insertRegulatingEquipmentsInto(networkUuid, variantNum, equipmentId, resource, ResourceType.LOAD);
         return resource;
     }
 
@@ -926,7 +933,10 @@ public class NetworkStoreRepository {
 
     public Optional<Resource<GeneratorAttributes>> getGenerator(UUID networkUuid, int variantNum, String generatorId) {
         Optional<Resource<GeneratorAttributes>> generatorResource = getIdentifiable(networkUuid, variantNum, generatorId, mappings.getGeneratorMappings());
-        generatorResource.ifPresent(generatorAttributesResource -> insertRegulationPointIntoEquipment(networkUuid, variantNum, generatorId, generatorAttributesResource, ResourceType.GENERATOR));
+        generatorResource.ifPresent(generatorAttributesResource ->
+            insertRegulationPointIntoEquipment(networkUuid, variantNum, generatorId, generatorAttributesResource, ResourceType.GENERATOR));
+        generatorResource.ifPresent(generatorAttributesResource ->
+            insertRegulatingEquipmentsInto(networkUuid, variantNum, generatorId, generatorAttributesResource, ResourceType.GENERATOR));
         return generatorResource;
     }
 
@@ -938,8 +948,13 @@ public class NetworkStoreRepository {
         insertReactiveCapabilityCurvePointsInEquipments(networkUuid, generators, reactiveCapabilityCurvePoints);
         // regulation points
         Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPoints(networkUuid, variantNum, ResourceType.GENERATOR);
-        generators.forEach(generator -> generator.getAttributes().setRegulationPoint(
-            regulationPointAttributes.get(new OwnerInfo(generator.getId(), ResourceType.GENERATOR, networkUuid, variantNum))));
+        Map<OwnerInfo, List<String>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, ResourceType.GENERATOR);
+        generators.forEach(generator -> {
+            OwnerInfo ownerInfo = new OwnerInfo(generator.getId(), ResourceType.GENERATOR, networkUuid, variantNum);
+            generator.getAttributes().setRegulationPoint(
+                regulationPointAttributes.get(ownerInfo));
+            generator.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
+        });
         return generators;
     }
 
@@ -951,8 +966,13 @@ public class NetworkStoreRepository {
         // regulation points
         Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPointsWithInClause(networkUuid, variantNum,
             REGULATED_EQUIPMENT_ID, equipmentsIds, ResourceType.GENERATOR);
-        generators.forEach(generator -> generator.getAttributes().setRegulationPoint(
-            regulationPointAttributes.get(new OwnerInfo(generator.getId(), ResourceType.GENERATOR, networkUuid, variantNum))));
+        Map<OwnerInfo, List<String>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, ResourceType.GENERATOR);
+        generators.forEach(generator -> {
+            OwnerInfo ownerInfo = new OwnerInfo(generator.getId(), ResourceType.GENERATOR, networkUuid, variantNum);
+            generator.getAttributes().setRegulationPoint(
+                regulationPointAttributes.get(ownerInfo));
+            generator.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
+        });
 
         //  reactive capability curves
         Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
@@ -1004,6 +1024,11 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.BATTERY.toString());
 
         insertReactiveCapabilityCurvePointsInEquipments(networkUuid, batteries, reactiveCapabilityCurvePoints);
+        Map<OwnerInfo, List<String>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, ResourceType.BATTERY);
+        batteries.forEach(battery -> {
+            OwnerInfo ownerInfo = new OwnerInfo(battery.getId(), ResourceType.BATTERY, networkUuid, variantNum);
+            battery.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
+        });
 
         return batteries;
     }
@@ -1016,7 +1041,11 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, equipmentsIds);
 
         insertReactiveCapabilityCurvePointsInEquipments(networkUuid, batteries, reactiveCapabilityCurvePoints);
-
+        Map<OwnerInfo, List<String>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, ResourceType.BATTERY);
+        batteries.forEach(battery -> {
+            OwnerInfo ownerInfo = new OwnerInfo(battery.getId(), ResourceType.BATTERY, networkUuid, variantNum);
+            battery.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
+        });
         return batteries;
     }
 
@@ -1046,7 +1075,9 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<LoadAttributes>> getLoad(UUID networkUuid, int variantNum, String loadId) {
-        return getIdentifiable(networkUuid, variantNum, loadId, mappings.getLoadMappings());
+        Optional<Resource<LoadAttributes>> loadAttributesResource = getIdentifiable(networkUuid, variantNum, loadId, mappings.getLoadMappings());
+        loadAttributesResource.ifPresent(loadAttributes -> insertRegulatingEquipmentsInto(networkUuid, variantNum, loadId, loadAttributes, ResourceType.LOAD));
+        return loadAttributesResource;
     }
 
     public List<Resource<LoadAttributes>> getLoads(UUID networkUuid, int variantNum) {
@@ -2141,7 +2172,7 @@ public class NetworkStoreRepository {
     public void insertRegulationPoints(Map<OwnerInfo, RegulationPointAttributes> regulationPoints) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertRegulationPointsQuery())) {
-                List<Object> values = new ArrayList<>(9);
+                List<Object> values = new ArrayList<>(10);
                 List<Map.Entry<OwnerInfo, RegulationPointAttributes>> list = new ArrayList<>(regulationPoints.entrySet());
                 for (List<Map.Entry<OwnerInfo, RegulationPointAttributes>> subUnit : Lists.partition(list, BATCH_SIZE)) {
                     for (Map.Entry<OwnerInfo, RegulationPointAttributes> attributes : subUnit) {
@@ -2164,10 +2195,13 @@ public class NetworkStoreRepository {
                             values.add(attributes.getValue().getRegulatingTerminal() != null
                                 ? attributes.getValue().getRegulatingTerminal().getSide()
                                 : null);
+                            values.add(attributes.getValue().getRegulatingResourceType() != null
+                                ? attributes.getValue().getRegulatingResourceType().toString()
+                                : null);
                         } else {
                             values.add(null);
                             values.add(attributes.getKey().getEquipmentId());
-                            for (int i = 0; i < 3; i++) {
+                            for (int i = 0; i < 4; i++) {
                                 values.add(null);
                             }
                         }
@@ -2375,6 +2409,68 @@ public class NetworkStoreRepository {
                 map.put(owner, regulationPointAttributes);
             }
             return map;
+        }
+    }
+
+    private Map<OwnerInfo, List<String>> getRegulatingEquipments(UUID networkUuid, int variantNum, ResourceType type) {
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsQuery());
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setObject(3, type.toString());
+
+            return innerGetRegulatingEquipments(preparedStmt, type);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    public Map<OwnerInfo, List<String>> innerGetRegulatingEquipments(PreparedStatement preparedStmt, ResourceType type) throws SQLException {
+        try (ResultSet resultSet = preparedStmt.executeQuery()) {
+            Map<OwnerInfo, List<String>> map = new HashMap<>();
+            while (resultSet.next()) {
+                OwnerInfo owner = new OwnerInfo();
+                String regulatedEquipmentId = resultSet.getString(3);
+                String regulatingConnectableId = resultSet.getString(4);
+                owner.setEquipmentId(regulatingConnectableId);
+                owner.setNetworkUuid(UUID.fromString(resultSet.getString(1)));
+                owner.setVariantNum(resultSet.getInt(2));
+                owner.setEquipmentType(type);
+                if (map.containsKey(owner)) {
+                    map.get(owner).add(regulatedEquipmentId);
+                } else {
+                    List<String> regulatedEquipmentIds = new ArrayList<>();
+                    regulatedEquipmentIds.add(regulatedEquipmentId);
+                    map.put(owner, regulatedEquipmentIds);
+                }
+            }
+            return map;
+        }
+    }
+
+    private <T extends IdentifiableAttributes> void insertRegulatingEquipmentsInto(UUID networkUuid, int variantNum,
+                                                                                   String equipmentId, Resource<T> resource,
+                                                                                   ResourceType type) {
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsForOneEquipmentQuery());
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setObject(3, type.toString());
+            preparedStmt.setObject(4, equipmentId);
+            ((Resource<AbstractIdentifiableAttributes>) resource).getAttributes()
+                    .setRegulatingEquipments(getRegulatingEquipments(preparedStmt));
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private List<String> getRegulatingEquipments(PreparedStatement preparedStmt) throws SQLException {
+        try (ResultSet resultSet = preparedStmt.executeQuery()) {
+            List<String> regulatingEquipements = new ArrayList<>();
+            while (resultSet.next()) {
+                regulatingEquipements.add(resultSet.getString(1));
+            }
+            return regulatingEquipements;
         }
     }
 
