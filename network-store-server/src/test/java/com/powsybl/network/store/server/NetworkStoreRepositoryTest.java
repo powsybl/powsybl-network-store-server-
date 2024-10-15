@@ -10,30 +10,24 @@ import com.powsybl.iidm.network.LimitType;
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.LimitsInfos;
 import com.powsybl.network.store.server.dto.OwnerInfo;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest
-@AutoConfigureMockMvc
-public class NetworkStoreRepositoryTest {
+class NetworkStoreRepositoryTest {
 
     private static final UUID NETWORK_UUID = UUID.fromString("7928181c-7977-4592-ba19-88027e4254e4");
 
     @Autowired
-    protected NetworkStoreRepository networkStoreRepository;
+    private NetworkStoreRepository networkStoreRepository;
 
     @Test
-    public void insertTemporaryLimitsInLinesTest() {
+    void insertTemporaryLimitsInLinesTest() {
 
         String equipmentIdA = "idLineA";
         String equipmentIdB = "idLineB";
@@ -196,7 +190,7 @@ public class NetworkStoreRepositoryTest {
     }
 
     @Test
-    public void insertReactiveCapabilityCurvesInGeneratorsTest() {
+    void insertReactiveCapabilityCurvesInGeneratorsTest() {
 
         String equipmentIdA = "idGeneratorA";
         String equipmentIdB = "idGeneratorB";
@@ -319,32 +313,32 @@ public class NetworkStoreRepositoryTest {
         map.put(infoGeneratorX, curvePointsX);
 
         assertNull(resGeneratorA.getAttributes().getReactiveLimits());
-        assertTrue(resGeneratorB.getAttributes().getReactiveLimits() instanceof ReactiveCapabilityCurveAttributes);
+        assertInstanceOf(ReactiveCapabilityCurveAttributes.class, resGeneratorB.getAttributes().getReactiveLimits());
         assertNull(((ReactiveCapabilityCurveAttributes) resGeneratorB.getAttributes().getReactiveLimits()).getPoints());
-        assertTrue(resGeneratorMinMax.getAttributes().getReactiveLimits() instanceof MinMaxReactiveLimitsAttributes);
+        assertInstanceOf(MinMaxReactiveLimitsAttributes.class, resGeneratorMinMax.getAttributes().getReactiveLimits());
 
         networkStoreRepository.insertReactiveCapabilityCurvePointsInEquipments(NETWORK_UUID, generators, new HashMap<>());
 
         assertNull(resGeneratorA.getAttributes().getReactiveLimits());
-        assertTrue(resGeneratorB.getAttributes().getReactiveLimits() instanceof ReactiveCapabilityCurveAttributes);
+        assertInstanceOf(ReactiveCapabilityCurveAttributes.class, resGeneratorB.getAttributes().getReactiveLimits());
         assertNull(((ReactiveCapabilityCurveAttributes) resGeneratorB.getAttributes().getReactiveLimits()).getPoints());
-        assertTrue(resGeneratorMinMax.getAttributes().getReactiveLimits() instanceof MinMaxReactiveLimitsAttributes);
+        assertInstanceOf(MinMaxReactiveLimitsAttributes.class, resGeneratorMinMax.getAttributes().getReactiveLimits());
 
         networkStoreRepository.insertReactiveCapabilityCurvePointsInEquipments(NETWORK_UUID, generators, map);
 
-        assertTrue(resGeneratorA.getAttributes().getReactiveLimits() instanceof ReactiveCapabilityCurveAttributes);
+        assertInstanceOf(ReactiveCapabilityCurveAttributes.class, resGeneratorA.getAttributes().getReactiveLimits());
         assertNotNull(((ReactiveCapabilityCurveAttributes) resGeneratorA.getAttributes().getReactiveLimits()).getPoints());
         assertEquals(3, ((ReactiveCapabilityCurveAttributes) resGeneratorA.getAttributes().getReactiveLimits()).getPoints().size());
 
-        assertTrue(resGeneratorB.getAttributes().getReactiveLimits() instanceof ReactiveCapabilityCurveAttributes);
+        assertInstanceOf(ReactiveCapabilityCurveAttributes.class, resGeneratorB.getAttributes().getReactiveLimits());
         assertNotNull(((ReactiveCapabilityCurveAttributes) resGeneratorB.getAttributes().getReactiveLimits()).getPoints());
         assertEquals(2, ((ReactiveCapabilityCurveAttributes) resGeneratorB.getAttributes().getReactiveLimits()).getPoints().size());
 
-        assertTrue(resGeneratorMinMax.getAttributes().getReactiveLimits() instanceof MinMaxReactiveLimitsAttributes);
+        assertInstanceOf(MinMaxReactiveLimitsAttributes.class, resGeneratorMinMax.getAttributes().getReactiveLimits());
     }
 
     @Test
-    public void insertTapChangerStepsInTwoWindingsTranformerTest() {
+    void insertTapChangerStepsInTwoWindingsTranformerTest() {
 
         String equipmentIdA = "id2WTransformerA";
         String equipmentIdB = "id2WTransformerB";
@@ -525,20 +519,8 @@ public class NetworkStoreRepositoryTest {
 
     }
 
-    public int getTapChangerStepsNumber(UUID networkUuid, int variantNum, ResourceType type, List<OwnerInfo> infos) {
-        return infos.stream()
-                .map(x -> {
-                    Map<OwnerInfo, List<TapChangerStepAttributes>> steps = networkStoreRepository.getTapChangerSteps(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, "equipmentType", type.toString());
-                    if (steps.get(x) != null) {
-                        return steps.get(x).size();
-                    }
-                    return 0;
-                })
-                .reduce(0, Integer::sum);
-    }
-
     @Test
-    public void insertTapChangerStepsInThreeWindingsTranformerTest() {
+    void insertTapChangerStepsInThreeWindingsTranformerTest() {
 
         String equipmentIdA = "id3WTransformerA";
         String equipmentIdB = "id3WTransformerB";
@@ -755,9 +737,8 @@ public class NetworkStoreRepositoryTest {
         assertNull(res3WTransformerB.getAttributes().getLeg(3).getPhaseTapChangerAttributes());
 
         // in A
-        assertThrows(IllegalArgumentException.class, () -> {
-            networkStoreRepository.insertTapChangerStepsInEquipments(NETWORK_UUID, threeWTransformers, mapA);
-        });
+        assertThrows(IllegalArgumentException.class, () ->
+            networkStoreRepository.insertTapChangerStepsInEquipments(NETWORK_UUID, threeWTransformers, mapA));
         assertNotNull(res3WTransformerA.getAttributes().getLeg(1).getRatioTapChangerAttributes().getSteps());
         assertNull(res3WTransformerA.getAttributes().getLeg(1).getPhaseTapChangerAttributes());
         assertEquals(2, res3WTransformerA.getAttributes().getLeg(1).getRatioTapChangerAttributes().getSteps().size());
@@ -767,9 +748,8 @@ public class NetworkStoreRepositoryTest {
         assertEquals(2, res3WTransformerA.getAttributes().getLeg(2).getRatioTapChangerAttributes().getSteps().size());
 
         // in B
-        assertThrows(IllegalArgumentException.class, () -> {
-            networkStoreRepository.insertTapChangerStepsInEquipments(NETWORK_UUID, threeWTransformers, mapB);
-        });
+        assertThrows(IllegalArgumentException.class, () ->
+            networkStoreRepository.insertTapChangerStepsInEquipments(NETWORK_UUID, threeWTransformers, mapB));
         assertNull(res3WTransformerB.getAttributes().getLeg(1).getPhaseTapChangerAttributes());
         assertNull(res3WTransformerB.getAttributes().getLeg(1).getRatioTapChangerAttributes());
 
@@ -783,7 +763,7 @@ public class NetworkStoreRepositoryTest {
     }
 
     @Test
-    public void test() {
+    void test() {
         Resource<LineAttributes> line1 = Resource.lineBuilder()
                 .id("line1")
                 .attributes(LineAttributes.builder()

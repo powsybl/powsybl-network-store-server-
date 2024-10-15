@@ -8,25 +8,20 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractMainConnectedComponentWithSwitchTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class})
-    })
-@TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class MainConnectedComponentWithSwitchIT extends AbstractMainConnectedComponentWithSwitchTest {
-
+    @Disabled("losing the v of buses / use the right views")
     @Test
     @Override
     public void test() {
         // FIXME remove this test when we stop losing the v of buses / use the right views
+        super.test();
     }
 }

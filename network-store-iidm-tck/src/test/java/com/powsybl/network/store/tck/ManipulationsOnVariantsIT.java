@@ -8,22 +8,16 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractManipulationsOnVariantsTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class})
-    })
-@TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class ManipulationsOnVariantsIT extends AbstractManipulationsOnVariantsTest {
-
+    @Disabled("we don't have the same cloneVariant implementation (see comment for details)")
     @Test
     @Override
     /* we need to override this test because we don't have the same cloneVariant implementation :
@@ -32,5 +26,6 @@ class ManipulationsOnVariantsIT extends AbstractManipulationsOnVariantsTest {
      * should we change this behavior ? */
     public void baseTests() {
         //FIXME see comment
+        super.baseTests();
     }
 }

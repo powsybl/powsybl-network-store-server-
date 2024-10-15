@@ -15,13 +15,10 @@ import java.util.Objects;
  * @author Nicolas Noir <nicolas.noir at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-public final class NetworkStorageTestCaseFactory {
+final class NetworkStorageTestCaseFactory {
 
     private NetworkStorageTestCaseFactory() {
-    }
-
-    public static Network create() {
-        return create(NetworkFactory.findDefault());
+        throw new IllegalStateException("Utility class");
     }
 
     public static Network create(NetworkFactory networkFactory) {
