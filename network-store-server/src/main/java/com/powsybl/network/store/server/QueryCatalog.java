@@ -563,15 +563,15 @@ public final class QueryCatalog {
 
     public static String buildRegulatingEquipmentsQuery() {
         return "select " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", regulatedequipmentid, "
-            + "regulatingterminalconnectableid from " + REGULATION_POINT_TABLE + " where " +
+            + "regulatingterminalconnectableid," + EQUIPMENT_TYPE_COLUMN + " from " + REGULATION_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
             REGULATING_EQUIPMENT_TYPE_COLUMN + " = ?";
     }
 
     public static String buildRegulatingEquipmentsForOneEquipmentQuery() {
-        return "select regulatedequipmentid "
-            + "from " + REGULATION_POINT_TABLE + " where " +
+        return "select regulatedequipmentid, " + EQUIPMENT_TYPE_COLUMN
+            + " from " + REGULATION_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
             REGULATING_EQUIPMENT_TYPE_COLUMN + " = ? and " +
