@@ -2548,7 +2548,7 @@ public class NetworkStoreRepository {
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setObject(3, type.toString());
             preparedStmt.setObject(4, equipmentId);
-            ((Resource<InjectionAttributes>) resource).getAttributes()
+            ((Resource<AbstractIdentifiableAttributes>) resource).getAttributes()
                     .setRegulatingEquipments(getRegulatingEquipments(preparedStmt));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
