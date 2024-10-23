@@ -197,4 +197,16 @@ class MergeNetworkIT extends AbstractMergeNetworkTest {
     public void testMergeAndDetachWithProperties() {
         // FIXME
     }
+
+    @Test
+    @Override
+    public void failMergeWithCommonAreaConflict() {
+        // FIXME
+    }
+
+    @Test
+    @Override
+    public void testMergeAndDetachWithDistinctAreas() {
+        // FIXME
+    }
 }

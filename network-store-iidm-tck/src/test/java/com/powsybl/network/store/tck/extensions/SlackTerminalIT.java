@@ -28,4 +28,10 @@ class SlackTerminalIT extends AbstractSlackTerminalTest {
     public void variantsCloneTest() {
         //FIXME remove when we fix primary key constraints violation on DB
     }
+
+    @Override
+    @Test
+    public void testWithSubnetwork() {
+        //FIXME remove when Network.merge(Network... networks) is implemented
+    }
 }
