@@ -105,7 +105,7 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- project specific dependencies (also overrides imports, but separate for clarity) -->
+            <!-- project specific dependencies -->
             <dependency>
                 <groupId>org.ow2.sirocco</groupId>
                 <artifactId>sirocco-text-table-formatter</artifactId>

@@ -14,7 +14,7 @@ import java.util.Objects;
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
-public abstract class AbstractForwardingRestClient implements RestClient {
+abstract class AbstractForwardingRestClient implements RestClient {
 
     @Delegate
     private RestClient delegate;
