@@ -522,7 +522,7 @@ public final class QueryCatalog {
             EQUIPMENT_TYPE_COLUMN + " = ?";
     }
 
-    public static String buildRegulationPointsWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
+    public static String buildRegulatingPointsWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }

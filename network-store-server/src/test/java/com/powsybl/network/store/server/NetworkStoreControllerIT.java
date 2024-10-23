@@ -524,7 +524,7 @@ public class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].attributes.voltageLevelId2").value("vl22"));
 
         // generator creation and update
-        RegulationPointAttributes regulationPointAttributes = RegulationPointAttributes.builder()
+        RegulatingPointAttributes regulationPointAttributes = RegulatingPointAttributes.builder()
             .regulatedEquipmentId("id")
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
             .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
@@ -952,7 +952,7 @@ public class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Collections.singleton(n1))))
                 .andExpect(status().isCreated());
-        RegulationPointAttributes regulationPointAttributes = RegulationPointAttributes.builder()
+        RegulatingPointAttributes regulationPointAttributes = RegulatingPointAttributes.builder()
             .regulatedEquipmentId("id")
             .resourceType(ResourceType.GENERATOR)
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
