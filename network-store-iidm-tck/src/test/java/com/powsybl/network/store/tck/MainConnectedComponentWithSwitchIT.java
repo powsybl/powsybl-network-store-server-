@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractMainConnectedComponentWithSwitchTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,11 +16,10 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class MainConnectedComponentWithSwitchIT extends AbstractMainConnectedComponentWithSwitchTest {
-    @Disabled("losing the v of buses / use the right views")
+
     @Test
     @Override
     public void test() {
         // FIXME remove this test when we stop losing the v of buses / use the right views
-        super.test();
     }
 }

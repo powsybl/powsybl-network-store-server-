@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractTapChangerTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,35 +16,28 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class TapChangerIT extends AbstractTapChangerTest {
-    @Disabled("TapChanger.getNeutralPosition and getNeutralStep aren't implemented")
+
     @Override
     @Test
     public void baseTestsRatioTapChanger() {
         // TODO remove this test when TapChanger.getNeutralPosition and getNeutralStep are implemented
-        super.baseTestsRatioTapChanger();
     }
 
-    @Disabled("TapChanger.getNeutralPosition and getNeutralStep aren't implemented")
     @Override
     @Test
     public void baseTestsPhaseTapChanger() {
         // TODO remove this test when TapChanger.getNeutralPosition and getNeutralStep are implemented
-        super.baseTestsPhaseTapChanger();
     }
 
-    @Disabled("TapChanger.getNeutralPosition and getNeutralStep aren't implemented")
     @Override
     @Test
     public void undefinedRegulationValueOnlyWarning() {
         // TODO remove this test when TapChanger.getNeutralPosition and getNeutralStep are implemented
-        super.undefinedRegulationValueOnlyWarning();
     }
 
-    @Disabled("primary key constraints violation on DB")
     @Test
     @Override
     public void testTapChangerSetterGetterInMultiVariants() {
         //FIXME remove when we fix primary key constraints violation on DB
-        super.testTapChangerSetterGetterInMultiVariants();
     }
 }

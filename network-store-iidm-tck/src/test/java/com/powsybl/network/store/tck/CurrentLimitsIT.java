@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractCurrentLimitsTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,51 +16,40 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class CurrentLimitsIT extends AbstractCurrentLimitsTest {
-    @Disabled("Bus.getV/setV not getting/updating correctly the V in all views")
+
     @Override
     @Test
     public void test() {
         // FIXME delete this test when we fix Bus.getV/setV not getting/updating correctly the V in all views
-        super.test();
     }
 
-    @Disabled("Bus.getV/setV not getting/updating correctly the V in all views")
     @Override
     @Test
     public void testForThreeWindingsTransformerLeg1() {
         // FIXME delete this test when we fix Bus.getV/setV not getting/updating correctly the V in all views
-        super.testForThreeWindingsTransformerLeg1();
     }
 
-    @Disabled("Bus.getV/setV not getting/updating correctly the V in all views")
     @Override
     @Test
     public void testForThreeWindingsTransformerLeg2() {
         // FIXME delete this test when we fix Bus.getV/setV not getting/updating correctly the V in all views
-        super.testForThreeWindingsTransformerLeg2();
     }
 
-    @Disabled("Bus.getV/setV not getting/updating correctly the V in all views")
     @Override
     @Test
     public void testForThreeWindingsTransformerLeg3() {
         // FIXME delete this test when we fix Bus.getV/setV not getting/updating correctly the V in all views
-        super.testForThreeWindingsTransformerLeg3();
     }
 
-    @Disabled("Bus.getV/setV not getting/updating correctly the V in all views")
     @Override
     @Test
     public void testLimitWithoutTempLimit() {
         // FIXME delete this test when we fix Bus.getV/setV not getting/updating correctly the V in all views
-        super.testLimitWithoutTempLimit();
     }
 
-    @Disabled("Bus.getV/setV not getting/updating correctly the V in all views")
     @Override
     @Test
     public void testSetterGetter() {
         // FIXME delete this test when we fix Bus.getV/setV not getting/updating correctly the V in all views
-        super.testSetterGetter();
     }
 }

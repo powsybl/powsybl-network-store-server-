@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractMultiVariantNetworkTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,35 +16,28 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class MultiVariantNetworkIT extends AbstractMultiVariantNetworkTest {
-    @Disabled("multi-thread access isn't supported")
+
     @Test
     @Override
     public void multiThreadTest() throws InterruptedException {
         // FIXME delete this test when multi-thread access is supported
-        super.multiThreadTest();
     }
 
-    @Disabled("multi-thread access isn't supported")
     @Test
     @Override
     public void multiVariantTopologyTest() {
         // FIXME delete this test when multi-thread access is supported
-        super.multiVariantTopologyTest();
     }
 
-    @Disabled("multi-thread access isn't supported")
     @Test
     @Override
     public void variantNotSetTest() throws InterruptedException {
         // FIXME delete this test when multi-thread access is supported
-        super.variantNotSetTest();
     }
 
-    @Disabled("multi-thread access isn't supported")
     @Test
     @Override
     public void variantSetTest() throws InterruptedException {
         // FIXME delete this test when multi-thread access is supported
-        super.variantSetTest();
     }
 }

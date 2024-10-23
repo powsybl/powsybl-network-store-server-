@@ -11,7 +11,6 @@ import com.powsybl.iidm.network.VoltageLevel;
 import com.powsybl.iidm.network.tck.AbstractLoadTest;
 import com.powsybl.iidm.network.test.FictitiousSwitchFactory;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -22,12 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class LoadIT extends AbstractLoadTest {
-    @Disabled("ZipLoadModelAdder isn't implemented")
+
     @Override
     @Test
     public void testZipLoadModel() {
         //TODO remove this test when ZipLoadModelAdder is implemented
-        super.testZipLoadModel();
     }
 
     @Override
@@ -39,11 +37,9 @@ class LoadIT extends AbstractLoadTest {
         assertNull(voltageLevel.newLoad().newExponentialModel().setNp(0.0).setNq(0.0).add());
     }
 
-    @Disabled("primary key constraints violation on DB")
     @Test
     @Override
     public void testSetterGetterInMultiVariants() {
         //FIXME remove when we fix primary key constraints violation on DB
-        super.testSetterGetterInMultiVariants();
     }
 }

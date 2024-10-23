@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractShuntCompensatorTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,14 +16,13 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class ShuntCompensatorIT extends AbstractShuntCompensatorTest {
-    @Disabled("primary key constraints violation on DB")
+
     @Test
     @Override
     public void testSetterGetterInMultiVariants() {
         //FIXME remove when we fix primary key constraints violation on DB
     }
 
-    @Disabled("waiting the release containing this PR: https://github.com/powsybl/powsybl-core/pull/2847")
     @Override
     @Test
     public void baseLinearShuntTest() {

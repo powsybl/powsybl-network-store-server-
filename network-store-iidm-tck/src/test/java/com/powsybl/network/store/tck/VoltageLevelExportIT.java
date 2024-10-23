@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractVoltageLevelExportTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -19,19 +18,16 @@ import java.io.IOException;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class VoltageLevelExportIT extends AbstractVoltageLevelExportTest {
-    @Disabled("VoltageLevelImpl.exportTopology isn't implemented")
+
     @Test
     @Override
     public void nodeBreakerTest() throws IOException {
         // FIXME remove this test when VoltageLevelImpl.exportTopology is implemented
-        super.nodeBreakerTest();
     }
 
-    @Disabled("VoltageLevelImpl.exportTopology isn't implemented")
     @Test
     @Override
     public void busBreakerTest() throws IOException {
         // FIXME remove this test when VoltageLevelImpl.exportTopology is implemented
-        super.busBreakerTest();
     }
 }

@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractLineTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,35 +16,28 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class LineIT extends AbstractLineTest {
-    @Disabled("waiting the release containing this PR: https://github.com/powsybl/powsybl-core/pull/3022")
+
     @Test
     @Override
     public void baseAcLineTests() {
         // FIXME remove this test when we use the release containing this PR : https://github.com/powsybl/powsybl-core/pull/3022
-        super.baseAcLineTests();
     }
 
-    @Disabled("exception message aren't homogenized with the powsybl-core")
     @Test
     @Override
     public void testRemoveAcLine() {
         // FIXME remove this test when exception msg are homogenized with the powsybl-core
-        super.testRemoveAcLine();
     }
 
-    @Disabled("powsybl-network-store-server not use powsybl network store 1.18.0")
     @Test
     @Override
     public void testMove1NbNetwork() {
         // TODO : remove this function as soon as powsybl network store server will use powsybl network store 1.18.0 (it will correct this test)
-        super.testMove1NbNetwork();
     }
 
-    @Disabled("powsybl-network-store-server not use powsybl network store 1.18.0")
     @Test
     @Override
     public void testMove2Nb() {
         // TODO : remove this function as soon as powsybl network store server will use powsybl network store 1.18.0 (it will correct this test)
-        super.testMove2Nb();
     }
 }

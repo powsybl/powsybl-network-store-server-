@@ -12,7 +12,6 @@ import com.powsybl.iidm.network.tck.AbstractNetworkTest;
 import com.powsybl.iidm.network.test.NetworkTest1Factory;
 import com.powsybl.iidm.network.util.Networks;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -29,28 +28,23 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class NetworkIT extends AbstractNetworkTest {
-    @Disabled("using the \"Default\" NetworkFactory in the base class")
+
     @Test
     @Override
     public void testWith() {
         // FIXME remove this when we fix the fact that we use the "Default" NetworkFactory in the base class
-        super.testWith();
     }
 
-    @Disabled("Unsupported operation: Validation level below STEADY_STATE_HYPOTHESIS not supported")
     @Test
     @Override
     public void testScadaNetwork() {
         // FIXME test throws UnsupportedOperationException: Validation level below STEADY_STATE_HYPOTHESIS not supported
-        super.testScadaNetwork();
     }
 
-    @Disabled("waiting the release containing this PR: https://github.com/powsybl/powsybl-core/pull/3020")
     @Test
     @Override
     public void testStreams() {
         // FIXME remove this test when we use the release containing this PR : https://github.com/powsybl/powsybl-core/pull/3020
-        super.testStreams();
     }
 
     // see FIXME-Override below
@@ -210,27 +204,21 @@ class NetworkIT extends AbstractNetworkTest {
         */
     }
 
-    @Disabled("missing validation on CurrentLimitAdder")
     @Test
     @Override
     public void testPermanentLimitViaAdder() {
         // FIXME remove this test when we add validation on CurrentLimitAdder
-        super.testPermanentLimitViaAdder();
     }
 
-    @Disabled("missing validation on CurrentLimitAdder")
     @Test
     @Override
     public void testPermanentLimitOnUnselectedOperationalLimitsGroup() {
         // FIXME remove this test when we add validation on CurrentLimitAdder
-        super.testPermanentLimitOnUnselectedOperationalLimitsGroup();
     }
 
-    @Disabled("missing validation on CurrentLimitAdder")
     @Test
     @Override
     public void testPermanentLimitOnSelectedOperationalLimitsGroup() {
         // FIXME remove this test when we add validation on CurrentLimitAdder
-        super.testPermanentLimitOnSelectedOperationalLimitsGroup();
     }
 }

@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractManipulationsOnVariantsTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,7 +16,7 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class ManipulationsOnVariantsIT extends AbstractManipulationsOnVariantsTest {
-    @Disabled("we don't have the same cloneVariant implementation (see comment for details)")
+
     @Test
     @Override
     /* we need to override this test because we don't have the same cloneVariant implementation :
@@ -26,6 +25,5 @@ class ManipulationsOnVariantsIT extends AbstractManipulationsOnVariantsTest {
      * should we change this behavior ? */
     public void baseTests() {
         //FIXME see comment
-        super.baseTests();
     }
 }

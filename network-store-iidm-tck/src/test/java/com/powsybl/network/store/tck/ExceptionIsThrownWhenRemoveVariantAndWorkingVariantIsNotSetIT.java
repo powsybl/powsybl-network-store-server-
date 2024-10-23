@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractExceptionIsThrownWhenRemoveVariantAndWorkingVariantIsNotSetTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,11 +16,10 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class ExceptionIsThrownWhenRemoveVariantAndWorkingVariantIsNotSetIT extends AbstractExceptionIsThrownWhenRemoveVariantAndWorkingVariantIsNotSetTest {
-    @Disabled("multi-thread access isn't supported")
+
     @Override
     @Test
     public void test() throws InterruptedException {
         // FIXME delete this test when multi-thread access is supported
-        super.test();
     }
 }

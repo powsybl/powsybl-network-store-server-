@@ -8,7 +8,6 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractStaticVarCompensatorTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,19 +16,16 @@ import org.springframework.test.context.ContextHierarchy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class StaticVarCompensatorIT extends AbstractStaticVarCompensatorTest {
-    @Disabled("regulating terminal isn't moved when the equipment regulated is deleted")
+
     @Override
     @Test
     public void regulatingTerminalTest() {
         // FIXME delete this test when the regulating terminal is moved when the equipment regulated is deleted
-        super.regulatingTerminalTest();
     }
 
-    @Disabled("primary key constraints violation on DB")
     @Override
     @Test
     public void testSetterGetterInMultiVariants() {
         //FIXME remove when we fix primary key constraints violation on DB
-        super.testSetterGetterInMultiVariants();
     }
 }
