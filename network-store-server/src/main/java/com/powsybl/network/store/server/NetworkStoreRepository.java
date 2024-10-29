@@ -2477,7 +2477,7 @@ public class NetworkStoreRepository {
                 owner.setEquipmentType(type);
                 regulationPointAttributes.setRegulatedEquipmentId(regulatedEquipmentId);
                 regulationPointAttributes.setRegulationMode(resultSet.getString(4));
-                regulationPointAttributes.setResourceType(type);
+                regulationPointAttributes.setRegulatingResourceType(type);
                 Optional<String> localConnectableId = Optional.ofNullable(resultSet.getString(5));
                 if (localConnectableId.isPresent()) {
                     regulationPointAttributes.setLocalTerminal(new TerminalRefAttributes(localConnectableId.get(), resultSet.getString(6)));

@@ -954,7 +954,7 @@ public class NetworkStoreControllerIT {
                 .andExpect(status().isCreated());
         RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
             .regulatedEquipmentId("id")
-            .resourceType(ResourceType.GENERATOR)
+            .regulatingResourceType(ResourceType.GENERATOR)
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
             .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
             .build();
