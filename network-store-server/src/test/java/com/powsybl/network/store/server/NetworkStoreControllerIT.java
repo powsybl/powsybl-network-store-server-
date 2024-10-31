@@ -525,7 +525,7 @@ public class NetworkStoreControllerIT {
 
         // generator creation and update
         RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
-            .regulatedEquipmentId("id")
+            .regulatingEquipmentId("id")
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
             .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
             .build();
@@ -953,7 +953,7 @@ public class NetworkStoreControllerIT {
                         .content(objectMapper.writeValueAsString(Collections.singleton(n1))))
                 .andExpect(status().isCreated());
         RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
-            .regulatedEquipmentId("id")
+            .regulatingEquipmentId("id")
             .regulatingResourceType(ResourceType.GENERATOR)
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
             .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())

@@ -17,15 +17,28 @@
                 relativeToChangelogFile="true"
                 splitStatements="true"
                 stripComments="true"/>
+        <!-- renaming -->
+        <renameColumn oldColumnName="regulatedequipmentid"
+                      newColumnName="regulatingequipmentid"
+                      tableName="regulationpoint"/>
+        <renameColumn oldColumnName="equipmenttype"
+                      newColumnName="regulatingequipmenttype"
+                      tableName="regulationpoint"/>
+        <!-- primary key -->
+        <dropPrimaryKey tableName="regulationpoint"/>
+        <addPrimaryKey columnNames="networkuuid, variantnum, regulatingequipmenttype, regulatingequipmentid"
+                       constraintName="regulationpoint_pkey" tableName="regulationpoint"/>
+        <!-- index -->
+        <dropIndex tableName="regulationpoint" indexName="regulationpoint_networkuuid_variantnum_equipmenttype_idx"/>
         <createIndex indexName="regulationpoint_regulating_equipment_idx" tableName="regulationpoint">
             <column name="networkuuid"/>
             <column name="variantnum"/>
             <column name="regulatingterminalconnectabletype"/>
             <column name="regulatingterminalconnectableid"/>
         </createIndex>
-        <dropPrimaryKey tableName="regulationpoint"/>
-        <addPrimaryKey columnNames="networkuuid, variantnum, equipmenttype, regulatedequipmentid" constraintName="regulationpoint_pkey" tableName="regulationpoint"/>
-        <dropIndex tableName="regulationpoint" indexName="regulationpoint_networkuuid_variantnum_equipmenttype_idx"/>
+        <renameTable oldTableName="regulationpoint"
+                     newTableName="regulatingpoint"
+                     schemaName="public"/>
     </changeSet>
 
 </databaseChangeLog>
