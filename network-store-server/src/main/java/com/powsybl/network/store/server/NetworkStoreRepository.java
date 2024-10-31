@@ -298,8 +298,8 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
-            // Delete of the regulation points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulationPointsQuery())) {
+            // Delete of the regulating points (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.executeUpdate();
             }
@@ -362,7 +362,7 @@ public class NetworkStoreRepository {
             }
 
             // Delete of the regulation points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulationPointsVariantQuery())) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
@@ -482,7 +482,7 @@ public class NetworkStoreRepository {
         }
 
         // Copy of the regulating points (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneRegulationPointsQuery())) {
+        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneRegulatingPointsQuery())) {
             preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
             preparedStmt.setObject(3, uuid);
@@ -926,7 +926,7 @@ public class NetworkStoreRepository {
 
         // Now that generators are created, we will insert in the database the corresponding reactive capability curve points.
         insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
-        insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public Optional<Resource<GeneratorAttributes>> getGenerator(UUID networkUuid, int variantNum, String generatorId) {
@@ -970,8 +970,8 @@ public class NetworkStoreRepository {
         insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
         // regulation points
 
-        deleteRegulationPoints(networkUuid, resources, ResourceType.GENERATOR);
-        insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+        deleteRegulatingPoints(networkUuid, resources, ResourceType.GENERATOR);
+        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public void updateGeneratorsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -981,7 +981,7 @@ public class NetworkStoreRepository {
     public void deleteGenerator(UUID networkUuid, int variantNum, String generatorId) {
         deleteIdentifiable(networkUuid, variantNum, generatorId, GENERATOR_TABLE);
         deleteReactiveCapabilityCurvePoints(networkUuid, variantNum, generatorId);
-        deleteRegulationPoints(networkUuid, variantNum, Collections.singletonList(generatorId), ResourceType.GENERATOR);
+        deleteRegulatingPoints(networkUuid, variantNum, Collections.singletonList(generatorId), ResourceType.GENERATOR);
     }
 
     // battery
@@ -1076,7 +1076,7 @@ public class NetworkStoreRepository {
     // shunt compensator
     public void createShuntCompensators(UUID networkUuid, List<Resource<ShuntCompensatorAttributes>> resources) {
         createIdentifiables(networkUuid, resources, mappings.getShuntCompensatorMappings());
-        insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public Optional<Resource<ShuntCompensatorAttributes>> getShuntCompensator(UUID networkUuid, int variantNum, String shuntCompensatorId) {
@@ -1103,8 +1103,8 @@ public class NetworkStoreRepository {
     public void updateShuntCompensators(UUID networkUuid, List<Resource<ShuntCompensatorAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getShuntCompensatorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        deleteRegulationPoints(networkUuid, resources, ResourceType.SHUNT_COMPENSATOR);
-        insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+        deleteRegulatingPoints(networkUuid, resources, ResourceType.SHUNT_COMPENSATOR);
+        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public void updateShuntCompensatorsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1112,7 +1112,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteShuntCompensator(UUID networkUuid, int variantNum, String shuntCompensatorId) {
-        deleteRegulationPoints(networkUuid, variantNum, Collections.singletonList(shuntCompensatorId), ResourceType.SHUNT_COMPENSATOR);
+        deleteRegulatingPoints(networkUuid, variantNum, Collections.singletonList(shuntCompensatorId), ResourceType.SHUNT_COMPENSATOR);
         deleteIdentifiable(networkUuid, variantNum, shuntCompensatorId, SHUNT_COMPENSATOR_TABLE);
     }
 
@@ -1123,7 +1123,7 @@ public class NetworkStoreRepository {
 
         // Now that vsc converter stations are created, we will insert in the database the corresponding reactive capability curve points.
         insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
-        insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public Optional<Resource<VscConverterStationAttributes>> getVscConverterStation(UUID networkUuid, int variantNum, String vscConverterStationId) {
@@ -1163,8 +1163,8 @@ public class NetworkStoreRepository {
         // modified because of the updated equipment's new values.
         deleteReactiveCapabilityCurvePoints(networkUuid, resources);
         insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
-        deleteRegulationPoints(networkUuid, resources, ResourceType.VSC_CONVERTER_STATION);
-        insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+        deleteRegulatingPoints(networkUuid, resources, ResourceType.VSC_CONVERTER_STATION);
+        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public void updateVscConverterStationsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1174,7 +1174,7 @@ public class NetworkStoreRepository {
     public void deleteVscConverterStation(UUID networkUuid, int variantNum, String vscConverterStationId) {
         deleteIdentifiable(networkUuid, variantNum, vscConverterStationId, VSC_CONVERTER_STATION_TABLE);
         deleteReactiveCapabilityCurvePoints(networkUuid, variantNum, vscConverterStationId);
-        deleteRegulationPoints(networkUuid, variantNum, Collections.singletonList(vscConverterStationId), ResourceType.VSC_CONVERTER_STATION);
+        deleteRegulatingPoints(networkUuid, variantNum, Collections.singletonList(vscConverterStationId), ResourceType.VSC_CONVERTER_STATION);
     }
 
     // LCC converter station
@@ -1210,7 +1210,7 @@ public class NetworkStoreRepository {
     // static var compensators
     public void createStaticVarCompensators(UUID networkUuid, List<Resource<StaticVarCompensatorAttributes>> resources) {
         createIdentifiables(networkUuid, resources, mappings.getStaticVarCompensatorMappings());
-        insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public Optional<Resource<StaticVarCompensatorAttributes>> getStaticVarCompensator(UUID networkUuid, int variantNum, String staticVarCompensatorId) {
@@ -1236,8 +1236,8 @@ public class NetworkStoreRepository {
 
     public void updateStaticVarCompensators(UUID networkUuid, List<Resource<StaticVarCompensatorAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getStaticVarCompensatorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
-        deleteRegulationPoints(networkUuid, resources, ResourceType.STATIC_VAR_COMPENSATOR);
-        insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+        deleteRegulatingPoints(networkUuid, resources, ResourceType.STATIC_VAR_COMPENSATOR);
+        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public void updateStaticVarCompensatorsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1245,7 +1245,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteStaticVarCompensator(UUID networkUuid, int variantNum, String staticVarCompensatorId) {
-        deleteRegulationPoints(networkUuid, variantNum, Collections.singletonList(staticVarCompensatorId), ResourceType.STATIC_VAR_COMPENSATOR);
+        deleteRegulatingPoints(networkUuid, variantNum, Collections.singletonList(staticVarCompensatorId), ResourceType.STATIC_VAR_COMPENSATOR);
         deleteIdentifiable(networkUuid, variantNum, staticVarCompensatorId, STATIC_VAR_COMPENSATOR_TABLE);
     }
 
@@ -2136,12 +2136,12 @@ public class NetworkStoreRepository {
         resourceIdsByVariant.forEach((k, v) -> deletePermanentLimits(networkUuid, k, v));
     }
 
-    // Regulation Points
-    public void insertRegulationPoints(Map<OwnerInfo, RegulatingPointAttributes> regulationPoints) {
+    // Regulating Points
+    public void insertRegulatingPoints(Map<OwnerInfo, RegulatingPointAttributes> regulatingPoints) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertRegulationPointsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertRegulatingPointsQuery())) {
                 List<Object> values = new ArrayList<>(10);
-                List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> list = new ArrayList<>(regulationPoints.entrySet());
+                List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> list = new ArrayList<>(regulatingPoints.entrySet());
                 for (List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> subUnit : Lists.partition(list, BATCH_SIZE)) {
                     for (Map.Entry<OwnerInfo, RegulatingPointAttributes> attributes : subUnit) {
                         values.clear();
@@ -2184,14 +2184,14 @@ public class NetworkStoreRepository {
         }
     }
 
-    public Map<OwnerInfo, RegulatingPointAttributes> getRegulationPoints(UUID networkUuid, int variantNum, ResourceType type) {
+    public Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPoints(UUID networkUuid, int variantNum, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulationPointsQuery());
+            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingPointsQuery());
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
 
-            return innerGetRegulationPoints(preparedStmt, type);
+            return innerGetRegulatingPoints(preparedStmt, type);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -2210,15 +2210,15 @@ public class NetworkStoreRepository {
                 preparedStmt.setString(4 + i, valuesForInClause.get(i));
             }
 
-            return innerGetRegulationPoints(preparedStmt, type);
+            return innerGetRegulatingPoints(preparedStmt, type);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    private void deleteRegulationPoints(UUID networkUuid, int variantNum, List<String> equipmentIds, ResourceType type) {
+    private void deleteRegulatingPoints(UUID networkUuid, int variantNum, List<String> equipmentIds, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulationPointsVariantEquipmentINQuery(equipmentIds.size()))) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.setObject(3, type.toString());
@@ -2232,7 +2232,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    private <T extends IdentifiableAttributes> void deleteRegulationPoints(UUID networkUuid, List<Resource<T>> resources, ResourceType type) {
+    private <T extends IdentifiableAttributes> void deleteRegulatingPoints(UUID networkUuid, List<Resource<T>> resources, ResourceType type) {
         Map<Integer, List<String>> resourceIdsByVariant = new HashMap<>();
         for (Resource<T> resource : resources) {
             List<String> resourceIds = resourceIdsByVariant.get(resource.getVariantNum());
@@ -2244,7 +2244,7 @@ public class NetworkStoreRepository {
             }
             resourceIdsByVariant.put(resource.getVariantNum(), resourceIds);
         }
-        resourceIdsByVariant.forEach((k, v) -> deleteRegulationPoints(networkUuid, k, v, type));
+        resourceIdsByVariant.forEach((k, v) -> deleteRegulatingPoints(networkUuid, k, v, type));
     }
 
     // Reactive Capability Curve Points
@@ -2338,13 +2338,13 @@ public class NetworkStoreRepository {
     private <T extends AbstractRegulatingEquipmentAttributes & InjectionAttributes> void setRegulatingPointAndRegulatingEquipmentsWithIds(List<Resource<T>> elements, UUID networkUuid, int variantNum, ResourceType type) {
         // regulation points
         List<String> elementIds = elements.stream().map(Resource::getId).toList();
-        Map<OwnerInfo, RegulatingPointAttributes> regulationPointAttributes = getRegulatingPointsWithInClause(networkUuid, variantNum,
+        Map<OwnerInfo, RegulatingPointAttributes> regulatingPointAttributes = getRegulatingPointsWithInClause(networkUuid, variantNum,
             REGULATING_EQUIPMENT_ID, elementIds, type);
         Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipmentsWithInClause(networkUuid, variantNum, REGULATING_EQUIPMENT_ID, elementIds, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
             element.getAttributes().setRegulatingPoint(
-                regulationPointAttributes.get(ownerInfo));
+                regulatingPointAttributes.get(ownerInfo));
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
         });
     }
@@ -2352,12 +2352,12 @@ public class NetworkStoreRepository {
     // on all elements of the network
     private <T extends AbstractRegulatingEquipmentAttributes & InjectionAttributes> void setRegulatingPointAndRegulatingEquipments(List<Resource<T>> elements, UUID networkUuid, int variantNum, ResourceType type) {
         // regulation points
-        Map<OwnerInfo, RegulatingPointAttributes> regulationPointAttributes = getRegulationPoints(networkUuid, variantNum, type);
+        Map<OwnerInfo, RegulatingPointAttributes> regulatingPointAttributes = getRegulatingPoints(networkUuid, variantNum, type);
         Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
             element.getAttributes().setRegulatingPoint(
-                regulationPointAttributes.get(ownerInfo));
+                regulatingPointAttributes.get(ownerInfo));
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
         });
     }
@@ -2383,7 +2383,7 @@ public class NetworkStoreRepository {
         });
     }
 
-    protected <T extends AbstractRegulatingEquipmentAttributes> Map<OwnerInfo, RegulatingPointAttributes> getRegulationPointFromEquipment(UUID networkUuid, List<Resource<T>> resources) {
+    protected <T extends AbstractRegulatingEquipmentAttributes> Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPointFromEquipment(UUID networkUuid, List<Resource<T>> resources) {
         Map<OwnerInfo, RegulatingPointAttributes> map = new HashMap<>();
         if (!resources.isEmpty()) {
             for (Resource<T> resource : resources) {
@@ -2399,31 +2399,31 @@ public class NetworkStoreRepository {
         return map;
     }
 
-    private Map<OwnerInfo, RegulatingPointAttributes> innerGetRegulationPoints(PreparedStatement preparedStmt, ResourceType type) throws SQLException {
+    private Map<OwnerInfo, RegulatingPointAttributes> innerGetRegulatingPoints(PreparedStatement preparedStmt, ResourceType type) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, RegulatingPointAttributes> map = new HashMap<>();
             while (resultSet.next()) {
                 OwnerInfo owner = new OwnerInfo();
-                RegulatingPointAttributes regulationPointAttributes = new RegulatingPointAttributes();
-                // In order, from the QueryCatalog.buildRegulationPointQuery SQL query :
+                RegulatingPointAttributes regulatingPointAttributes = new RegulatingPointAttributes();
+                // In order, from the QueryCatalog.buildRegulatingPointQuery SQL query :
                 // equipmentId, networkUuid, variantNum, regulatingEquipmentId, localTerminal and regulatingTerminal
                 String regulatingEquipmentId = resultSet.getString(3);
                 owner.setEquipmentId(regulatingEquipmentId);
                 owner.setNetworkUuid(UUID.fromString(resultSet.getString(1)));
                 owner.setVariantNum(resultSet.getInt(2));
                 owner.setEquipmentType(type);
-                regulationPointAttributes.setRegulatingEquipmentId(regulatingEquipmentId);
-                regulationPointAttributes.setRegulationMode(resultSet.getString(4));
-                regulationPointAttributes.setRegulatingResourceType(type);
+                regulatingPointAttributes.setRegulatingEquipmentId(regulatingEquipmentId);
+                regulatingPointAttributes.setRegulationMode(resultSet.getString(4));
+                regulatingPointAttributes.setRegulatingResourceType(type);
                 Optional<String> localConnectableId = Optional.ofNullable(resultSet.getString(5));
                 if (localConnectableId.isPresent()) {
-                    regulationPointAttributes.setLocalTerminal(new TerminalRefAttributes(localConnectableId.get(), resultSet.getString(6)));
+                    regulatingPointAttributes.setLocalTerminal(new TerminalRefAttributes(localConnectableId.get(), resultSet.getString(6)));
                 }
                 Optional<String> regulatingConnectableId = Optional.ofNullable(resultSet.getString(7));
                 if (regulatingConnectableId.isPresent()) {
-                    regulationPointAttributes.setRegulatingTerminal(new TerminalRefAttributes(resultSet.getString(7), resultSet.getString(8)));
+                    regulatingPointAttributes.setRegulatingTerminal(new TerminalRefAttributes(resultSet.getString(7), resultSet.getString(8)));
                 }
-                map.put(owner, regulationPointAttributes);
+                map.put(owner, regulatingPointAttributes);
             }
             return map;
         }

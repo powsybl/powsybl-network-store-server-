@@ -492,15 +492,15 @@ public final class QueryCatalog {
                 NETWORK_UUID_COLUMN + " = ?";
     }
 
-    // Regulation point
-    public static String buildInsertRegulationPointsQuery() {
+    // Regulating point
+    public static String buildInsertRegulatingPointsQuery() {
         return "insert into " + REGULATING_POINT_TABLE + " (" +
             NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN + ", " + REGULATING_EQUIPMENT_ID + ", " + REGULATING_EQUIPMENT_TYPE_COLUMN + ", " +
             REGULATION_MODE + ", localTerminalConnectableId, localTerminalSide, regulatingterminalconnectableid, regulatingterminalside, " + REGULATED_EQUIPMENT_TYPE_COLUMN + ")" +
             " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
-    public static String buildCloneRegulationPointsQuery() {
+    public static String buildCloneRegulatingPointsQuery() {
         return "insert into " + REGULATING_POINT_TABLE + " (" + NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN + ", " +
              REGULATING_EQUIPMENT_ID + ", " + REGULATING_EQUIPMENT_TYPE_COLUMN + ", " + REGULATION_MODE +
             ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide, " +
@@ -511,7 +511,7 @@ public final class QueryCatalog {
             " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildRegulationPointsQuery() {
+    public static String buildRegulatingPointsQuery() {
         return "select " +
             NETWORK_UUID_COLUMN + ", " +
             VARIANT_NUM_COLUMN + ", " +
@@ -539,18 +539,18 @@ public final class QueryCatalog {
             "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
-    public static String buildDeleteRegulationPointsVariantQuery() {
+    public static String buildDeleteRegulatingPointsVariantQuery() {
         return "delete from " + REGULATING_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildDeleteRegulationPointsQuery() {
+    public static String buildDeleteRegulatingPointsQuery() {
         return "delete from " + REGULATING_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ?";
     }
 
-    public static String buildDeleteRegulationPointsVariantEquipmentINQuery(int numberOfValues) {
+    public static String buildDeleteRegulatingPointsVariantEquipmentINQuery(int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
