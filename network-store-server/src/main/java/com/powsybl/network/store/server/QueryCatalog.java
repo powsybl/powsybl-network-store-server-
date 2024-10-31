@@ -579,6 +579,20 @@ public final class QueryCatalog {
             "regulatingterminalconnectableid = ?";
     }
 
+    public static String buildRegulatingEquipmentsWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
+        if (numberOfValues < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+
+        return "select " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + REGULATING_EQUIPMENT_ID + ", "
+            + "regulatingterminalconnectableid," + REGULATING_EQUIPMENT_TYPE_COLUMN + " from " + REGULATING_POINT_TABLE + " where " +
+            NETWORK_UUID_COLUMN + " = ? and " +
+            VARIANT_NUM_COLUMN + " = ? and " +
+            REGULATING_EQUIPMENT_TYPE_COLUMN + " = ? and " +
+            columnNameForInClause + " in (" +
+            "?, ".repeat(numberOfValues - 1) + "?)";
+    }
+
     // Tap Changer Steps
     public static String buildCloneTapChangerStepQuery() {
         return "insert into " + TAP_CHANGER_STEP_TABLE + "(" +
