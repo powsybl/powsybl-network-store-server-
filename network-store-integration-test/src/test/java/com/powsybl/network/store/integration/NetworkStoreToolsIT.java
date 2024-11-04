@@ -12,18 +12,15 @@ import com.powsybl.network.store.tools.NetworkStoreDeleteTool;
 import com.powsybl.network.store.tools.NetworkStoreImportTool;
 import com.powsybl.network.store.tools.NetworkStoreListTool;
 import com.powsybl.network.store.tools.NetworkStoreScriptTool;
-import com.powsybl.tools.test.AbstractToolTest;
 import com.powsybl.tools.Tool;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,24 +29,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * @author Jon Harper <jon.harper at rte-france.com>
- */
-abstract class AbstractNetworkStoreToolsIT extends AbstractToolTest {
-}
-
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})
-    })
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})})
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
-public class NetworkStoreToolsIT extends AbstractNetworkStoreToolsIT {
+class NetworkStoreToolsIT extends AbstractNetworkStoreToolsIT {
 
     @LocalServerPort
     private int randomServerPort;
@@ -66,8 +54,8 @@ public class NetworkStoreToolsIT extends AbstractNetworkStoreToolsIT {
         return "http://localhost:" + randomServerPort + "/";
     }
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         Supplier<NetworkStoreService> networkStoreServiceSupplier = () -> new NetworkStoreService(getBaseUrl());
         deleteTool = new NetworkStoreDeleteTool(networkStoreServiceSupplier);
         importTool = new NetworkStoreImportTool(networkStoreServiceSupplier);
@@ -83,6 +71,7 @@ public class NetworkStoreToolsIT extends AbstractNetworkStoreToolsIT {
     }
 
     @Override
+    @Test
     public void assertCommand() {
         assertCommand(deleteTool.getCommand(), "network-store-delete", 1, 1);
         assertOption(deleteTool.getCommand().getOptions(), "network-uuid", true, true);
@@ -95,7 +84,7 @@ public class NetworkStoreToolsIT extends AbstractNetworkStoreToolsIT {
     }
 
     @Test
-    public void test() throws IOException {
+    void test() throws IOException {
         // import a xiidm file
         Files.copy(getClass().getResourceAsStream("/test.xiidm"), fileSystem.getPath("/work/test.xiidm"));
         assertCommandSuccessful(new String[] {"network-store-import", "--input-file", "/work/test.xiidm"},

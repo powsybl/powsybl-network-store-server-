@@ -20,11 +20,11 @@ import java.util.Optional;
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  */
-public class TestRestClient extends AbstractForwardingRestClient {
+class TestRestClient extends AbstractForwardingRestClient {
 
     private final RestClientMetrics metrics;
 
-    public TestRestClient(RestClient delegate, RestClientMetrics metrics) {
+    TestRestClient(RestClient delegate, RestClientMetrics metrics) {
         super(delegate);
         this.metrics = Objects.requireNonNull(metrics);
     }

@@ -19,15 +19,15 @@ import com.powsybl.network.store.client.RestClient;
 import com.powsybl.network.store.client.RestClientImpl;
 import org.apache.commons.io.FilenameUtils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public final class TestUtils {
-
+final class TestUtils {
     private TestUtils() {
+        throw new IllegalStateException("Utility class");
     }
 
     static NetworkStoreService createNetworkStoreService(int randomServerPort) {
