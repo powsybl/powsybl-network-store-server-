@@ -13,28 +13,23 @@ import com.powsybl.network.store.iidm.impl.ConfiguredBusImpl;
 import com.powsybl.network.store.iidm.impl.ShuntCompensatorLinearModelImpl;
 import com.powsybl.network.store.iidm.impl.ShuntCompensatorNonLinearModelImpl;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})
-})
-public class NetworkStoreValidationTest {
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})})
+class NetworkStoreValidationTest {
 
     @LocalServerPort
     private int randomServerPort;
@@ -45,13 +40,13 @@ public class NetworkStoreValidationTest {
         return "http://localhost:" + randomServerPort + "/";
     }
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         service = new NetworkStoreService(getBaseUrl());
     }
 
     @Test
-    public void testVoltageLevel() {
+    void testVoltageLevel() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
 
@@ -94,7 +89,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testGenerator() {
+    void testGenerator() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -145,7 +140,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testLoad() {
+    void testLoad() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -171,7 +166,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testGround() {
+    void testGround() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -186,7 +181,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testShuntCompensator() {
+    void testShuntCompensator() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -289,7 +284,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testStaticVarCompensator() {
+    void testStaticVarCompensator() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -322,7 +317,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testDanglingLine() {
+    void testDanglingLine() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -406,7 +401,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testTwoWindingsTransformer() {
+    void testTwoWindingsTransformer() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -645,7 +640,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testTieLine() {
+    void testTieLine() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -676,7 +671,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testHvdcLine() {
+    void testHvdcLine() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         VoltageLevel vl1 = s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -782,7 +777,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testLine() {
+    void testLine() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();
@@ -827,7 +822,7 @@ public class NetworkStoreValidationTest {
     }
 
     @Test
-    public void testThreeWindingsTransformer() {
+    void testThreeWindingsTransformer() {
         Network network = service.getNetworkFactory().createNetwork("Validation network", "test");
         Substation s1 = network.newSubstation().setId("S1").setCountry(Country.FR).add();
         s1.newVoltageLevel().setId("VL1").setNominalV(380).setLowVoltageLimit(320).setHighVoltageLimit(420).setTopologyKind(TopologyKind.NODE_BREAKER).add();

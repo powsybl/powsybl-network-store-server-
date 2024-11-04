@@ -8,18 +8,11 @@ package com.powsybl.network.store.tck.extensions;
 
 import com.powsybl.iidm.network.tck.extensions.AbstractThreeWindingsTransformerToBeEstimatedTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class})
-})
-@TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class ThreeWindingsTransformerToBeEstimatedIT extends AbstractThreeWindingsTransformerToBeEstimatedTest {
 }

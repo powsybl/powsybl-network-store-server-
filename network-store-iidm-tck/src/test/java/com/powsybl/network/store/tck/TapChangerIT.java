@@ -8,41 +8,36 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractTapChangerTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class})
-    })
-@TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class TapChangerIT extends AbstractTapChangerTest {
 
-    // TODO remove this test when TapChanger.getNeutralPosition et getNeutralStep are implemented
     @Override
     @Test
-    public void baseTestsRatioTapChanger() { }
+    public void baseTestsRatioTapChanger() {
+        // TODO remove this test when TapChanger.getNeutralPosition and getNeutralStep are implemented
+    }
 
-    // TODO remove this test when TapChanger.getNeutralPosition et getNeutralStep are implemented
     @Override
     @Test
-    public void baseTestsPhaseTapChanger() { }
+    public void baseTestsPhaseTapChanger() {
+        // TODO remove this test when TapChanger.getNeutralPosition and getNeutralStep are implemented
+    }
 
-    // TODO remove this test when TapChanger.getNeutralPosition et getNeutralStep are implemented
     @Override
     @Test
-    public void undefinedRegulationValueOnlyWarning() { }
+    public void undefinedRegulationValueOnlyWarning() {
+        // TODO remove this test when TapChanger.getNeutralPosition and getNeutralStep are implemented
+    }
 
     @Test
     @Override
     public void testTapChangerSetterGetterInMultiVariants() {
         //FIXME remove when we fix primary key constraints violation on DB
     }
-
 }

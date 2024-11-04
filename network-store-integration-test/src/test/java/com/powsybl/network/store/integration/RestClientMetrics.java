@@ -6,7 +6,8 @@
  */
 package com.powsybl.network.store.integration;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
