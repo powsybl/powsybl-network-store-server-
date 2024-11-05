@@ -359,7 +359,7 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
-            // Delete of the regulation points (which are not Identifiables objects)
+            // Delete of the regulating points (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
@@ -966,8 +966,7 @@ public class NetworkStoreRepository {
         // modified because of the updated equipment's new values.
         deleteReactiveCapabilityCurvePoints(networkUuid, resources);
         insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
-        // regulation points
-
+        // regulating points
         deleteRegulatingPoints(networkUuid, resources, ResourceType.GENERATOR);
         insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
@@ -2294,7 +2293,7 @@ public class NetworkStoreRepository {
 
     // using the request on a small number of ids and not on all elements
     private <T extends AbstractRegulatingEquipmentAttributes & RegulatedEquipmentAttributes> void setRegulatingPointAndRegulatingEquipmentsWithIds(List<Resource<T>> elements, UUID networkUuid, int variantNum, ResourceType type) {
-        // regulation points
+        // regulating points
         List<String> elementIds = elements.stream().map(Resource::getId).toList();
         Map<OwnerInfo, RegulatingPointAttributes> regulatingPointAttributes = getRegulatingPointsWithInClause(networkUuid, variantNum,
             REGULATING_EQUIPMENT_ID, elementIds, type);
@@ -2309,7 +2308,7 @@ public class NetworkStoreRepository {
 
     // on all elements of the network
     private <T extends AbstractRegulatingEquipmentAttributes & RegulatedEquipmentAttributes> void setRegulatingPointAndRegulatingEquipments(List<Resource<T>> elements, UUID networkUuid, int variantNum, ResourceType type) {
-        // regulation points
+        // regulating points
         Map<OwnerInfo, RegulatingPointAttributes> regulatingPointAttributes = getRegulatingPoints(networkUuid, variantNum, type);
         Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, type);
         elements.forEach(element -> {
