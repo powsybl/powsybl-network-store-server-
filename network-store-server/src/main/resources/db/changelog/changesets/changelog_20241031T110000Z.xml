@@ -24,6 +24,9 @@
         <renameColumn oldColumnName="equipmenttype"
                       newColumnName="regulatingequipmenttype"
                       tableName="regulationpoint"/>
+        <renameColumn oldColumnName="regulatingterminalconnectabletype"
+                      newColumnName="regulatedequipmenttype"
+                      tableName="regulationpoint"/>
         <!-- primary key -->
         <dropPrimaryKey tableName="regulationpoint"/>
         <addPrimaryKey columnNames="networkuuid, variantnum, regulatingequipmenttype, regulatingequipmentid"
@@ -33,7 +36,7 @@
         <createIndex indexName="regulationpoint_regulating_equipment_idx" tableName="regulationpoint">
             <column name="networkuuid"/>
             <column name="variantnum"/>
-            <column name="regulatingterminalconnectabletype"/>
+            <column name="regulatedequipmenttype"/>
             <column name="regulatingterminalconnectableid"/>
         </createIndex>
         <renameTable oldTableName="regulationpoint"

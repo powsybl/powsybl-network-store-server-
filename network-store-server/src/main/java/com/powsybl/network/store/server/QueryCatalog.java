@@ -33,7 +33,7 @@ public final class QueryCatalog {
     static final String NAME_COLUMN = "name";
     static final String EQUIPMENT_TYPE_COLUMN = "equipmentType";
     static final String REGULATING_EQUIPMENT_TYPE_COLUMN = "regulatingEquipmentType";
-    static final String REGULATED_EQUIPMENT_TYPE_COLUMN = "regulatingterminalconnectabletype";
+    static final String REGULATED_EQUIPMENT_TYPE_COLUMN = "regulatedEquipmentType";
     static final String EQUIPMENT_ID_COLUMN = "equipmentId";
     static final String REGULATING_EQUIPMENT_ID = "regulatingEquipmentId";
     static final String INDEX_COLUMN = "index";
