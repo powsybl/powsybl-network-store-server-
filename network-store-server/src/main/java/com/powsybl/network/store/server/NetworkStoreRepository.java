@@ -967,8 +967,7 @@ public class NetworkStoreRepository {
         deleteReactiveCapabilityCurvePoints(networkUuid, resources);
         insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
         // regulating points
-        deleteRegulatingPoints(networkUuid, resources, ResourceType.GENERATOR);
-        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
+        updateRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public void updateGeneratorsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1100,8 +1099,8 @@ public class NetworkStoreRepository {
     public void updateShuntCompensators(UUID networkUuid, List<Resource<ShuntCompensatorAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getShuntCompensatorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        deleteRegulatingPoints(networkUuid, resources, ResourceType.SHUNT_COMPENSATOR);
-        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
+        // regulating points
+        updateRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public void updateShuntCompensatorsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1160,8 +1159,9 @@ public class NetworkStoreRepository {
         // modified because of the updated equipment's new values.
         deleteReactiveCapabilityCurvePoints(networkUuid, resources);
         insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
-        deleteRegulatingPoints(networkUuid, resources, ResourceType.VSC_CONVERTER_STATION);
-        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
+
+        // regulating points
+        updateRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public void updateVscConverterStationsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1233,8 +1233,9 @@ public class NetworkStoreRepository {
 
     public void updateStaticVarCompensators(UUID networkUuid, List<Resource<StaticVarCompensatorAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getStaticVarCompensatorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
-        deleteRegulatingPoints(networkUuid, resources, ResourceType.STATIC_VAR_COMPENSATOR);
-        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
+
+        // regulating points
+        updateRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
     }
 
     public void updateStaticVarCompensatorsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -2132,6 +2133,38 @@ public class NetworkStoreRepository {
                         }
                         bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
+                    }
+                    preparedStmt.executeBatch();
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    public void updateRegulatingPoints(Map<OwnerInfo, RegulatingPointAttributes> regulatingPoints) {
+        try (var connection = dataSource.getConnection()) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateRegulatingPointsQuery())) {
+                List<Object> values = new ArrayList<>(8);
+                List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> list = new ArrayList<>(regulatingPoints.entrySet());
+                for (List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> subUnit : Lists.partition(list, BATCH_SIZE)) {
+                    for (Map.Entry<OwnerInfo, RegulatingPointAttributes> attributes : subUnit) {
+                        if (attributes.getValue() != null) {
+                            values.clear();
+                            // set values
+                            values.add(attributes.getValue().getRegulationMode());
+                            TerminalRefAttributes regulatingTerminal = attributes.getValue().getRegulatingTerminal();
+                            values.add(regulatingTerminal != null ? regulatingTerminal.getConnectableId() : null);
+                            values.add(regulatingTerminal != null ? regulatingTerminal.getSide() : null);
+                            values.add(attributes.getValue().getRegulatedResourceType() != null ? attributes.getValue().getRegulatedResourceType().toString() : null);
+                            // where values
+                            values.add(attributes.getKey().getNetworkUuid());
+                            values.add(attributes.getKey().getVariantNum());
+                            values.add(attributes.getKey().getEquipmentId());
+                            values.add(attributes.getKey().getEquipmentType().toString());
+                            bindValues(preparedStmt, values, mapper);
+                            preparedStmt.addBatch();
+                        }
                     }
                     preparedStmt.executeBatch();
                 }
