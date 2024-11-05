@@ -2455,17 +2455,9 @@ public class NetworkStoreRepository {
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
             preparedStmt.setObject(4, equipmentId);
-            switch (type) {
-                case BATTERY, DANGLING_LINE, GROUND, GENERATOR, SHUNT_COMPENSATOR, STATIC_VAR_COMPENSATOR,
-                     LCC_CONVERTER_STATION, VSC_CONVERTER_STATION, LOAD ->
-                    ((Resource<InjectionAttributes>) resource).getAttributes().setRegulatingEquipments(getRegulatingEquipments(preparedStmt));
-                case BUSBAR_SECTION ->
-                    ((Resource<BusbarSectionAttributes>) resource).getAttributes().setRegulatingEquipments(getRegulatingEquipments(preparedStmt));
-                case TWO_WINDINGS_TRANSFORMER, LINE ->
-                    ((Resource<BranchAttributes>) resource).getAttributes().setRegulatingEquipments(getRegulatingEquipments(preparedStmt));
-                case THREE_WINDINGS_TRANSFORMER ->
-                    ((Resource<ThreeWindingsTransformerAttributes>) resource).getAttributes().setRegulatingEquipments(getRegulatingEquipments(preparedStmt));
-                default -> { }
+            IdentifiableAttributes identifiableAttributes = resource.getAttributes();
+            if (identifiableAttributes instanceof RegulatedEquipmentAttributes regulatedEquipmentAttributes) {
+                regulatedEquipmentAttributes.setRegulatingEquipments(getRegulatingEquipments(preparedStmt));
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
