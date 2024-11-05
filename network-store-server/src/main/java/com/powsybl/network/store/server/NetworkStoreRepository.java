@@ -2339,9 +2339,9 @@ public class NetworkStoreRepository {
     private <T extends RegulatedEquipmentAttributes> void setRegulatingEquipments(List<Resource<T>> elements, UUID networkUuid, int variantNum, ResourceType type) {
         // regulating equipments
         Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, type);
-        elements.forEach(generator -> {
-            OwnerInfo ownerInfo = new OwnerInfo(generator.getId(), type, networkUuid, variantNum);
-            generator.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
+        elements.forEach(element -> {
+            OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
+            element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
         });
     }
 
