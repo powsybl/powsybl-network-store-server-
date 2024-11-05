@@ -226,6 +226,7 @@ public class NetworkStoreRepository {
             for (List<Resource<NetworkAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                 for (Resource<NetworkAttributes> resource : subResources) {
                     NetworkAttributes attributes = resource.getAttributes();
+                    attributes.setVariantMode(VariantMode.FULL); //Temp
                     values.clear();
                     values.add(resource.getVariantNum());
                     values.add(resource.getId());
@@ -440,8 +441,9 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(6, sourceVariantNum);
                 preparedStmt.execute();
             }
-
-            cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum);
+            if (variantMode == VariantMode.FULL) {
+                cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum);
+            }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         } catch (IOException e) {
@@ -532,7 +534,7 @@ public class NetworkStoreRepository {
         }
         int sourceVariantNum = VariantUtils.getVariantNum(sourceVariantId, variantsInfos);
         int targetVariantNum = VariantUtils.findFistAvailableVariantNum(variantsInfos);
-        cloneNetworkVariant(networkUuid, sourceVariantNum, targetVariantNum, targetVariantId, VariantMode.FULL);
+        cloneNetworkVariant(networkUuid, sourceVariantNum, targetVariantNum, targetVariantId, VariantMode.PARTIAL);
     }
 
     public <T extends IdentifiableAttributes> void createIdentifiables(UUID networkUuid, List<Resource<T>> resources,
@@ -693,8 +695,8 @@ public class NetworkStoreRepository {
         }
     }
 
-    private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiables(UUID networkUuid, int variantNum,
-                                                                                  TableMapping tableMapping) {
+    private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesForVariant(UUID networkUuid, int variantNum,
+                                                                                            TableMapping tableMapping) {
         List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
@@ -836,13 +838,22 @@ public class NetworkStoreRepository {
         extensionHandler.updateExtensionsFromEquipments(networkUuid, resources);
     }
 
-    public void deleteIdentifiable(UUID networkUuid, int variantNum, String id, String tableName) {
+    public void deleteIdentifiable(UUID networkUuid, int variantNum, String id, String tableName, boolean isUpdate) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiableQuery(tableName))) {
                 preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.setString(3, id);
                 preparedStmt.executeUpdate();
+            }
+            if (!isUpdate) {
+                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildAddTombstonedIdentifiableQuery())) {
+                    preparedStmt.setObject(1, networkUuid);
+                    preparedStmt.setInt(2, variantNum);
+                    preparedStmt.setObject(3, tableName);
+                    preparedStmt.setString(4, id);
+                    preparedStmt.executeUpdate();
+                }
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
@@ -869,7 +880,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteSubstation(UUID networkUuid, int variantNum, String substationId) {
-        deleteIdentifiable(networkUuid, variantNum, substationId, SUBSTATION_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, substationId, SUBSTATION_TABLE, false);
     }
 
     // voltage level
@@ -919,7 +930,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteVoltageLevel(UUID networkUuid, int variantNum, String voltageLevelId) {
-        deleteIdentifiable(networkUuid, variantNum, voltageLevelId, VOLTAGE_LEVEL_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, voltageLevelId, VOLTAGE_LEVEL_TABLE, false);
     }
 
     // generator
@@ -939,7 +950,40 @@ public class NetworkStoreRepository {
     }
 
     public List<Resource<GeneratorAttributes>> getGenerators(UUID networkUuid, int variantNum) {
+        // get variant mode
+        // get src variant num if partial
+        // get src variant num equipments
+        // override any src variant num equipments by the one in this variant num
         List<Resource<GeneratorAttributes>> generators = getIdentifiables(networkUuid, variantNum, mappings.getGeneratorMappings());
+
+//        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+//        VariantMode variantMode = network.getAttributes().getVariantMode();
+//        List<Resource<GeneratorAttributes>> generators;
+//        if (variantMode == VariantMode.PARTIAL) {
+//            // Retrieve identifiables from first FULL variant
+//            int srcVariantNum = network.getAttributes().getSrcVariantNum();
+//            Resource<NetworkAttributes> srcNetwork = getNetwork(networkUuid, variantNum).orElseThrow();
+//            // retrieve src identifiables in first full variant recursively
+//            if (srcNetwork.getAttributes().getVariantMode() == VariantMode.FULL) {
+//                generators = getIdentifiables(networkUuid, srcVariantNum, mappings.getGeneratorMappings()); // this should probably not retrieve identifiable that were updated (in a new variant ?)
+//            } else {
+//                generators = getGenerators(networkUuid, srcVariantNum);
+//            }
+//            // above retrieve three identifiable instead of 2
+//            // set the variantnum of the resource
+//            generators.forEach(g -> g.setVariantNum(variantNum));
+//            // Remove any modified generator from srcVariantNum and get newly modified values
+//            List<Resource<GeneratorAttributes>> updatedIdentifiables = getIdentifiables(networkUuid, variantNum, mappings.getGeneratorMappings());
+//            Set<String> updatedIdentifiableIds = updatedIdentifiables.stream().map(g -> g.getId()).collect(Collectors.toSet());
+//            // remove if updated
+//            generators.removeIf(g -> updatedIdentifiableIds.contains(g.getId()));
+//            // remove if deleted equipment
+//            List<String> tombstonedIdentifiableIds = getTombstonedIdentifiables(networkUuid, variantNum);
+//            generators.removeIf(g -> tombstonedIdentifiableIds.contains(g.getId()));
+//            generators.addAll(updatedIdentifiables);
+//        } else {
+//            generators = getIdentifiables(networkUuid, variantNum, mappings.getGeneratorMappings());
+//        }
 
         //  reactive capability curves
         Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.GENERATOR.toString());
@@ -949,6 +993,59 @@ public class NetworkStoreRepository {
         generators.forEach(generator -> generator.getAttributes().setRegulationPoint(
             regulationPointAttributes.get(new OwnerInfo(generator.getId(), ResourceType.GENERATOR, networkUuid, variantNum))));
         return generators;
+    }
+
+    private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiables(UUID networkUuid, int variantNum, TableMapping tableMapping) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        VariantMode variantMode = network.getAttributes().getVariantMode();
+
+        List<Resource<T>> identifiables;
+
+        if (variantMode == VariantMode.PARTIAL) {
+            // Retrieve identifiables from the (full) variant first
+            int srcVariantNum = network.getAttributes().getSrcVariantNum();
+            List<Resource<T>> baseIdentifiables = getIdentifiables(networkUuid, srcVariantNum, tableMapping);
+
+            // Retrieve updated identifiables in partial
+            List<Resource<T>> updatedIdentifiables = getIdentifiablesForVariant(networkUuid, variantNum, tableMapping);
+            Set<String> updatedIds = updatedIdentifiables.stream()
+                    .map(Resource::getId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            baseIdentifiables.removeIf(resource -> updatedIds.contains(resource.getId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            baseIdentifiables.removeIf(resource -> tombstonedIds.contains(resource.getId()));
+            // Combine base and updated identifiables
+            baseIdentifiables.addAll(updatedIdentifiables);
+            // Set the variantNum of all resources to the current variant
+            baseIdentifiables.forEach(resource -> resource.setVariantNum(variantNum));
+            identifiables = baseIdentifiables;
+        } else {
+            // If the variant is FULL, retrieve identifiables for the specified variant directly
+            identifiables = getIdentifiablesForVariant(networkUuid, variantNum, tableMapping);
+        }
+        return identifiables;
+    }
+
+    private List<String> getTombstonedIdentifiables(UUID networkUuid, int variantNum) {
+        List<String> identifiables = new ArrayList<>();
+
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetTombstonedEquipmentsQuery());
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+
+            try (var resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    identifiables.add(resultSet.getString("equipmentid"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+
+        return identifiables;
     }
 
     public List<Resource<GeneratorAttributes>> getVoltageLevelGenerators(UUID networkUuid, int variantNum, String voltageLevelId) {
@@ -970,7 +1067,9 @@ public class NetworkStoreRepository {
     }
 
     public void updateGenerators(UUID networkUuid, List<Resource<GeneratorAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getGeneratorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        // Delete + create
+        resources.stream().forEach(r -> deleteIdentifiable(networkUuid, r.getVariantNum(), r.getId(), GENERATOR_TABLE, true));
+        createIdentifiables(networkUuid, resources, mappings.getGeneratorMappings());
 
         // To update the generator's reactive capability curve points, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the reactive capability curve point's primary key is to be
@@ -988,7 +1087,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteGenerator(UUID networkUuid, int variantNum, String generatorId) {
-        deleteIdentifiable(networkUuid, variantNum, generatorId, GENERATOR_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, generatorId, GENERATOR_TABLE, false);
         deleteReactiveCapabilityCurvePoints(networkUuid, variantNum, generatorId);
         deleteRegulationPoints(networkUuid, variantNum, Collections.singletonList(generatorId), ResourceType.GENERATOR);
     }
@@ -1043,7 +1142,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteBattery(UUID networkUuid, int variantNum, String batteryId) {
-        deleteIdentifiable(networkUuid, variantNum, batteryId, BATTERY_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, batteryId, BATTERY_TABLE, false);
         deleteReactiveCapabilityCurvePoints(networkUuid, variantNum, batteryId);
     }
 
@@ -1074,7 +1173,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteLoad(UUID networkUuid, int variantNum, String loadId) {
-        deleteIdentifiable(networkUuid, variantNum, loadId, LOAD_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, loadId, LOAD_TABLE, false);
     }
 
     // shunt compensator
@@ -1136,7 +1235,7 @@ public class NetworkStoreRepository {
 
     public void deleteShuntCompensator(UUID networkUuid, int variantNum, String shuntCompensatorId) {
         deleteRegulationPoints(networkUuid, variantNum, Collections.singletonList(shuntCompensatorId), ResourceType.SHUNT_COMPENSATOR);
-        deleteIdentifiable(networkUuid, variantNum, shuntCompensatorId, SHUNT_COMPENSATOR_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, shuntCompensatorId, SHUNT_COMPENSATOR_TABLE, false);
     }
 
     // VSC converter station
@@ -1212,7 +1311,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteVscConverterStation(UUID networkUuid, int variantNum, String vscConverterStationId) {
-        deleteIdentifiable(networkUuid, variantNum, vscConverterStationId, VSC_CONVERTER_STATION_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, vscConverterStationId, VSC_CONVERTER_STATION_TABLE, false);
         deleteReactiveCapabilityCurvePoints(networkUuid, variantNum, vscConverterStationId);
         deleteRegulationPoints(networkUuid, variantNum, Collections.singletonList(vscConverterStationId), ResourceType.VSC_CONVERTER_STATION);
     }
@@ -1244,7 +1343,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteLccConverterStation(UUID networkUuid, int variantNum, String lccConverterStationId) {
-        deleteIdentifiable(networkUuid, variantNum, lccConverterStationId, LCC_CONVERTER_STATION_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, lccConverterStationId, LCC_CONVERTER_STATION_TABLE, false);
     }
 
     // static var compensators
@@ -1307,7 +1406,7 @@ public class NetworkStoreRepository {
 
     public void deleteStaticVarCompensator(UUID networkUuid, int variantNum, String staticVarCompensatorId) {
         deleteRegulationPoints(networkUuid, variantNum, Collections.singletonList(staticVarCompensatorId), ResourceType.STATIC_VAR_COMPENSATOR);
-        deleteIdentifiable(networkUuid, variantNum, staticVarCompensatorId, STATIC_VAR_COMPENSATOR_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, staticVarCompensatorId, STATIC_VAR_COMPENSATOR_TABLE, false);
     }
 
     // busbar section
@@ -1333,7 +1432,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteBusBarSection(UUID networkUuid, int variantNum, String busBarSectionId) {
-        deleteIdentifiable(networkUuid, variantNum, busBarSectionId, BUSBAR_SECTION_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, busBarSectionId, BUSBAR_SECTION_TABLE, false);
     }
 
     // switch
@@ -1359,7 +1458,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteSwitch(UUID networkUuid, int variantNum, String switchId) {
-        deleteIdentifiable(networkUuid, variantNum, switchId, SWITCH_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, switchId, SWITCH_TABLE, false);
     }
 
     // 2 windings transformer
@@ -1427,7 +1526,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteTwoWindingsTransformer(UUID networkUuid, int variantNum, String twoWindingsTransformerId) {
-        deleteIdentifiable(networkUuid, variantNum, twoWindingsTransformerId, TWO_WINDINGS_TRANSFORMER_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, twoWindingsTransformerId, TWO_WINDINGS_TRANSFORMER_TABLE, false);
         deleteTemporaryLimits(networkUuid, variantNum, twoWindingsTransformerId);
         deletePermanentLimits(networkUuid, variantNum, twoWindingsTransformerId);
         deleteTapChangerSteps(networkUuid, variantNum, twoWindingsTransformerId);
@@ -1522,7 +1621,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteThreeWindingsTransformer(UUID networkUuid, int variantNum, String threeWindingsTransformerId) {
-        deleteIdentifiable(networkUuid, variantNum, threeWindingsTransformerId, THREE_WINDINGS_TRANSFORMER_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, threeWindingsTransformerId, THREE_WINDINGS_TRANSFORMER_TABLE, false);
         deleteTemporaryLimits(networkUuid, variantNum, threeWindingsTransformerId);
         deletePermanentLimits(networkUuid, variantNum, threeWindingsTransformerId);
         deleteTapChangerSteps(networkUuid, variantNum, threeWindingsTransformerId);
@@ -1583,7 +1682,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteLine(UUID networkUuid, int variantNum, String lineId) {
-        deleteIdentifiable(networkUuid, variantNum, lineId, LINE_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, lineId, LINE_TABLE, false);
         deleteTemporaryLimits(networkUuid, variantNum, lineId);
         deletePermanentLimits(networkUuid, variantNum, lineId);
     }
@@ -1607,7 +1706,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteHvdcLine(UUID networkUuid, int variantNum, String hvdcLineId) {
-        deleteIdentifiable(networkUuid, variantNum, hvdcLineId, HVDC_LINE_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, hvdcLineId, HVDC_LINE_TABLE, false);
     }
 
     // Dangling line
@@ -1647,7 +1746,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteGround(UUID networkUuid, int variantNum, String groundId) {
-        deleteIdentifiable(networkUuid, variantNum, groundId, GROUND_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, groundId, GROUND_TABLE, false);
     }
 
     public List<Resource<DanglingLineAttributes>> getVoltageLevelDanglingLines(UUID networkUuid, int variantNum, String voltageLevelId) {
@@ -1672,7 +1771,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteDanglingLine(UUID networkUuid, int variantNum, String danglingLineId) {
-        deleteIdentifiable(networkUuid, variantNum, danglingLineId, DANGLING_LINE_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, danglingLineId, DANGLING_LINE_TABLE, false);
         deleteTemporaryLimits(networkUuid, variantNum, danglingLineId);
         deletePermanentLimits(networkUuid, variantNum, danglingLineId);
     }
@@ -1709,7 +1808,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteTieLine(UUID networkUuid, int variantNum, String tieLineId) {
-        deleteIdentifiable(networkUuid, variantNum, tieLineId, TIE_LINE_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, tieLineId, TIE_LINE_TABLE, false);
         deleteTemporaryLimits(networkUuid, variantNum, tieLineId);
         deletePermanentLimits(networkUuid, variantNum, tieLineId);
     }
@@ -1741,7 +1840,7 @@ public class NetworkStoreRepository {
     }
 
     public void deleteBus(UUID networkUuid, int variantNum, String configuredBusId) {
-        deleteIdentifiable(networkUuid, variantNum, configuredBusId, CONFIGURED_BUS_TABLE);
+        deleteIdentifiable(networkUuid, variantNum, configuredBusId, CONFIGURED_BUS_TABLE, false);
     }
 
     private static String getNonEmptyTable(ResultSet resultSet) throws SQLException {

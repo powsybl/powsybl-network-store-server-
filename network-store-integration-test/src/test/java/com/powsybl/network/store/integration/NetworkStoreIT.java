@@ -26,6 +26,7 @@ import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.network.store.iidm.impl.ConfiguredBusImpl;
 import com.powsybl.network.store.iidm.impl.NetworkFactoryImpl;
 import com.powsybl.network.store.iidm.impl.NetworkImpl;
+import com.powsybl.network.store.model.VariantMode;
 import com.powsybl.network.store.server.NetworkStoreApplication;
 import com.powsybl.ucte.converter.UcteImporter;
 import org.apache.commons.collections4.IterableUtils;
@@ -37,8 +38,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -55,15 +54,15 @@ import static org.mockito.Mockito.*;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  * @author Etienne Homer <etienne.homer at rte-france.com>
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})})
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
 class NetworkStoreIT {
-    @DynamicPropertySource
-    private static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
-        UUID uuid = UUID.randomUUID();
-        registry.add("testDbSuffix", () -> uuid);
-    }
+//    @DynamicPropertySource
+//    private static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
+//        UUID uuid = UUID.randomUUID();
+//        registry.add("testDbSuffix", () -> uuid);
+//    }
 
     private static final double ESP = 0.000001;
 
@@ -177,7 +176,7 @@ class NetworkStoreIT {
             assertEquals(1, generators.size());
             assertEquals(1, loads.size());
             List<Terminal> connectedTerminals = StreamSupport.stream(buses.get(0).getConnectedTerminals().spliterator(), false)
-                .collect(Collectors.toList());
+                    .collect(Collectors.toList());
             assertEquals(4, connectedTerminals.size());
 
             assertNotNull(network.getGenerator("n1_generator1").getTerminal().getBusView().getBus());
@@ -185,7 +184,7 @@ class NetworkStoreIT {
 
             VoltageLevel voltageLevel1 = network.getVoltageLevel("n1_voltageLevel1");
             assertEquals(6, voltageLevel1.getNodeBreakerView().getMaximumNodeIndex());
-            assertArrayEquals(new int[] {0, 1, 2, 3, 5, 6}, voltageLevel1.getNodeBreakerView().getNodes());
+            assertArrayEquals(new int[]{0, 1, 2, 3, 5, 6}, voltageLevel1.getNodeBreakerView().getNodes());
             assertNotNull(voltageLevel1.getNodeBreakerView().getTerminal(2));
             assertNull(voltageLevel1.getNodeBreakerView().getTerminal(4));
             List<Integer> traversedNodes = new ArrayList<>();
@@ -383,9 +382,9 @@ class NetworkStoreIT {
             VscConverterStation vsc1 = readNetwork.getVscConverterStation("VSC1");
             VscConverterStation vsc2 = readNetwork.getVscConverterStation("VSC2");
             assertThrows(PowsyblException.class, () -> vsc1.remove())
-                .getMessage().contains("Impossible to remove this converter station (still attached to 'HVDC1')");
+                    .getMessage().contains("Impossible to remove this converter station (still attached to 'HVDC1')");
             assertTrue(assertThrows(PowsyblException.class, () -> vsc2.remove())
-                .getMessage().contains("Impossible to remove this converter station (still attached to 'HVDC1')"));
+                    .getMessage().contains("Impossible to remove this converter station (still attached to 'HVDC1')"));
             assertEquals(1, readNetwork.getHvdcLineCount());
             readNetwork.getHvdcLine("HVDC1").remove();
             assertEquals(0, readNetwork.getHvdcLineCount());
@@ -517,20 +516,20 @@ class NetworkStoreIT {
             assertEquals(1, networkIds.size());
             Network readNetwork = service.getNetwork(networkIds.keySet().stream().findFirst().get());
             readNetwork.getSubstation("S1").newVoltageLevel()
-                .setId("vl1")
-                .setNominalV(380)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setId("vl1")
+                    .setNominalV(380)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
             readNetwork.getVoltageLevel("vl1").getBusBreakerView().newBus()
-                .setId("BUS1")
-                .add();
+                    .setId("BUS1")
+                    .add();
             readNetwork.getVoltageLevel("vl1").newLoad()
-                .setId("LD1")
-                .setP0(200.0)
-                .setQ0(-200.0)
-                .setLoadType(LoadType.AUXILIARY)
-                .setConnectableBus("BUS1")
-                .add();
+                    .setId("LD1")
+                    .setP0(200.0)
+                    .setQ0(-200.0)
+                    .setLoadType(LoadType.AUXILIARY)
+                    .setConnectableBus("BUS1")
+                    .add();
 
             assertEquals(2, readNetwork.getLoadCount());
             service.flush(readNetwork);
@@ -567,12 +566,12 @@ class NetworkStoreIT {
             Network readNetwork = service.getNetwork(networkIds.keySet().stream().findFirst().get());
 
             readNetwork.getVoltageLevel("VL1").getNodeBreakerView().newBusbarSection()
-                .setId("BBS1")
-                .setEnsureIdUnicity(true)
-                .setFictitious(false)
-                .setName("bbs1")
-                .setNode(0)
-                .add();
+                    .setId("BBS1")
+                    .setEnsureIdUnicity(true)
+                    .setFictitious(false)
+                    .setName("bbs1")
+                    .setNode(0)
+                    .add();
             service.flush(readNetwork);
         }
 
@@ -613,12 +612,12 @@ class NetworkStoreIT {
             assertEquals(2, readNetwork.getShuntCompensatorCount());
 
             assertTrue(assertThrows(PowsyblException.class, () -> readNetwork.getSubstation("S1").remove())
-                .getMessage().contains("The substation S1 is still connected to another substation"));
+                    .getMessage().contains("The substation S1 is still connected to another substation"));
 
             readNetwork.getHvdcLine("HVDC1").remove();
 
             assertTrue(assertThrows(PowsyblException.class, () -> readNetwork.getSubstation("S1").remove())
-                .getMessage().contains("The substation S1 is still connected to another substation"));
+                    .getMessage().contains("The substation S1 is still connected to another substation"));
 
             readNetwork.getLine("LINE1").remove();
             readNetwork.getSubstation("S1").remove();
@@ -702,11 +701,11 @@ class NetworkStoreIT {
             network.addListener(mockedListener);
 
             Substation s1 = network.newSubstation()
-                .setId("S1")
-                .setFictitious(true)
-                .setCountry(Country.FR)
-                .setTso("TSO_FR")
-                .add();
+                    .setId("S1")
+                    .setFictitious(true)
+                    .setCountry(Country.FR)
+                    .setTso("TSO_FR")
+                    .add();
 
             verify(mockedListener, times(1)).onCreation(s1);
 
@@ -745,19 +744,19 @@ class NetworkStoreIT {
             network.addListener(mockedListener);
 
             Substation s1 = network.newSubstation()
-                .setId("S1")
-                .setCountry(Country.FR)
-                .setTso("TSO_FR")
-                .add();
+                    .setId("S1")
+                    .setCountry(Country.FR)
+                    .setTso("TSO_FR")
+                    .add();
 
             VoltageLevel vl1 = s1.newVoltageLevel()
-                .setFictitious(true)
-                .setId("vl1")
-                .setNominalV(400)
-                .setLowVoltageLimit(385)
-                .setHighVoltageLimit(415)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setFictitious(true)
+                    .setId("vl1")
+                    .setNominalV(400)
+                    .setLowVoltageLimit(385)
+                    .setHighVoltageLimit(415)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
 
             verify(mockedListener, times(1)).onCreation(vl1);
 
@@ -792,43 +791,43 @@ class NetworkStoreIT {
             network.addListener(mockedListener);
 
             Substation s1 = network.newSubstation()
-                .setId("S1")
-                .add();
+                    .setId("S1")
+                    .add();
             VoltageLevel vl1 = s1.newVoltageLevel()
-                .setId("vl1")
-                .setNominalV(400)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setId("vl1")
+                    .setNominalV(400)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
             vl1.getBusBreakerView().newBus()
-                .setId("b1")
-                .add();
+                    .setId("b1")
+                    .add();
 
             Substation s2 = network.newSubstation()
-                .setId("S2")
-                .add();
+                    .setId("S2")
+                    .add();
             VoltageLevel vl2 = s2.newVoltageLevel()
-                .setId("vl2")
-                .setNominalV(400)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setId("vl2")
+                    .setNominalV(400)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
             vl2.getBusBreakerView().newBus()
-                .setId("b2")
-                .add();
+                    .setId("b2")
+                    .add();
 
             Line line = network.newLine()
-                .setId("line")
-                .setFictitious(true)
-                .setVoltageLevel1("vl1")
-                .setBus1("b1")
-                .setVoltageLevel2("vl2")
-                .setBus2("b2")
-                .setR(1)
-                .setX(3)
-                .setG1(4)
-                .setG2(8)
-                .setB1(2)
-                .setB2(4)
-                .add();
+                    .setId("line")
+                    .setFictitious(true)
+                    .setVoltageLevel1("vl1")
+                    .setBus1("b1")
+                    .setVoltageLevel2("vl2")
+                    .setBus2("b2")
+                    .setR(1)
+                    .setX(3)
+                    .setG1(4)
+                    .setG2(8)
+                    .setB1(2)
+                    .setB2(4)
+                    .add();
 
             verify(mockedListener, times(1)).onCreation(line);
 
@@ -875,27 +874,27 @@ class NetworkStoreIT {
             network.addListener(mockedListener);
 
             Substation s1 = network.newSubstation()
-                .setId("S1")
-                .add();
+                    .setId("S1")
+                    .add();
             VoltageLevel vl1 = s1.newVoltageLevel()
-                .setId("vl1")
-                .setNominalV(400)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setId("vl1")
+                    .setNominalV(400)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
             vl1.getBusBreakerView().newBus()
-                .setId("b1")
-                .add();
+                    .setId("b1")
+                    .add();
 
             Battery battery = vl1.newBattery()
-                .setFictitious(true)
-                .setId("battery")
-                .setConnectableBus("b1")
-                .setBus("b1")
-                .setTargetP(50)
-                .setTargetQ(10)
-                .setMinP(40)
-                .setMaxP(70)
-                .add();
+                    .setFictitious(true)
+                    .setId("battery")
+                    .setConnectableBus("b1")
+                    .setBus("b1")
+                    .setTargetP(50)
+                    .setTargetQ(10)
+                    .setMinP(40)
+                    .setMaxP(70)
+                    .add();
 
             verify(mockedListener, times(1)).onCreation(battery);
 
@@ -958,24 +957,24 @@ class NetworkStoreIT {
             network.addListener(mockedListener);
 
             Substation s1 = network.newSubstation()
-                .setId("S1")
-                .add();
+                    .setId("S1")
+                    .add();
             VoltageLevel vl1 = s1.newVoltageLevel()
-                .setId("vl1")
-                .setNominalV(400)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setId("vl1")
+                    .setNominalV(400)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
             vl1.getBusBreakerView().newBus()
-                .setId("b1")
-                .add();
+                    .setId("b1")
+                    .add();
             Load load = vl1.newLoad()
-                .setId("load")
-                .setFictitious(true)
-                .setConnectableBus("b1")
-                .setBus("b1")
-                .setP0(50)
-                .setQ0(10)
-                .add();
+                    .setId("load")
+                    .setFictitious(true)
+                    .setConnectableBus("b1")
+                    .setBus("b1")
+                    .setP0(50)
+                    .setQ0(10)
+                    .add();
 
             verify(mockedListener, times(1)).onCreation(load);
 
@@ -1089,16 +1088,16 @@ class NetworkStoreIT {
             readNetwork.removeListener(mockedListener);
 
             danglingLine.getGeneration().newReactiveCapabilityCurve().beginPoint()
-                .setP(5)
-                .setMinQ(1)
-                .setMaxQ(10)
-                .endPoint()
-                .beginPoint()
-                .setP(10)
-                .setMinQ(-10)
-                .setMaxQ(1)
-                .endPoint()
-                .add();
+                    .setP(5)
+                    .setMinQ(1)
+                    .setMaxQ(10)
+                    .endPoint()
+                    .beginPoint()
+                    .setP(10)
+                    .setMinQ(-10)
+                    .setMaxQ(1)
+                    .endPoint()
+                    .add();
 
             DanglingLine danglingLine2 = readNetwork.getDanglingLineStream().skip(1).findFirst().get();
             assertFalse(danglingLine2.isFictitious());
@@ -1108,16 +1107,16 @@ class NetworkStoreIT {
             danglingLine2.setFictitious(true);
             danglingLine2.setR(50);
             danglingLine2.getGeneration().newReactiveCapabilityCurve().beginPoint()
-                .setP(25)
-                .setMinQ(7)
-                .setMaxQ(13)
-                .endPoint()
-                .beginPoint()
-                .setP(10)
-                .setMinQ(-10)
-                .setMaxQ(1)
-                .endPoint()
-                .add();
+                    .setP(25)
+                    .setMinQ(7)
+                    .setMaxQ(13)
+                    .endPoint()
+                    .beginPoint()
+                    .setP(10)
+                    .setMinQ(-10)
+                    .setMaxQ(1)
+                    .endPoint()
+                    .add();
 
             service.flush(readNetwork);  // flush the network
         }
@@ -1263,27 +1262,27 @@ class NetworkStoreIT {
             assertEquals(1, readNetwork.getHvdcLineCount());
             readNetwork.getHvdcLine("HVDC1").remove();
             readNetwork.newHvdcLine()
-                .setName("HVDC1")
-                .setId("HVDC1")
-                .setR(27)
-                .setActivePowerSetpoint(350.0)
-                .setMaxP(400.0)
-                .setConvertersMode(HvdcLine.ConvertersMode.SIDE_1_INVERTER_SIDE_2_RECTIFIER)
-                .setNominalV(220)
-                .setConverterStationId1("VSC1")
-                .setConverterStationId2("VSC2")
-                .add();
+                    .setName("HVDC1")
+                    .setId("HVDC1")
+                    .setR(27)
+                    .setActivePowerSetpoint(350.0)
+                    .setMaxP(400.0)
+                    .setConvertersMode(HvdcLine.ConvertersMode.SIDE_1_INVERTER_SIDE_2_RECTIFIER)
+                    .setNominalV(220)
+                    .setConverterStationId1("VSC1")
+                    .setConverterStationId2("VSC2")
+                    .add();
             readNetwork.newHvdcLine()
-                .setName("HVDC2")
-                .setId("HVDC2")
-                .setR(27)
-                .setActivePowerSetpoint(350.0)
-                .setMaxP(400.0)
-                .setConvertersMode(HvdcLine.ConvertersMode.SIDE_1_INVERTER_SIDE_2_RECTIFIER)
-                .setNominalV(220)
-                .setConverterStationId1("VSC1")
-                .setConverterStationId2("VSC2")
-                .add();
+                    .setName("HVDC2")
+                    .setId("HVDC2")
+                    .setR(27)
+                    .setActivePowerSetpoint(350.0)
+                    .setMaxP(400.0)
+                    .setConvertersMode(HvdcLine.ConvertersMode.SIDE_1_INVERTER_SIDE_2_RECTIFIER)
+                    .setNominalV(220)
+                    .setConverterStationId1("VSC1")
+                    .setConverterStationId2("VSC2")
+                    .add();
             service.flush(readNetwork);
         }
 
@@ -2011,96 +2010,96 @@ class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("test", "test");
             Substation s1 = network.newSubstation()
-                .setId("S1")
-                .add();
+                    .setId("S1")
+                    .add();
             VoltageLevel vl1 = s1.newVoltageLevel()
-                .setId("vl1")
-                .setNominalV(400)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setId("vl1")
+                    .setNominalV(400)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
             vl1.getBusBreakerView().newBus()
-                .setId("b1")
-                .add();
+                    .setId("b1")
+                    .add();
 
             Substation s2 = network.newSubstation()
-                .setId("S2")
-                .add();
+                    .setId("S2")
+                    .add();
             VoltageLevel vl2 = s2.newVoltageLevel()
-                .setId("vl2")
-                .setNominalV(400)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setId("vl2")
+                    .setNominalV(400)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
             vl2.getBusBreakerView().newBus()
-                .setId("b2")
-                .add();
+                    .setId("b2")
+                    .add();
             vl2.getBusBreakerView().newBus()
-                .setId("b2b")
-                .add();
+                    .setId("b2b")
+                    .add();
             Switch s = vl2.getBusBreakerView().newSwitch()
-                .setId("s")
-                .setBus1("b2")
-                .setBus2("b2b")
-                .setOpen(false)
-                .add();
+                    .setId("s")
+                    .setBus1("b2")
+                    .setBus2("b2b")
+                    .setOpen(false)
+                    .add();
 
             Substation s3 = network.newSubstation()
-                .setId("S3")
-                .add();
+                    .setId("S3")
+                    .add();
             VoltageLevel vl3 = s3.newVoltageLevel()
-                .setId("vl3")
-                .setNominalV(400)
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .add();
+                    .setId("vl3")
+                    .setNominalV(400)
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .add();
             vl3.getBusBreakerView().newBus()
-                .setId("b3")
-                .add();
+                    .setId("b3")
+                    .add();
             vl3.newLoad()
-                .setId("ld")
-                .setConnectableBus("b3")
-                .setBus("b3")
-                .setP0(50)
-                .setQ0(10)
-                .add();
+                    .setId("ld")
+                    .setConnectableBus("b3")
+                    .setBus("b3")
+                    .setP0(50)
+                    .setQ0(10)
+                    .add();
 
             network.newLine()
-                .setId("l12")
-                .setVoltageLevel1("vl1")
-                .setBus1("b1")
-                .setVoltageLevel2("vl2")
-                .setBus2("b2")
-                .setR(1)
-                .setX(3)
-                .setG1(0)
-                .setG2(0)
-                .setB1(0)
-                .setB2(0)
-                .add();
+                    .setId("l12")
+                    .setVoltageLevel1("vl1")
+                    .setBus1("b1")
+                    .setVoltageLevel2("vl2")
+                    .setBus2("b2")
+                    .setR(1)
+                    .setX(3)
+                    .setG1(0)
+                    .setG2(0)
+                    .setB1(0)
+                    .setB2(0)
+                    .add();
 
             network.newLine()
-                .setId("l23")
-                .setVoltageLevel1("vl2")
-                .setBus1("b2b")
-                .setVoltageLevel2("vl3")
-                .setBus2("b3")
-                .setR(1)
-                .setX(3)
-                .setG1(0)
-                .setG2(0)
-                .setB1(0)
-                .setB2(0)
-                .add();
+                    .setId("l23")
+                    .setVoltageLevel1("vl2")
+                    .setBus1("b2b")
+                    .setVoltageLevel2("vl3")
+                    .setBus2("b3")
+                    .setR(1)
+                    .setX(3)
+                    .setG1(0)
+                    .setG2(0)
+                    .setB1(0)
+                    .setB2(0)
+                    .add();
 
             vl1.newGenerator()
-                .setId("g")
-                .setConnectableBus("b1")
-                .setRegulatingTerminal(network.getLine("l12").getTerminal1())
-                .setBus("b1")
-                .setTargetP(102.56)
-                .setTargetV(390)
-                .setMinP(0)
-                .setMaxP(500)
-                .setVoltageRegulatorOn(true)
-                .add();
+                    .setId("g")
+                    .setConnectableBus("b1")
+                    .setRegulatingTerminal(network.getLine("l12").getTerminal1())
+                    .setBus("b1")
+                    .setTargetP(102.56)
+                    .setTargetV(390)
+                    .setMinP(0)
+                    .setMaxP(500)
+                    .setVoltageRegulatorOn(true)
+                    .add();
 
             service.flush(network);
 
@@ -2157,19 +2156,19 @@ class NetworkStoreIT {
             assertEquals(10, readNetwork.getBranchCount());
 
             Substation s1 = readNetwork.newSubstation()
-                .setId("S1")
-                .setCountry(Country.FR)
-                .add();
+                    .setId("S1")
+                    .setCountry(Country.FR)
+                    .add();
             VoltageLevel vl1 = s1.newVoltageLevel()
-                .setId("VL1")
-                .setNominalV(380)
-                .setTopologyKind(TopologyKind.NODE_BREAKER)
-                .add();
+                    .setId("VL1")
+                    .setNominalV(380)
+                    .setTopologyKind(TopologyKind.NODE_BREAKER)
+                    .add();
             VoltageLevel vl2 = s1.newVoltageLevel()
-                .setId("VL2")
-                .setNominalV(380)
-                .setTopologyKind(TopologyKind.NODE_BREAKER)
-                .add();
+                    .setId("VL2")
+                    .setNominalV(380)
+                    .setTopologyKind(TopologyKind.NODE_BREAKER)
+                    .add();
 
             DanglingLine danglingLine1 = vl1.newDanglingLine()
                     .setId("DL1")
@@ -2194,11 +2193,11 @@ class NetworkStoreIT {
                     .add();
 
             TieLine tieLine2 = readNetwork.newTieLine()
-                .setId("id")
-                .setName("name")
-                .setDanglingLine1(danglingLine1.getId())
-                .setDanglingLine2(danglingLine2.getId())
-                .add();
+                    .setId("id")
+                    .setName("name")
+                    .setDanglingLine1(danglingLine1.getId())
+                    .setDanglingLine2(danglingLine2.getId())
+                    .add();
 
             assertEquals("id", tieLine2.getId());
             assertEquals("test", tieLine2.getPairingKey());
@@ -2234,14 +2233,14 @@ class NetworkStoreIT {
             regularLine.getTerminal2().setQ(300.);
 
             Substation s2 = readNetwork.newSubstation()
-                .setId("D7_TEST_SUB_EA")
-                .setCountry(Country.DE)
-                .add();
+                    .setId("D7_TEST_SUB_EA")
+                    .setCountry(Country.DE)
+                    .add();
 
             assertNull(s2.getExtension(EntsoeArea.class));
             assertNull(s2.getExtensionByName("entsoeArea"));
             s2.addExtension(EntsoeArea.class,
-                new EntsoeAreaImpl(s2, EntsoeGeographicalCode.D7));
+                    new EntsoeAreaImpl(s2, EntsoeGeographicalCode.D7));
             assertNotNull(s2.getExtension(EntsoeArea.class));
             assertNotNull(s2.getExtensionByName("entsoeArea"));
             assertEquals(EntsoeGeographicalCode.D7, s2.getExtension(EntsoeArea.class).getCode());
@@ -2292,27 +2291,27 @@ class NetworkStoreIT {
             assertEquals(1, readNetwork.getDanglingLineCount());
             readNetwork.getDanglingLine("dl1").remove();
             readNetwork.getVoltageLevel("VL1").newDanglingLine()
-                .setName("dl1")
-                .setId("dl1")
-                .setNode(1)
-                .setP0(533)
-                .setQ0(242)
-                .setR(27)
-                .setX(44)
-                .setG(89)
-                .setB(11)
-                .add();
+                    .setName("dl1")
+                    .setId("dl1")
+                    .setNode(1)
+                    .setP0(533)
+                    .setQ0(242)
+                    .setR(27)
+                    .setX(44)
+                    .setG(89)
+                    .setB(11)
+                    .add();
             readNetwork.getVoltageLevel("VL1").newDanglingLine()
-                .setName("dl2")
-                .setId("dl2")
-                .setNode(2)
-                .setP0(533)
-                .setQ0(242)
-                .setR(27)
-                .setX(44)
-                .setG(89)
-                .setB(11)
-                .add();
+                    .setName("dl2")
+                    .setId("dl2")
+                    .setNode(2)
+                    .setP0(533)
+                    .setQ0(242)
+                    .setR(27)
+                    .setX(44)
+                    .setG(89)
+                    .setB(11)
+                    .add();
             service.flush(readNetwork);
         }
 
@@ -2444,32 +2443,32 @@ class NetworkStoreIT {
             assertTrue(Iterables.isEmpty(danglingLinesVL3));
 
             vl3.getBusBreakerView().newBus()
-                .setId("BUS")
-                .add();
+                    .setId("BUS")
+                    .add();
             vl3.newDanglingLine()
-                .setId("DL")
-                .setBus("BUS")
-                .setR(10.0)
-                .setX(1.0)
-                .setB(10e-6)
-                .setG(10e-5)
-                .setP0(50.0)
-                .setQ0(30.0)
-                .add();
+                    .setId("DL")
+                    .setBus("BUS")
+                    .setR(10.0)
+                    .setX(1.0)
+                    .setB(10e-6)
+                    .setG(10e-5)
+                    .setP0(50.0)
+                    .setQ0(30.0)
+                    .add();
             danglingLinesVL3 = vl3.getConnectables(DanglingLine.class);
             assertEquals(1, Iterables.size(danglingLinesVL3));
 
             Iterable<StaticVarCompensator> svcsVL3 = vl3.getConnectables(StaticVarCompensator.class);
             assertTrue(Iterables.isEmpty(svcsVL3));
             vl3.newStaticVarCompensator()
-                .setId("SVC2")
-                .setConnectableBus("BUS")
-                .setBus("BUS")
-                .setBmin(0.0002)
-                .setBmax(0.0008)
-                .setRegulationMode(StaticVarCompensator.RegulationMode.VOLTAGE)
-                .setVoltageSetpoint(390)
-                .add();
+                    .setId("SVC2")
+                    .setConnectableBus("BUS")
+                    .setBus("BUS")
+                    .setBmin(0.0002)
+                    .setBmax(0.0008)
+                    .setRegulationMode(StaticVarCompensator.RegulationMode.VOLTAGE)
+                    .setVoltageSetpoint(390)
+                    .add();
             svcsVL3 = vl3.getConnectables(StaticVarCompensator.class);
             assertEquals(1, Iterables.size(svcsVL3));
 
@@ -2486,37 +2485,37 @@ class NetworkStoreIT {
             assertEquals(1, Iterables.size(t2wsVL1));
 
             VscConverterStation vsc = vl1.newVscConverterStation()
-                .setId("VSC1")
-                .setName("Converter2")
-                .setConnectableBus("NHV1")
-                .setLossFactor(1.1f)
-                .setReactivePowerSetpoint(123)
-                .setVoltageRegulatorOn(false)
-                .add();
+                    .setId("VSC1")
+                    .setName("Converter2")
+                    .setConnectableBus("NHV1")
+                    .setLossFactor(1.1f)
+                    .setReactivePowerSetpoint(123)
+                    .setVoltageRegulatorOn(false)
+                    .add();
 
             vl1.getBusBreakerView().newBus()
-                .setId("B1")
-                .add();
+                    .setId("B1")
+                    .add();
             vl1.newLccConverterStation()
-                .setId("LCC1")
-                .setName("Converter1")
-                .setConnectableBus("B1")
-                .setBus("B1")
-                .setLossFactor(1.1f)
-                .setPowerFactor(0.5f)
-                .add();
+                    .setId("LCC1")
+                    .setName("Converter1")
+                    .setConnectableBus("B1")
+                    .setBus("B1")
+                    .setLossFactor(1.1f)
+                    .setPowerFactor(0.5f)
+                    .add();
 
             vl1.getBusBreakerView().newBus()
-                .setId("B2")
-                .add();
+                    .setId("B2")
+                    .add();
             vl1.newLccConverterStation()
-                .setId("LCC2")
-                .setName("Converter2")
-                .setConnectableBus("B2")
-                .setBus("B2")
-                .setLossFactor(1.1f)
-                .setPowerFactor(0.5f)
-                .add();
+                    .setId("LCC2")
+                    .setName("Converter2")
+                    .setConnectableBus("B2")
+                    .setBus("B2")
+                    .setLossFactor(1.1f)
+                    .setPowerFactor(0.5f)
+                    .add();
 
             Iterable<VscConverterStation> vscsVL1 = vl1.getConnectables(VscConverterStation.class);
             assertEquals(1, Iterables.size(vscsVL1));
@@ -2690,33 +2689,33 @@ class NetworkStoreIT {
             visitedConnectablesBusView.clear();
 
             StaticVarCompensator svc = network.getVoltageLevel("04664b78-c766-11e1-8775-005056c00008").newStaticVarCompensator()
-                .setId("SVC1")
-                .setName("SVC1")
-                .setConnectableBus("04878f11-c766-11e1-8775-005056c00008")
-                .setRegulationMode(StaticVarCompensator.RegulationMode.OFF)
-                .setReactivePowerSetpoint(5.2f)
-                .setBmax(0.5f)
-                .setBmin(0.1f)
-                .add();
+                    .setId("SVC1")
+                    .setName("SVC1")
+                    .setConnectableBus("04878f11-c766-11e1-8775-005056c00008")
+                    .setRegulationMode(StaticVarCompensator.RegulationMode.OFF)
+                    .setReactivePowerSetpoint(5.2f)
+                    .setBmax(0.5f)
+                    .setBmin(0.1f)
+                    .add();
             svc.getTerminal().connect();
 
             LccConverterStation lcc = network.getVoltageLevel("04664b78-c766-11e1-8775-005056c00008").newLccConverterStation()
-                .setId("LCC1")
-                .setName("LCC1")
-                .setPowerFactor(0.2f)
-                .setLossFactor(0.5f)
-                .setConnectableBus("04878f11-c766-11e1-8775-005056c00008")
-                .add();
+                    .setId("LCC1")
+                    .setName("LCC1")
+                    .setPowerFactor(0.2f)
+                    .setLossFactor(0.5f)
+                    .setConnectableBus("04878f11-c766-11e1-8775-005056c00008")
+                    .add();
             lcc.getTerminal().connect();
 
             VscConverterStation vsc = network.getVoltageLevel("04664b78-c766-11e1-8775-005056c00008").newVscConverterStation()
-                .setId("VSC1")
-                .setName("VSC1")
-                .setVoltageRegulatorOn(false)
-                .setReactivePowerSetpoint(4.5f)
-                .setLossFactor(0.3f)
-                .setConnectableBus("04878f11-c766-11e1-8775-005056c00008")
-                .add();
+                    .setId("VSC1")
+                    .setName("VSC1")
+                    .setVoltageRegulatorOn(false)
+                    .setReactivePowerSetpoint(4.5f)
+                    .setLossFactor(0.3f)
+                    .setConnectableBus("04878f11-c766-11e1-8775-005056c00008")
+                    .add();
             vsc.getTerminal().connect();
 
             testVl = network.getVoltageLevel("04664b78-c766-11e1-8775-005056c00008");
@@ -2780,9 +2779,9 @@ class NetworkStoreIT {
     private static Network loadUcteNetwork(NetworkFactory networkFactory) {
         String filePath = "/uctNetwork.uct";
         ReadOnlyDataSource dataSource = new ResourceDataSource(
-            FilenameUtils.getBaseName(filePath),
-            new ResourceSet(FilenameUtils.getPath(filePath),
-                FilenameUtils.getName(filePath)));
+                FilenameUtils.getBaseName(filePath),
+                new ResourceSet(FilenameUtils.getPath(filePath),
+                        FilenameUtils.getName(filePath)));
         return new UcteImporter().importData(dataSource, networkFactory, null);
     }
 
@@ -2806,138 +2805,138 @@ class NetworkStoreIT {
     private static Network createTapChangerNetwork(NetworkFactory networkFactory) {
         Network network = networkFactory.createNetwork("Phase tap changer", "test");
         Substation s1 = network.newSubstation()
-            .setId("S1")
-            .setCountry(Country.ES)
-            .add();
+                .setId("S1")
+                .setCountry(Country.ES)
+                .add();
         VoltageLevel vl1 = s1.newVoltageLevel()
-            .setId("VL1")
-            .setNominalV(400f)
-            .setTopologyKind(TopologyKind.NODE_BREAKER)
-            .add();
+                .setId("VL1")
+                .setNominalV(400f)
+                .setTopologyKind(TopologyKind.NODE_BREAKER)
+                .add();
         VoltageLevel vl2 = s1.newVoltageLevel()
-            .setId("VL2")
-            .setNominalV(400f)
-            .setTopologyKind(TopologyKind.NODE_BREAKER)
-            .add();
+                .setId("VL2")
+                .setNominalV(400f)
+                .setTopologyKind(TopologyKind.NODE_BREAKER)
+                .add();
         TwoWindingsTransformer twt = s1.newTwoWindingsTransformer()
-            .setId("TWT2")
-            .setName("My two windings transformer")
-            .setVoltageLevel1("VL1")
-            .setVoltageLevel2("VL2")
-            .setNode1(1)
-            .setNode2(2)
-            .setR(0.5)
-            .setX(4.)
-            .setG(0)
-            .setB(0)
-            .setRatedU1(24)
-            .setRatedU2(385)
-            .setRatedS(100)
-            .add();
+                .setId("TWT2")
+                .setName("My two windings transformer")
+                .setVoltageLevel1("VL1")
+                .setVoltageLevel2("VL2")
+                .setNode1(1)
+                .setNode2(2)
+                .setR(0.5)
+                .setX(4.)
+                .setG(0)
+                .setB(0)
+                .setRatedU1(24)
+                .setRatedU2(385)
+                .setRatedS(100)
+                .add();
         twt.newPhaseTapChanger()
-            .setLowTapPosition(0)
-            .setTapPosition(0)
-            .setRegulating(false)
-            .setRegulationMode(PhaseTapChanger.RegulationMode.CURRENT_LIMITER)
-            .setRegulationValue(25)
-            .setRegulationTerminal(twt.getTerminal2())
-            .setTargetDeadband(22)
-            .beginStep()
-            .setAlpha(-10)
-            .setRho(0.99)
-            .setR(1.)
-            .setX(4.)
-            .setG(0.5)
-            .setB(1.5)
-            .endStep()
-            .beginStep()
-            .setAlpha(0)
-            .setRho(1)
-            .setR(1.1)
-            .setX(4.1)
-            .setG(0.6)
-            .setB(1.6)
-            .endStep()
-            .beginStep()
-            .setAlpha(10)
-            .setRho(1.01)
-            .setR(1.2)
-            .setX(4.2)
-            .setG(0.7)
-            .setB(1.7)
-            .endStep()
-            .add();
+                .setLowTapPosition(0)
+                .setTapPosition(0)
+                .setRegulating(false)
+                .setRegulationMode(PhaseTapChanger.RegulationMode.CURRENT_LIMITER)
+                .setRegulationValue(25)
+                .setRegulationTerminal(twt.getTerminal2())
+                .setTargetDeadband(22)
+                .beginStep()
+                .setAlpha(-10)
+                .setRho(0.99)
+                .setR(1.)
+                .setX(4.)
+                .setG(0.5)
+                .setB(1.5)
+                .endStep()
+                .beginStep()
+                .setAlpha(0)
+                .setRho(1)
+                .setR(1.1)
+                .setX(4.1)
+                .setG(0.6)
+                .setB(1.6)
+                .endStep()
+                .beginStep()
+                .setAlpha(10)
+                .setRho(1.01)
+                .setR(1.2)
+                .setX(4.2)
+                .setG(0.7)
+                .setB(1.7)
+                .endStep()
+                .add();
         twt.newRatioTapChanger()
-            .setLowTapPosition(0)
-            .setTapPosition(0)
-            .setRegulating(true)
-            .setTargetV(200)
-            .setRegulationTerminal(twt.getTerminal2())
-            .setTargetDeadband(22)
-            .beginStep()
-            .setRho(0.99)
-            .setR(1.)
-            .setX(4.)
-            .setG(0.5)
-            .setB(1.5)
-            .endStep()
-            .beginStep()
-            .setRho(1)
-            .setR(1.1)
-            .setX(4.1)
-            .setG(0.6)
-            .setB(1.6)
-            .endStep()
-            .beginStep()
-            .setRho(1.01)
-            .setR(1.2)
-            .setX(4.2)
-            .setG(0.7)
-            .setB(1.7)
-            .endStep()
-            .add();
+                .setLowTapPosition(0)
+                .setTapPosition(0)
+                .setRegulating(true)
+                .setTargetV(200)
+                .setRegulationTerminal(twt.getTerminal2())
+                .setTargetDeadband(22)
+                .beginStep()
+                .setRho(0.99)
+                .setR(1.)
+                .setX(4.)
+                .setG(0.5)
+                .setB(1.5)
+                .endStep()
+                .beginStep()
+                .setRho(1)
+                .setR(1.1)
+                .setX(4.1)
+                .setG(0.6)
+                .setB(1.6)
+                .endStep()
+                .beginStep()
+                .setRho(1.01)
+                .setR(1.2)
+                .setX(4.2)
+                .setG(0.7)
+                .setB(1.7)
+                .endStep()
+                .add();
         return network;
     }
 
     private static Network createGeneratorNetwork(NetworkFactory networkFactory, ReactiveLimitsKind kind) {
         Network network = networkFactory.createNetwork("Generator network", "test");
         Substation s1 = network.newSubstation()
-            .setId("S1")
-            .setCountry(Country.ES)
-            .add();
+                .setId("S1")
+                .setCountry(Country.ES)
+                .add();
         VoltageLevel vl1 = s1.newVoltageLevel()
-            .setId("VL1")
-            .setNominalV(400f)
-            .setTopologyKind(TopologyKind.NODE_BREAKER)
-            .add();
+                .setId("VL1")
+                .setNominalV(400f)
+                .setTopologyKind(TopologyKind.NODE_BREAKER)
+                .add();
         Generator generator = vl1.newGenerator()
-            .setId("GEN")
-            .setNode(1)
-            .setMaxP(20)
-            .setMinP(-20)
-            .setVoltageRegulatorOn(true)
-            .setTargetP(100)
-            .setTargetV(200)
-            .setTargetQ(100)
-            .add();
+                .setId("GEN")
+                .setNode(1)
+                .setMaxP(20)
+                .setMinP(-20)
+                .setVoltageRegulatorOn(true)
+                .setTargetP(100)
+                .setTargetV(200)
+                .setTargetQ(100)
+                .add();
         if (kind.equals(ReactiveLimitsKind.CURVE)) {
             generator.newReactiveCapabilityCurve()
-                .beginPoint()
-                .setMaxQ(1)
-                .setMinQ(-1)
-                .setP(2)
-                .endPoint()
-                .beginPoint()
-                .setMaxQ(2)
-                .setMinQ(-2)
-                .setP(1)
-                .endPoint()
-                .add();
+                    .beginPoint()
+                    .setMaxQ(1)
+                    .setMinQ(-1)
+                    .setP(2)
+                    .endPoint()
+                    .beginPoint()
+                    .setMaxQ(2)
+                    .setMinQ(-2)
+                    .setP(1)
+                    .endPoint()
+                    .add();
         } else {
             generator.newMinMaxReactiveLimits()
-                .setMaxQ(2)
-                .setMinQ(-2)
-                .add();
+                    .setMaxQ(2)
+                    .setMinQ(-2)
+                    .add();
         }
         return network;
     }
@@ -2945,48 +2944,48 @@ class NetworkStoreIT {
     private static Network createRemoveDL(NetworkFactory networkFactory) {
         Network network = networkFactory.createNetwork("DL network", "test");
         Substation s1 = network.newSubstation()
-            .setId("S1")
-            .setCountry(Country.ES)
-            .add();
+                .setId("S1")
+                .setCountry(Country.ES)
+                .add();
         VoltageLevel vl1 = s1.newVoltageLevel()
-            .setId("VL1")
-            .setNominalV(400f)
-            .setTopologyKind(TopologyKind.NODE_BREAKER)
-            .add();
+                .setId("VL1")
+                .setNominalV(400f)
+                .setTopologyKind(TopologyKind.NODE_BREAKER)
+                .add();
         vl1.newDanglingLine()
-            .setId("dl1")
-            .setName("dl1")
-            .setNode(1)
-            .setP0(1)
-            .setQ0(1)
-            .setR(1)
-            .setX(1)
-            .setG(1)
-            .setB(1)
-            .add();
+                .setId("dl1")
+                .setName("dl1")
+                .setNode(1)
+                .setP0(1)
+                .setQ0(1)
+                .setR(1)
+                .setX(1)
+                .setG(1)
+                .setB(1)
+                .add();
         network.getDanglingLine("dl1").remove();
         vl1.newDanglingLine()
-            .setId("dl1")
-            .setName("dl1")
-            .setNode(1)
-            .setP0(1)
-            .setQ0(1)
-            .setR(1)
-            .setX(1)
-            .setG(1)
-            .setB(1)
-            .add();
+                .setId("dl1")
+                .setName("dl1")
+                .setNode(1)
+                .setP0(1)
+                .setQ0(1)
+                .setR(1)
+                .setX(1)
+                .setG(1)
+                .setB(1)
+                .add();
         vl1.newGenerator()
-            .setId("GEN")
-            .setNode(3)
-            .setMaxP(20)
-            .setMinP(-20)
-            .setVoltageRegulatorOn(true)
-            .setTargetP(100)
-            .setTargetQ(100)
-            .setTargetV(220)
-            .setRatedS(1)
-            .add();
+                .setId("GEN")
+                .setNode(3)
+                .setMaxP(20)
+                .setMinP(-20)
+                .setVoltageRegulatorOn(true)
+                .setTargetP(100)
+                .setTargetQ(100)
+                .setTargetV(220)
+                .setRatedS(1)
+                .add();
         return network;
     }
 
@@ -3031,8 +3030,8 @@ class NetworkStoreIT {
 
             assertEquals(16, network.getIdentifiables().size());
             assertEquals(Arrays.asList("P1", "P2", "VLHV2", "VLHV1", "VLGEN", "VLLOAD", "GEN", "LOAD", "NGEN_NHV1",
-                    "NHV2_NLOAD", "NHV1_NHV2_2", "NHV1_NHV2_1", "NLOAD", "NHV1", "NHV2", "NGEN"),
-                network.getIdentifiables().stream().map(Identifiable::getId).collect(Collectors.toList()));
+                            "NHV2_NLOAD", "NHV1_NHV2_2", "NHV1_NHV2_1", "NLOAD", "NHV1", "NHV2", "NGEN"),
+                    network.getIdentifiables().stream().map(Identifiable::getId).collect(Collectors.toList()));
         }
     }
 
@@ -3427,20 +3426,20 @@ class NetworkStoreIT {
             assertEquals("networkTestCase", readNetwork.getId());
 
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newActivePowerLimits1().setPermanentLimit(15).beginTemporaryLimit().endTemporaryLimit().add())
-                .getMessage().contains("temporary limit value is not set");
+                    .getMessage().contains("temporary limit value is not set");
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newActivePowerLimits1().setPermanentLimit(15).beginTemporaryLimit().setValue(-2).endTemporaryLimit().add())
-                .getMessage().contains("temporary limit value must be > 0");
+                    .getMessage().contains("temporary limit value must be > 0");
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newActivePowerLimits1().setPermanentLimit(15).beginTemporaryLimit().setValue(2).endTemporaryLimit().add())
-                .getMessage().contains("acceptable duration is not set");
+                    .getMessage().contains("acceptable duration is not set");
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newActivePowerLimits1().setPermanentLimit(15).beginTemporaryLimit().setValue(2).setAcceptableDuration(-2).endTemporaryLimit().add())
-                .getMessage().contains("acceptable duration must be >= 0");
+                    .getMessage().contains("acceptable duration must be >= 0");
 
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newActivePowerLimits1().setPermanentLimit(15).beginTemporaryLimit().ensureNameUnicity().setValue(2).setAcceptableDuration(2).endTemporaryLimit().add())
-                .getMessage().contains("name is not set");
+                    .getMessage().contains("name is not set");
             readNetwork.getLine("LINE1").newActivePowerLimits1().setPermanentLimit(15)
-                .beginTemporaryLimit().setName("name").ensureNameUnicity().setValue(2).setAcceptableDuration(2).endTemporaryLimit()
-                .beginTemporaryLimit().setName("name").ensureNameUnicity().setValue(1).setAcceptableDuration(4).endTemporaryLimit()
-                .add();
+                    .beginTemporaryLimit().setName("name").ensureNameUnicity().setValue(2).setAcceptableDuration(2).endTemporaryLimit()
+                    .beginTemporaryLimit().setName("name").ensureNameUnicity().setValue(1).setAcceptableDuration(4).endTemporaryLimit()
+                    .add();
             assertEquals("name#0", readNetwork.getLine("LINE1").getActivePowerLimits1().orElseThrow().getTemporaryLimit(4).getName());
         }
     }
@@ -3463,20 +3462,20 @@ class NetworkStoreIT {
             assertEquals("networkTestCase", readNetwork.getId());
 
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newApparentPowerLimits1().setPermanentLimit(15).beginTemporaryLimit().endTemporaryLimit().add())
-                .getMessage().contains("temporary limit value is not set");
+                    .getMessage().contains("temporary limit value is not set");
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newApparentPowerLimits1().setPermanentLimit(15).beginTemporaryLimit().setValue(-2).endTemporaryLimit().add())
-                .getMessage().contains("temporary limit value must be > 0");
+                    .getMessage().contains("temporary limit value must be > 0");
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newApparentPowerLimits1().setPermanentLimit(15).beginTemporaryLimit().setValue(2).endTemporaryLimit().add())
-                .getMessage().contains("acceptable duration is not set");
+                    .getMessage().contains("acceptable duration is not set");
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newApparentPowerLimits1().setPermanentLimit(15).beginTemporaryLimit().setValue(2).setAcceptableDuration(-2).endTemporaryLimit().add())
-                .getMessage().contains("acceptable duration must be >= 0");
+                    .getMessage().contains("acceptable duration must be >= 0");
 
             assertThrows(ValidationException.class, () -> readNetwork.getLine("LINE1").newApparentPowerLimits1().setPermanentLimit(15).beginTemporaryLimit().ensureNameUnicity().setValue(2).setAcceptableDuration(2).endTemporaryLimit().add())
-                .getMessage().contains("name is not set");
+                    .getMessage().contains("name is not set");
             readNetwork.getLine("LINE1").newApparentPowerLimits1().setPermanentLimit(15)
-                .beginTemporaryLimit().setName("name").ensureNameUnicity().setValue(2).setAcceptableDuration(2).endTemporaryLimit()
-                .beginTemporaryLimit().setName("name").ensureNameUnicity().setValue(1).setAcceptableDuration(4).endTemporaryLimit()
-                .add();
+                    .beginTemporaryLimit().setName("name").ensureNameUnicity().setValue(2).setAcceptableDuration(2).endTemporaryLimit()
+                    .beginTemporaryLimit().setName("name").ensureNameUnicity().setValue(1).setAcceptableDuration(4).endTemporaryLimit()
+                    .add();
             assertEquals("name#0", readNetwork.getLine("LINE1").getApparentPowerLimits1().orElseThrow().getTemporaryLimit(4).getName());
         }
     }
@@ -3575,12 +3574,12 @@ class NetworkStoreIT {
 
             // create a load before clone, should be created in both variants
             Load load2 = network.getVoltageLevel("VLGEN").newLoad()
-                .setId("LOAD2")
-                .setBus("NLOAD")
-                .setConnectableBus("NLOAD")
-                .setP0(800.0)
-                .setQ0(550.0)
-                .add();
+                    .setId("LOAD2")
+                    .setBus("NLOAD")
+                    .setConnectableBus("NLOAD")
+                    .setP0(800.0)
+                    .setQ0(550.0)
+                    .add();
             Load load2b = network.getLoad("LOAD2");
             assertEquals(800, load2.getP0(), 0);
             assertEquals(800, load2b.getP0(), 0);
@@ -3766,7 +3765,7 @@ class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant over existing
             PowsyblException ex = assertThrows(PowsyblException.class,
-                () -> service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3"));
+                    () -> service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3"));
             assertTrue(ex.getMessage().contains("already exists"));
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -3800,7 +3799,7 @@ class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant over existing with mayOverwrite=true
             PowsyblException ex = assertThrows(PowsyblException.class,
-                () -> service.cloneVariant(networkUuid, "v2", INITIAL_VARIANT_ID, true));
+                    () -> service.cloneVariant(networkUuid, "v2", INITIAL_VARIANT_ID, true));
             assertTrue(ex.getMessage().contains("forbidden"));
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -3882,13 +3881,13 @@ class NetworkStoreIT {
             Network network = service.createNetwork("networknosubstation", "test");
             networkUuid = service.getNetworkUuid(network);
             network.newVoltageLevel()
-                .setTopologyKind(TopologyKind.BUS_BREAKER)
-                .setId("bbVL")
-                .setName("bbVL_name")
-                .setNominalV(200.0)
-                .setLowVoltageLimit(100.0)
-                .setHighVoltageLimit(200.0)
-                .add();
+                    .setTopologyKind(TopologyKind.BUS_BREAKER)
+                    .setId("bbVL")
+                    .setName("bbVL_name")
+                    .setNominalV(200.0)
+                    .setLowVoltageLimit(100.0)
+                    .setHighVoltageLimit(200.0)
+                    .add();
             VoltageLevel voltageLevel = network.getVoltageLevel("bbVL");
             assertNotNull(voltageLevel);
             assertEquals(200.0, voltageLevel.getNominalV(), 0.0);
@@ -3900,11 +3899,11 @@ class NetworkStoreIT {
             assertTrue(Iterables.isEmpty(voltageLevel.getConnectables()));
             voltageLevel.getBusBreakerView().newBus().setId("bbVL_1").add();
             Load load = voltageLevel.newLoad()
-                .setId("LOAD")
-                .setBus("bbVL_1")
-                .setP0(600.0)
-                .setQ0(200.0)
-                .add();
+                    .setId("LOAD")
+                    .setBus("bbVL_1")
+                    .setP0(600.0)
+                    .setQ0(200.0)
+                    .add();
             assertEquals(1, Iterables.size(voltageLevel.getConnectables()));
             assertTrue(Iterables.contains(voltageLevel.getConnectables(), load));
 
@@ -4017,12 +4016,12 @@ class NetworkStoreIT {
             service.flush(network);
 
             assertEquals(Set.of("/networks/" + networkUuid + "/generators/sv",               // GEN only SV
-                                "/networks/" + networkUuid + "/voltage-levels/sv",           // VLGEN only SV
-                                "/networks/" + networkUuid + "/loads/sv",                    // LOAD only SV
-                                "/networks/" + networkUuid + "/lines",                       // NHV1_NHV2_2 full
-                                "/networks/" + networkUuid + "/configured-buses",            // NLOAD full because not optimized (useless)
-                                "/networks/" + networkUuid + "/lines/sv",                    // NHV1_NHV2_1 only SV
-                                "/networks/" + networkUuid + "/2-windings-transformers/sv"), // NGEN_NHV1 only SV
+                            "/networks/" + networkUuid + "/voltage-levels/sv",           // VLGEN only SV
+                            "/networks/" + networkUuid + "/loads/sv",                    // LOAD only SV
+                            "/networks/" + networkUuid + "/lines",                       // NHV1_NHV2_2 full
+                            "/networks/" + networkUuid + "/configured-buses",            // NLOAD full because not optimized (useless)
+                            "/networks/" + networkUuid + "/lines/sv",                    // NHV1_NHV2_1 only SV
+                            "/networks/" + networkUuid + "/2-windings-transformers/sv"), // NGEN_NHV1 only SV
                     metrics.updatedUrls);
         }
 
@@ -4125,4 +4124,97 @@ class NetworkStoreIT {
             assertEquals(0, metrics.allGetterCallCount);
         }
     }
+
+    @Test
+    void testVariantsModifyOnce() {
+        // import network on initial variant
+        UUID networkUuid;
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
+            networkUuid = service.getNetworkUuid(network);
+            assertEquals(2, network.getGeneratorCount());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+            service.setVariantMode(network, VariantMode.PARTIAL);
+
+            // clone initial variant to variant "v"
+            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(2, network.getGeneratorCount());
+            Generator gen = network.getGenerator("GEN");
+            gen.setMaxP(15.5);
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(2, network.getGeneratorCount());
+            assertEquals(15.5, network.getGenerator("GEN").getMaxP());
+        }
+    }
+
+    @Test
+    void testVariantsModifyTwice() {
+        // import network on initial variant
+        UUID networkUuid;
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
+            networkUuid = service.getNetworkUuid(network);
+            assertEquals(2, network.getGeneratorCount());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+            service.setVariantMode(network, VariantMode.PARTIAL);
+
+            // clone initial variant to variant "v"
+            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(2, network.getGeneratorCount());
+            Generator gen = network.getGenerator("GEN");
+            gen.setMaxP(15.5);
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(2, network.getGeneratorCount());
+            assertEquals(15.5, network.getGenerator("GEN").getMaxP());
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(2, network.getGeneratorCount());
+            Generator gen = network.getGenerator("GEN");
+            gen.setMaxP(16.0);
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(2, network.getGeneratorCount());
+            assertEquals(16.0, network.getGenerator("GEN").getMaxP());
+        }
+    }
+
 }
