@@ -1,2 +1,7 @@
 server:
   port : 23146
+
+spring:
+  h2:
+    console:
+      enabled: true

@@ -170,8 +170,9 @@ public class NetworkStoreController {
     public ResponseEntity<Void> cloneNetwork(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                              @Parameter(description = "Source variant Id", required = true) @PathVariable("sourceVariantId") String sourceVariantId,
                                              @Parameter(description = "Target variant Id", required = true) @PathVariable("targetVariantId") String targetVariantId,
-                                             @Parameter(description = "mayOverwrite", required = false) @RequestParam(required = false) boolean mayOverwrite) {
-        repository.cloneNetwork(networkId, sourceVariantId, targetVariantId, mayOverwrite);
+                                             @Parameter(description = "mayOverwrite", required = false) @RequestParam(required = false) boolean mayOverwrite,
+                                             @Parameter(description = "Variant mode", required = true) @RequestParam(required = false) String variantMode) {
+        repository.cloneNetwork(networkId, sourceVariantId, targetVariantId, mayOverwrite, variantMode != null ? VariantMode.valueOf(variantMode) : VariantMode.PARTIAL);
         return ResponseEntity.ok().build();
     }
 

@@ -432,16 +432,20 @@ public class NetworkStoreRepository {
         var stopwatch = Stopwatch.createStarted();
 
         try (var connection = dataSource.getConnection()) {
+            Resource<NetworkAttributes> srcNetwork = getNetwork(uuid, sourceVariantNum).orElseThrow();
+            VariantMode srcVariantMode = srcNetwork.getAttributes().getVariantMode();
+            int srcVariantNum = srcVariantMode == VariantMode.FULL ? sourceVariantNum : srcNetwork.getAttributes().getSrcVariantNum();
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
                 preparedStmt.setString(3, mapper.writeValueAsString(variantMode));
-                preparedStmt.setInt(4, sourceVariantNum);
+                preparedStmt.setInt(4, srcVariantNum); // this is the num of the root network for readings
                 preparedStmt.setObject(5, uuid);
                 preparedStmt.setInt(6, sourceVariantNum);
                 preparedStmt.execute();
             }
-            if (variantMode == VariantMode.FULL) {
+            // copy resources only if source variant is partial
+            if (srcVariantMode == VariantMode.PARTIAL || variantMode == VariantMode.FULL) { // if full clone or if src is partial we could !VariantMode.PARTIAL ?
                 cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum);
             }
         } catch (SQLException e) {
@@ -519,7 +523,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    public void cloneNetwork(UUID networkUuid, String sourceVariantId, String targetVariantId, boolean mayOverwrite) {
+    public void cloneNetwork(UUID networkUuid, String sourceVariantId, String targetVariantId, boolean mayOverwrite, VariantMode variantMode) {
         List<VariantInfos> variantsInfos = getVariantsInfos(networkUuid);
         Optional<VariantInfos> targetVariant = VariantUtils.getVariant(targetVariantId, variantsInfos);
         if (targetVariant.isPresent()) {
@@ -534,7 +538,7 @@ public class NetworkStoreRepository {
         }
         int sourceVariantNum = VariantUtils.getVariantNum(sourceVariantId, variantsInfos);
         int targetVariantNum = VariantUtils.findFistAvailableVariantNum(variantsInfos);
-        cloneNetworkVariant(networkUuid, sourceVariantNum, targetVariantNum, targetVariantId, VariantMode.PARTIAL);
+        cloneNetworkVariant(networkUuid, sourceVariantNum, targetVariantNum, targetVariantId, variantMode);
     }
 
     public <T extends IdentifiableAttributes> void createIdentifiables(UUID networkUuid, List<Resource<T>> resources,
@@ -561,10 +565,61 @@ public class NetworkStoreRepository {
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        try (var connection = dataSource.getConnection()) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedEquipmentsQuery())) {
+                List<Object> values = new ArrayList<>(3);
+                for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
+                    for (Resource<T> resource : subResources) {
+                        values.clear();
+                        values.add(networkUuid);
+                        values.add(resource.getVariantNum());
+                        values.add(resource.getId());
+                        bindValues(preparedStmt, values, mapper);
+                        preparedStmt.addBatch();
+                    }
+                    preparedStmt.executeBatch();
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+
         extensionHandler.insertExtensions(extensionHandler.getExtensionsFromEquipments(networkUuid, resources));
     }
 
     private <T extends IdentifiableAttributes> Optional<Resource<T>> getIdentifiable(UUID networkUuid, int variantNum, String equipmentId,
+                                                                                     TableMapping tableMapping) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        VariantMode variantMode = network.getAttributes().getVariantMode();
+
+        return (variantMode == VariantMode.PARTIAL)
+                ? retrieveFromPartialVariant(network, networkUuid, variantNum, equipmentId, tableMapping)
+                : getIdentifiableForVariant(networkUuid, variantNum, equipmentId, tableMapping);
+    }
+
+    private <T extends IdentifiableAttributes> Optional<Resource<T>> retrieveFromPartialVariant(
+            Resource<NetworkAttributes> network, UUID networkUuid, int variantNum, String equipmentId, TableMapping tableMapping) {
+
+        List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+        if (tombstonedIds.contains(equipmentId)) {
+            return Optional.empty();
+        }
+
+        int sourceVariantNum = network.getAttributes().getSrcVariantNum();
+        Optional<Resource<T>> identifiable = getIdentifiableForVariant(networkUuid, sourceVariantNum, equipmentId, tableMapping);
+
+        if (identifiable.isPresent()) {
+            Optional<Resource<T>> variantSpecificIdentifiable = getIdentifiableForVariant(networkUuid, variantNum, equipmentId, tableMapping);
+            if (variantSpecificIdentifiable.isPresent()) {
+                return variantSpecificIdentifiable;
+            } else {
+                identifiable.get().setVariantNum(variantNum);
+            }
+        }
+        return identifiable;
+    }
+
+    private <T extends IdentifiableAttributes> Optional<Resource<T>> getIdentifiableForVariant(UUID networkUuid, int variantNum, String equipmentId,
                                                                                      TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
@@ -595,6 +650,7 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> Resource<T> completeResourceInfos(Resource<T> resource, UUID networkUuid, int variantNum, String equipmentId) {
+        // need to handle these resource additional data later
         return switch (resource.getType()) {
             case GENERATOR -> completeGeneratorInfos(resource, networkUuid, variantNum, equipmentId);
             case BATTERY -> completeBatteryInfos(resource, networkUuid, variantNum, equipmentId);
@@ -890,7 +946,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateVoltageLevels(UUID networkUuid, List<Resource<VoltageLevelAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getVoltageLevelMappings(), SUBSTATION_ID);
+        update4PartialVariants(networkUuid, resources, VOLTAGE_LEVEL_TABLE, mappings.getVoltageLevelMappings());
     }
 
     public void updateVoltageLevelsSv(UUID networkUuid, List<Resource<VoltageLevelSvAttributes>> resources) {
@@ -955,36 +1011,6 @@ public class NetworkStoreRepository {
         // get src variant num equipments
         // override any src variant num equipments by the one in this variant num
         List<Resource<GeneratorAttributes>> generators = getIdentifiables(networkUuid, variantNum, mappings.getGeneratorMappings());
-
-//        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-//        VariantMode variantMode = network.getAttributes().getVariantMode();
-//        List<Resource<GeneratorAttributes>> generators;
-//        if (variantMode == VariantMode.PARTIAL) {
-//            // Retrieve identifiables from first FULL variant
-//            int srcVariantNum = network.getAttributes().getSrcVariantNum();
-//            Resource<NetworkAttributes> srcNetwork = getNetwork(networkUuid, variantNum).orElseThrow();
-//            // retrieve src identifiables in first full variant recursively
-//            if (srcNetwork.getAttributes().getVariantMode() == VariantMode.FULL) {
-//                generators = getIdentifiables(networkUuid, srcVariantNum, mappings.getGeneratorMappings()); // this should probably not retrieve identifiable that were updated (in a new variant ?)
-//            } else {
-//                generators = getGenerators(networkUuid, srcVariantNum);
-//            }
-//            // above retrieve three identifiable instead of 2
-//            // set the variantnum of the resource
-//            generators.forEach(g -> g.setVariantNum(variantNum));
-//            // Remove any modified generator from srcVariantNum and get newly modified values
-//            List<Resource<GeneratorAttributes>> updatedIdentifiables = getIdentifiables(networkUuid, variantNum, mappings.getGeneratorMappings());
-//            Set<String> updatedIdentifiableIds = updatedIdentifiables.stream().map(g -> g.getId()).collect(Collectors.toSet());
-//            // remove if updated
-//            generators.removeIf(g -> updatedIdentifiableIds.contains(g.getId()));
-//            // remove if deleted equipment
-//            List<String> tombstonedIdentifiableIds = getTombstonedIdentifiables(networkUuid, variantNum);
-//            generators.removeIf(g -> tombstonedIdentifiableIds.contains(g.getId()));
-//            generators.addAll(updatedIdentifiables);
-//        } else {
-//            generators = getIdentifiables(networkUuid, variantNum, mappings.getGeneratorMappings());
-//        }
-
         //  reactive capability curves
         Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.GENERATOR.toString());
         insertReactiveCapabilityCurvePointsInEquipments(networkUuid, generators, reactiveCapabilityCurvePoints);
@@ -1004,7 +1030,8 @@ public class NetworkStoreRepository {
         if (variantMode == VariantMode.PARTIAL) {
             // Retrieve identifiables from the (full) variant first
             int srcVariantNum = network.getAttributes().getSrcVariantNum();
-            List<Resource<T>> baseIdentifiables = getIdentifiables(networkUuid, srcVariantNum, tableMapping);
+//            List<Resource<T>> identifiables = getIdentifiables(networkUuid, srcVariantNum, tableMapping); to go back to the parent (previous implem)
+            identifiables = getIdentifiablesForVariant(networkUuid, srcVariantNum, tableMapping);
 
             // Retrieve updated identifiables in partial
             List<Resource<T>> updatedIdentifiables = getIdentifiablesForVariant(networkUuid, variantNum, tableMapping);
@@ -1012,15 +1039,14 @@ public class NetworkStoreRepository {
                     .map(Resource::getId)
                     .collect(Collectors.toSet());
             // Remove any resources that have been updated in the current variant
-            baseIdentifiables.removeIf(resource -> updatedIds.contains(resource.getId()));
+            identifiables.removeIf(resource -> updatedIds.contains(resource.getId()));
             // Remove tombstoned resources in the current variant
             List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            baseIdentifiables.removeIf(resource -> tombstonedIds.contains(resource.getId()));
+            identifiables.removeIf(resource -> tombstonedIds.contains(resource.getId()));
             // Combine base and updated identifiables
-            baseIdentifiables.addAll(updatedIdentifiables);
+            identifiables.addAll(updatedIdentifiables);
             // Set the variantNum of all resources to the current variant
-            baseIdentifiables.forEach(resource -> resource.setVariantNum(variantNum));
-            identifiables = baseIdentifiables;
+            identifiables.forEach(resource -> resource.setVariantNum(variantNum));
         } else {
             // If the variant is FULL, retrieve identifiables for the specified variant directly
             identifiables = getIdentifiablesForVariant(networkUuid, variantNum, tableMapping);
@@ -1068,8 +1094,7 @@ public class NetworkStoreRepository {
 
     public void updateGenerators(UUID networkUuid, List<Resource<GeneratorAttributes>> resources) {
         // Delete + create
-        resources.stream().forEach(r -> deleteIdentifiable(networkUuid, r.getVariantNum(), r.getId(), GENERATOR_TABLE, true));
-        createIdentifiables(networkUuid, resources, mappings.getGeneratorMappings());
+        update4PartialVariants(networkUuid, resources, GENERATOR_TABLE, mappings.getGeneratorMappings());
 
         // To update the generator's reactive capability curve points, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the reactive capability curve point's primary key is to be
@@ -1080,6 +1105,11 @@ public class NetworkStoreRepository {
 
         deleteRegulationPoints(networkUuid, resources, ResourceType.GENERATOR);
         insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
+    }
+
+    private <T extends IdentifiableAttributes> void update4PartialVariants(UUID networkUuid, List<Resource<T>> resources, String table, TableMapping tableMapping) {
+        resources.stream().forEach(r -> deleteIdentifiable(networkUuid, r.getVariantNum(), r.getId(), table, true));
+        createIdentifiables(networkUuid, resources, tableMapping);
     }
 
     public void updateGeneratorsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1128,7 +1158,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateBatteries(UUID networkUuid, List<Resource<BatteryAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getBatteryMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, BATTERY_TABLE, mappings.getBatteryMappings());
 
         // To update the battery's reactive capability curve points, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the reactive capability curve point's primary key is to be
@@ -1165,7 +1195,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateLoads(UUID networkUuid, List<Resource<LoadAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getLoadMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, LOAD_TABLE, mappings.getLoadMappings());
     }
 
     public void updateLoadsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1223,7 +1253,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateShuntCompensators(UUID networkUuid, List<Resource<ShuntCompensatorAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getShuntCompensatorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, SHUNT_COMPENSATOR_TABLE, mappings.getShuntCompensatorMappings());
 
         deleteRegulationPoints(networkUuid, resources, ResourceType.SHUNT_COMPENSATOR);
         insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
@@ -1295,7 +1325,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateVscConverterStations(UUID networkUuid, List<Resource<VscConverterStationAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getVscConverterStationMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, VSC_CONVERTER_STATION_TABLE, mappings.getVscConverterStationMappings());
 
         // To update the vscConverterStation's reactive capability curve points, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the reactive capability curve point's primary key is to be
@@ -1335,7 +1365,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateLccConverterStations(UUID networkUuid, List<Resource<LccConverterStationAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getLccConverterStationMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, LCC_CONVERTER_STATION_TABLE, mappings.getLccConverterStationMappings());
     }
 
     public void updateLccConverterStationsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1395,7 +1425,8 @@ public class NetworkStoreRepository {
     }
 
     public void updateStaticVarCompensators(UUID networkUuid, List<Resource<StaticVarCompensatorAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getStaticVarCompensatorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, STATIC_VAR_COMPENSATOR_TABLE, mappings.getStaticVarCompensatorMappings());
+
         deleteRegulationPoints(networkUuid, resources, ResourceType.STATIC_VAR_COMPENSATOR);
         insertRegulationPoints(getRegulationPointFromEquipment(networkUuid, resources));
     }
@@ -1416,7 +1447,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateBusbarSections(UUID networkUuid, List<Resource<BusbarSectionAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getBusbarSectionMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, BUSBAR_SECTION_TABLE, mappings.getBusbarSectionMappings());
     }
 
     public Optional<Resource<BusbarSectionAttributes>> getBusbarSection(UUID networkUuid, int variantNum, String busbarSectionId) {
@@ -1454,7 +1485,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateSwitches(UUID networkUuid, List<Resource<SwitchAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getSwitchMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, SWITCH_TABLE, mappings.getSwitchMappings());
     }
 
     public void deleteSwitch(UUID networkUuid, int variantNum, String switchId) {
@@ -1742,7 +1773,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateGrounds(UUID networkUuid, List<Resource<GroundAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getGroundMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, GROUND_TABLE, mappings.getGroundMappings());
     }
 
     public void deleteGround(UUID networkUuid, int variantNum, String groundId) {
@@ -1777,7 +1808,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateDanglingLines(UUID networkUuid, List<Resource<DanglingLineAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getDanglingLineMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, DANGLING_LINE_TABLE, mappings.getDanglingLineMappings());
 
         // To update the danglingline's temporary limits, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
@@ -1836,7 +1867,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateBuses(UUID networkUuid, List<Resource<ConfiguredBusAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getConfiguredBusMappings(), VOLTAGE_LEVEL_ID_COLUMN);
+        update4PartialVariants(networkUuid, resources, CONFIGURED_BUS_TABLE, mappings.getConfiguredBusMappings());
     }
 
     public void deleteBus(UUID networkUuid, int variantNum, String configuredBusId) {
@@ -2513,7 +2544,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, RegulationPointAttributes> regulationPointAttributes = getRegulationPointsWithInClause(networkUuid, variantNum,
             REGULATED_EQUIPMENT_ID, Collections.singletonList(equipmentId), resourceType);
         if (regulationPointAttributes.size() != 1) {
-            throw new PowsyblException("a regulating element must have one regulating point");
+//            throw new PowsyblException("a regulating element must have one regulating point");
         } else {
             regulationPointAttributes.values().forEach(regulationPointAttribute ->
                 ((AbstractIdentifiableAttributes) resource.getAttributes()).setRegulationPoint(regulationPointAttribute));

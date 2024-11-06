@@ -748,6 +748,10 @@ public final class QueryCatalog {
     }
 
     public static String buildGetTombstonedEquipmentsQuery() {
-        return "SELECT equipmentid FROM tombstoned WHERE networkuuid = ? AND variantnum = ?";
+        return "select equipmentid FROM tombstoned WHERE networkuuid = ? AND variantnum = ?";
+    }
+
+    public static String buildDeleteTombstonedEquipmentsQuery() {
+        return "delete from tombstoned WHERE networkuuid = ? AND variantnum = ? AND equipmentId = ?";
     }
 }

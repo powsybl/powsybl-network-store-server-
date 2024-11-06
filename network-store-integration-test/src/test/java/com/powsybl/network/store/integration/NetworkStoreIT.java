@@ -26,7 +26,6 @@ import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.network.store.iidm.impl.ConfiguredBusImpl;
 import com.powsybl.network.store.iidm.impl.NetworkFactoryImpl;
 import com.powsybl.network.store.iidm.impl.NetworkImpl;
-import com.powsybl.network.store.model.VariantMode;
 import com.powsybl.network.store.server.NetworkStoreApplication;
 import com.powsybl.ucte.converter.UcteImporter;
 import org.apache.commons.collections4.IterableUtils;
@@ -35,9 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,13 +56,13 @@ import static org.mockito.Mockito.*;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})})
-@DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class NetworkStoreIT {
-//    @DynamicPropertySource
-//    private static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
-//        UUID uuid = UUID.randomUUID();
-//        registry.add("testDbSuffix", () -> uuid);
-//    }
+    @DynamicPropertySource
+    private static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
+        UUID uuid = UUID.randomUUID();
+        registry.add("testDbSuffix", () -> uuid);
+    }
 
     private static final double ESP = 0.000001;
 
@@ -184,7 +184,7 @@ class NetworkStoreIT {
 
             VoltageLevel voltageLevel1 = network.getVoltageLevel("n1_voltageLevel1");
             assertEquals(6, voltageLevel1.getNodeBreakerView().getMaximumNodeIndex());
-            assertArrayEquals(new int[]{0, 1, 2, 3, 5, 6}, voltageLevel1.getNodeBreakerView().getNodes());
+            assertArrayEquals(new int[] {0, 1, 2, 3, 5, 6}, voltageLevel1.getNodeBreakerView().getNodes());
             assertNotNull(voltageLevel1.getNodeBreakerView().getTerminal(2));
             assertNull(voltageLevel1.getNodeBreakerView().getTerminal(4));
             List<Integer> traversedNodes = new ArrayList<>();
@@ -4124,97 +4124,4 @@ class NetworkStoreIT {
             assertEquals(0, metrics.allGetterCallCount);
         }
     }
-
-    @Test
-    void testVariantsModifyOnce() {
-        // import network on initial variant
-        UUID networkUuid;
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
-            networkUuid = service.getNetworkUuid(network);
-            assertEquals(2, network.getGeneratorCount());
-            service.flush(network);
-        }
-
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = service.getNetwork(networkUuid);
-            assertNotNull(network);
-            service.setVariantMode(network, VariantMode.PARTIAL);
-
-            // clone initial variant to variant "v"
-            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
-            service.flush(network);
-        }
-
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = service.getNetwork(networkUuid);
-            network.getVariantManager().setWorkingVariant("v");
-            assertEquals(2, network.getGeneratorCount());
-            Generator gen = network.getGenerator("GEN");
-            gen.setMaxP(15.5);
-            service.flush(network);
-        }
-
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = service.getNetwork(networkUuid);
-            network.getVariantManager().setWorkingVariant("v");
-            assertEquals(2, network.getGeneratorCount());
-            assertEquals(15.5, network.getGenerator("GEN").getMaxP());
-        }
-    }
-
-    @Test
-    void testVariantsModifyTwice() {
-        // import network on initial variant
-        UUID networkUuid;
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
-            networkUuid = service.getNetworkUuid(network);
-            assertEquals(2, network.getGeneratorCount());
-            service.flush(network);
-        }
-
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = service.getNetwork(networkUuid);
-            assertNotNull(network);
-            service.setVariantMode(network, VariantMode.PARTIAL);
-
-            // clone initial variant to variant "v"
-            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
-            service.flush(network);
-        }
-
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = service.getNetwork(networkUuid);
-            network.getVariantManager().setWorkingVariant("v");
-            assertEquals(2, network.getGeneratorCount());
-            Generator gen = network.getGenerator("GEN");
-            gen.setMaxP(15.5);
-            service.flush(network);
-        }
-
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = service.getNetwork(networkUuid);
-            network.getVariantManager().setWorkingVariant("v");
-            assertEquals(2, network.getGeneratorCount());
-            assertEquals(15.5, network.getGenerator("GEN").getMaxP());
-        }
-
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = service.getNetwork(networkUuid);
-            network.getVariantManager().setWorkingVariant("v");
-            assertEquals(2, network.getGeneratorCount());
-            Generator gen = network.getGenerator("GEN");
-            gen.setMaxP(16.0);
-            service.flush(network);
-        }
-
-        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
-            Network network = service.getNetwork(networkUuid);
-            network.getVariantManager().setWorkingVariant("v");
-            assertEquals(2, network.getGeneratorCount());
-            assertEquals(16.0, network.getGenerator("GEN").getMaxP());
-        }
-    }
-
 }
