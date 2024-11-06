@@ -1047,4 +1047,89 @@ class NetworkStoreRepositoryTest {
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getStaticVarCompensator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, staticVarCompensatorId).isEmpty());
     }
+
+    @Test
+    void testRegulatingPointForVSC() {
+        String vscId = "svc1";
+        Resource<VscConverterStationAttributes> staticVarCompensator = Resource.vscConverterStationBuilder()
+            .id(vscId)
+            .attributes(VscConverterStationAttributes.builder()
+                .voltageLevelId("vl1")
+                .name(vscId)
+                .regulatingPoint(RegulatingPointAttributes.builder()
+                    .localTerminal(TerminalRefAttributes.builder().connectableId(vscId).build())
+                    .regulatedResourceType(ResourceType.VSC_CONVERTER_STATION)
+                    .regulatingEquipmentId(vscId)
+                    .regulatingTerminal(TerminalRefAttributes.builder().connectableId(vscId).build())
+                    .build())
+                .build())
+            .build();
+        networkStoreRepository.createVscConverterStations(NETWORK_UUID, List.of(staticVarCompensator));
+        String loadId = "load1";
+        Resource<LoadAttributes> load1 = Resource.loadBuilder()
+            .id(loadId)
+            .attributes(LoadAttributes.builder()
+                .voltageLevelId("vl1")
+                .build())
+            .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(load1));
+
+        Optional<Resource<VscConverterStationAttributes>> vscCreation = networkStoreRepository.getVscConverterStation(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, vscId);
+        assertTrue(vscCreation.isPresent());
+        assertEquals(vscId, vscCreation.get().getAttributes().getRegulatingPoint().getRegulatingEquipmentId());
+        assertNull(vscCreation.get().getAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
+        assertNull(vscCreation.get().getAttributes().getRegulatingPoint().getRegulationMode());
+        assertEquals(vscId, vscCreation.get().getAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
+        assertNull(vscCreation.get().getAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertEquals(1, vscCreation.get().getAttributes().getRegulatingEquipments().size());
+        assertTrue(vscCreation.get().getAttributes().getRegulatingEquipments().containsKey(vscId));
+        assertEquals(ResourceType.VSC_CONVERTER_STATION, vscCreation.get().getAttributes().getRegulatingEquipments().get(vscId));
+
+        // get vl svc
+        List<Resource<VscConverterStationAttributes>> vscList = networkStoreRepository.getVoltageLevelVscConverterStations(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, "vl1");
+        assertEquals(1, vscList.size());
+        Resource<VscConverterStationAttributes> vscVl = vscList.get(0);
+        assertEquals(vscId, vscVl.getAttributes().getRegulatingPoint().getRegulatingEquipmentId());
+        assertEquals(vscId, vscVl.getAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
+        assertNull(vscVl.getAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
+        assertNull(vscVl.getAttributes().getRegulatingPoint().getRegulationMode());
+        assertEquals(vscId, vscVl.getAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
+        assertNull(vscVl.getAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+
+        // update
+        Resource<VscConverterStationAttributes> updatedGen = Resource.vscConverterStationBuilder()
+            .id(vscId)
+            .variantNum(Resource.INITIAL_VARIANT_NUM)
+            .attributes(VscConverterStationAttributes.builder()
+                .voltageLevelId("vl1")
+                .name(vscId)
+                .regulatingPoint(RegulatingPointAttributes.builder()
+                    .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())
+                    .regulatedResourceType(ResourceType.LOAD)
+                    .build())
+                .build())
+            .build();
+        networkStoreRepository.updateVscConverterStations(NETWORK_UUID, List.of(updatedGen));
+
+        Optional<Resource<VscConverterStationAttributes>> vscResult = networkStoreRepository.getVscConverterStation(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, vscId);
+        assertTrue(vscResult.isPresent());
+        assertEquals(loadId, vscResult.get().getAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
+        assertNull(vscResult.get().getAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
+        assertNull(vscResult.get().getAttributes().getRegulatingPoint().getRegulationMode());
+        assertEquals(vscId, vscResult.get().getAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
+        assertNull(vscResult.get().getAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertTrue(vscResult.get().getAttributes().getRegulatingEquipments().isEmpty());
+
+        Optional<Resource<LoadAttributes>> loadResult = networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        assertTrue(loadResult.isPresent());
+        assertEquals(1, loadResult.get().getAttributes().getRegulatingEquipments().size());
+        assertTrue(loadResult.get().getAttributes().getRegulatingEquipments().containsKey(vscId));
+        assertEquals(ResourceType.VSC_CONVERTER_STATION, loadResult.get().getAttributes().getRegulatingEquipments().get(vscId));
+
+        // delete
+        networkStoreRepository.deleteVscConverterStation(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, vscId);
+        networkStoreRepository.deleteLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
+        assertTrue(networkStoreRepository.getVscConverterStation(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, vscId).isEmpty());
+    }
 }
