@@ -6,7 +6,10 @@
  */
 package com.powsybl.network.store.server;
 
+import com.powsybl.iidm.network.EnergySource;
 import com.powsybl.iidm.network.LimitType;
+import com.powsybl.iidm.network.extensions.ActivePowerControl;
+import com.powsybl.iidm.network.extensions.GeneratorStartup;
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.LimitsInfos;
 import com.powsybl.network.store.server.dto.OwnerInfo;
@@ -781,5 +784,84 @@ class NetworkStoreRepositoryTest {
         networkStoreRepository.createLoads(NETWORK_UUID, List.of(load1));
         List<String> identifiablesIds = networkStoreRepository.getIdentifiablesIds(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM);
         assertEquals(List.of("load1", "line1"), identifiablesIds);
+    }
+
+    @Test
+    void testRegulatingPointForGenerator() {
+        String generatorId = "gen1";
+        Resource<GeneratorAttributes> gen = Resource.generatorBuilder()
+            .id(generatorId)
+            .attributes(GeneratorAttributes.builder()
+                    .voltageLevelId("vl1")
+                    .name(generatorId)
+                    .regulatingPoint(RegulatingPointAttributes.builder()
+                        .localTerminal(TerminalRefAttributes.builder().connectableId(generatorId).build())
+                        .regulatedResourceType(ResourceType.GENERATOR)
+                        .regulatingEquipmentId(generatorId)
+                        .regulatingTerminal(TerminalRefAttributes.builder().connectableId(generatorId).build())
+                        .build())
+                    .build())
+            .build();
+        networkStoreRepository.createGenerators(NETWORK_UUID, List.of(gen));
+        String loadId = "load1";
+        Resource<LoadAttributes> load1 = Resource.loadBuilder()
+            .id(loadId)
+            .attributes(LoadAttributes.builder()
+                .voltageLevelId("vl1")
+                .build())
+            .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(load1));
+
+        Optional<Resource<GeneratorAttributes>> generator = networkStoreRepository.getGenerator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, generatorId);
+        assertTrue(generator.isPresent());
+        assertEquals(generatorId, generator.get().getAttributes().getRegulatingPoint().getRegulatingEquipmentId());
+        assertNull(generator.get().getAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
+        assertNull(generator.get().getAttributes().getRegulatingPoint().getRegulationMode());
+        assertEquals(generatorId, generator.get().getAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
+        assertNull(generator.get().getAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertEquals(1, generator.get().getAttributes().getRegulatingEquipments().size());
+        assertTrue(generator.get().getAttributes().getRegulatingEquipments().containsKey(generatorId));
+        assertEquals(ResourceType.GENERATOR, generator.get().getAttributes().getRegulatingEquipments().get(generatorId));
+
+        // get vl generator
+        List<Resource<GeneratorAttributes>> generatorList = networkStoreRepository.getVoltageLevelGenerators(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, "vl1");
+        assertEquals(1, generatorList.size());
+        Resource<GeneratorAttributes> generatorVl = generatorList.get(0);
+        assertEquals(generatorId, generatorVl.getAttributes().getRegulatingPoint().getRegulatingEquipmentId());
+        assertEquals(generatorId, generatorVl.getAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
+        assertNull(generatorVl.getAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
+        assertNull(generatorVl.getAttributes().getRegulatingPoint().getRegulationMode());
+        assertEquals(generatorId, generatorVl.getAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
+        assertNull(generatorVl.getAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+
+        // update
+        Resource<GeneratorAttributes> updatedGen = Resource.generatorBuilder()
+            .id(generatorId)
+            .variantNum(Resource.INITIAL_VARIANT_NUM)
+            .attributes(GeneratorAttributes.builder()
+                .voltageLevelId("vl1")
+                .name(generatorId)
+                .regulatingPoint(RegulatingPointAttributes.builder()
+                    .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())
+                    .regulatedResourceType(ResourceType.LOAD)
+                    .build())
+                .build())
+            .build();
+        networkStoreRepository.updateGenerators(NETWORK_UUID, List.of(updatedGen));
+
+        Optional<Resource<GeneratorAttributes>> generatorResult = networkStoreRepository.getGenerator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, generatorId);
+        assertTrue(generatorResult.isPresent());
+        assertEquals(loadId, generatorResult.get().getAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
+        assertNull(generatorResult.get().getAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
+        assertNull(generatorResult.get().getAttributes().getRegulatingPoint().getRegulationMode());
+        assertEquals(generatorId, generatorResult.get().getAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
+        assertNull(generatorResult.get().getAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertTrue(generatorResult.get().getAttributes().getRegulatingEquipments().isEmpty());
+
+        Optional<Resource<LoadAttributes>> loadResult = networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        assertTrue(loadResult.isPresent());
+        assertEquals(1, loadResult.get().getAttributes().getRegulatingEquipments().size());
+        assertTrue(loadResult.get().getAttributes().getRegulatingEquipments().containsKey(generatorId));
+        assertEquals(ResourceType.GENERATOR, loadResult.get().getAttributes().getRegulatingEquipments().get(generatorId));
     }
 }
