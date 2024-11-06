@@ -2330,7 +2330,7 @@ public class NetworkStoreRepository {
         List<String> elementIds = elements.stream().map(Resource::getId).toList();
         Map<OwnerInfo, RegulatingPointAttributes> regulatingPointAttributes = getRegulatingPointsWithInClause(networkUuid, variantNum,
             REGULATING_EQUIPMENT_ID, elementIds, type);
-        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipmentsWithInClause(networkUuid, variantNum, REGULATING_EQUIPMENT_ID, elementIds, type);
+        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipmentsWithInClause(networkUuid, variantNum, "regulatingterminalconnectableid", elementIds, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
             element.getAttributes().setRegulatingPoint(
@@ -2360,7 +2360,7 @@ public class NetworkStoreRepository {
     // using the request on a small number of ids and not on all elements
     private <T extends RegulatedEquipmentAttributes> void setRegulatingEquipmentsWithIds(List<Resource<T>> elements, UUID networkUuid, int variantNum, ResourceType type, List<String> elementIds) {
         // regulating equipments
-        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipmentsWithInClause(networkUuid, variantNum, REGULATING_EQUIPMENT_ID, elementIds, type);
+        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipmentsWithInClause(networkUuid, variantNum, "regulatingterminalconnectableid", elementIds, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));

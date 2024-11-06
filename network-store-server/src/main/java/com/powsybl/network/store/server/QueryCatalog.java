@@ -601,7 +601,7 @@ public final class QueryCatalog {
             + "regulatingterminalconnectableid," + REGULATING_EQUIPMENT_TYPE_COLUMN + " from " + REGULATING_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
-            REGULATING_EQUIPMENT_TYPE_COLUMN + " = ? and " +
+            REGULATED_EQUIPMENT_TYPE_COLUMN + " = ? and " +
             columnNameForInClause + " in (" +
             "?, ".repeat(numberOfValues - 1) + "?)";
     }
