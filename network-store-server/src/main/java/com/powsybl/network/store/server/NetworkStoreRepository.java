@@ -768,6 +768,41 @@ public class NetworkStoreRepository {
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInContainer(UUID networkUuid, int variantNum, String containerId,
                                                                                              Set<String> containerColumns,
                                                                                              TableMapping tableMapping) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        VariantMode variantMode = network.getAttributes().getVariantMode();
+
+        List<Resource<T>> identifiables;
+
+        if (variantMode == VariantMode.PARTIAL) {
+            // Retrieve identifiables from the (full) variant first
+            int srcVariantNum = network.getAttributes().getSrcVariantNum();
+//            List<Resource<T>> identifiables = getIdentifiables(networkUuid, srcVariantNum, tableMapping); to go back to the parent (previous implem)
+            identifiables = getIdentifiablesInContainerForVariant(networkUuid, srcVariantNum, containerId, containerColumns, tableMapping);
+
+            // Retrieve updated identifiables in partial
+            List<Resource<T>> updatedIdentifiables = getIdentifiablesInContainerForVariant(networkUuid, variantNum, containerId, containerColumns, tableMapping);
+            Set<String> updatedIds = updatedIdentifiables.stream()
+                    .map(Resource::getId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            identifiables.removeIf(resource -> updatedIds.contains(resource.getId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            identifiables.removeIf(resource -> tombstonedIds.contains(resource.getId()));
+            // Combine base and updated identifiables
+            identifiables.addAll(updatedIdentifiables);
+            // Set the variantNum of all resources to the current variant
+            identifiables.forEach(resource -> resource.setVariantNum(variantNum));
+        } else {
+            // If the variant is FULL, retrieve identifiables for the specified variant directly
+            identifiables = getIdentifiablesInContainerForVariant(networkUuid, variantNum, containerId, containerColumns, tableMapping);
+        }
+        return identifiables;
+    }
+
+    private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInContainerForVariant(UUID networkUuid, int variantNum, String containerId,
+                                                                                             Set<String> containerColumns,
+                                                                                             TableMapping tableMapping) {
         List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesInContainerQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), containerColumns));
@@ -1896,6 +1931,37 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<IdentifiableAttributes>> getIdentifiable(UUID networkUuid, int variantNum, String id) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        VariantMode variantMode = network.getAttributes().getVariantMode();
+
+        return (variantMode == VariantMode.PARTIAL)
+                ? retrieveFromPartialVariant(network, networkUuid, variantNum, id)
+                : getIdentifiableForVariant(networkUuid, variantNum, id);
+    }
+
+    private Optional<Resource<IdentifiableAttributes>> retrieveFromPartialVariant(
+            Resource<NetworkAttributes> network, UUID networkUuid, int variantNum, String id) {
+
+        List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+        if (tombstonedIds.contains(id)) {
+            return Optional.empty();
+        }
+
+        int sourceVariantNum = network.getAttributes().getSrcVariantNum();
+        Optional<Resource<IdentifiableAttributes>> identifiable = getIdentifiableForVariant(networkUuid, sourceVariantNum, id);
+
+        if (identifiable.isPresent()) {
+            Optional<Resource<IdentifiableAttributes>> variantSpecificIdentifiable = getIdentifiableForVariant(networkUuid, variantNum, id);
+            if (variantSpecificIdentifiable.isPresent()) {
+                return variantSpecificIdentifiable;
+            } else {
+                identifiable.get().setVariantNum(variantNum);
+            }
+        }
+        return identifiable;
+    }
+
+    public Optional<Resource<IdentifiableAttributes>> getIdentifiableForVariant(UUID networkUuid, int variantNum, String id) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiableForAllTablesQuery());
             preparedStmt.setObject(1, networkUuid);

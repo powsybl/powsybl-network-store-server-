@@ -531,4 +531,6 @@ class NetworkStoreITDiffVariants {
             service.flush(network);
         }
     }
+
+    // add a getVoltagLevelResource test
 }
