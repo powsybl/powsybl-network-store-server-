@@ -193,46 +193,6 @@ public final class QueryCatalog {
         return query.toString();
     }
 
-    // https://www.postgresql.org/docs/15/sql-merge.html
-    public static String buildUpsertIdentifiableQuery(String tableName, Collection<String> columns, String columnToAddToWhereClause) {
-        StringBuilder query = new StringBuilder("merge into ")
-                .append(tableName)
-                .append(" key (").append(NETWORK_UUID_COLUMN).append(", ")
-                .append(VARIANT_NUM_COLUMN).append(", ")
-                .append(ID_COLUMN).append(") ");
-
-        // Insert values into the target table
-        query.append("values (");
-        var it = columns.iterator();
-        while (it.hasNext()) {
-            query.append("?");
-            if (it.hasNext()) {
-                query.append(", ");
-            }
-        }
-        query.append(") ");
-
-        // Prepare the update section
-        query.append("when matched then update set ");
-        it = columns.iterator();
-        while (it.hasNext()) {
-            String column = it.next();
-            if (!column.equals(columnToAddToWhereClause)) {
-                query.append(column).append(" = ?");
-                if (it.hasNext()) {
-                    query.append(", ");
-                }
-            }
-        }
-
-        // Add additional condition to the update if specified
-        if (columnToAddToWhereClause != null) {
-            query.append(", ").append(columnToAddToWhereClause).append(" = ?");
-        }
-
-        return query.toString();
-    }
-
     public static String buildUpdateInjectionSvQuery(String tableName) {
         return "update " +
                 tableName +

@@ -146,6 +146,7 @@ public class NetworkStoreController {
                                              @Parameter(description = "Target variant number", required = true) @PathVariable("targetVariantNum") int targetVariantNum,
                                              @Parameter(description = "Target variant id", required = true) @RequestParam(required = false) String targetVariantId,
                                              @Parameter(description = "Variant mode", required = true) @RequestParam(required = false) String variantMode) {
+        //TODO: not sure about the default?
         repository.cloneNetworkVariant(networkId, sourceVariantNum, targetVariantNum, targetVariantId, variantMode != null ? VariantMode.valueOf(variantMode) : VariantMode.PARTIAL);
         return ResponseEntity.ok().build();
     }
@@ -172,6 +173,7 @@ public class NetworkStoreController {
                                              @Parameter(description = "Target variant Id", required = true) @PathVariable("targetVariantId") String targetVariantId,
                                              @Parameter(description = "mayOverwrite", required = false) @RequestParam(required = false) boolean mayOverwrite,
                                              @Parameter(description = "Variant mode", required = true) @RequestParam(required = false) String variantMode) {
+        //TODO: not sure about the default, do we even need variant mode in this case ?
         repository.cloneNetwork(networkId, sourceVariantId, targetVariantId, mayOverwrite, variantMode != null ? VariantMode.valueOf(variantMode) : VariantMode.PARTIAL);
         return ResponseEntity.ok().build();
     }

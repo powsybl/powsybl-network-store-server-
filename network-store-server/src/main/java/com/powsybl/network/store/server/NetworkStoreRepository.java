@@ -226,7 +226,7 @@ public class NetworkStoreRepository {
             for (List<Resource<NetworkAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                 for (Resource<NetworkAttributes> resource : subResources) {
                     NetworkAttributes attributes = resource.getAttributes();
-                    attributes.setVariantMode(VariantMode.FULL); //Temp
+//                    attributes.setVariantMode(VariantMode.FULL); //Temp
                     values.clear();
                     values.add(resource.getVariantNum());
                     values.add(resource.getId());
@@ -405,18 +405,17 @@ public class NetworkStoreRepository {
 
         executeWithoutAutoCommit(connection -> {
             for (VariantInfos variantInfos : variantsInfoList) {
-                Resource<NetworkAttributes> sourceNetworkResource = getNetwork(sourceNetworkUuid, variantInfos.getNum()).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + sourceNetworkUuid + ", variantId : " + variantInfos.getId()));
-                sourceNetworkResource.getAttributes().setUuid(targetNetworkUuid);
-                sourceNetworkResource.setVariantNum(VariantUtils.findFistAvailableVariantNum(newNetworkVariants));
-                sourceNetworkResource.getAttributes().setExtensionAttributes(Collections.emptyMap());
-                sourceNetworkResource.setVariantNum(VariantUtils.findFistAvailableVariantNum(newNetworkVariants));
+                Resource<NetworkAttributes> sourceNetworkAttribute = getNetwork(sourceNetworkUuid, variantInfos.getNum()).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + sourceNetworkUuid + ", variantId : " + variantInfos.getId()));
+                sourceNetworkAttribute.getAttributes().setUuid(targetNetworkUuid);
+                sourceNetworkAttribute.getAttributes().setExtensionAttributes(Collections.emptyMap());
+                sourceNetworkAttribute.setVariantNum(VariantUtils.findFistAvailableVariantNum(newNetworkVariants));
 
-                newNetworkVariants.add(new VariantInfos(sourceNetworkResource.getAttributes().getVariantId(), sourceNetworkResource.getVariantNum(),
-                                                        sourceNetworkResource.getAttributes().getVariantMode(), sourceNetworkResource.getAttributes().getSrcVariantNum()));
-                variantsNotFound.remove(sourceNetworkResource.getAttributes().getVariantId());
+                newNetworkVariants.add(new VariantInfos(sourceNetworkAttribute.getAttributes().getVariantId(), sourceNetworkAttribute.getVariantNum(),
+                                                        sourceNetworkAttribute.getAttributes().getVariantMode(), sourceNetworkAttribute.getAttributes().getSrcVariantNum()));
+                variantsNotFound.remove(sourceNetworkAttribute.getAttributes().getVariantId());
 
-                createNetworks(connection, List.of(sourceNetworkResource));
-                cloneNetworkElements(connection, sourceNetworkUuid, targetNetworkUuid, sourceNetworkResource.getVariantNum(), variantInfos.getNum());
+                createNetworks(connection, List.of(sourceNetworkAttribute));
+                cloneNetworkElements(connection, sourceNetworkUuid, targetNetworkUuid, sourceNetworkAttribute.getVariantNum(), variantInfos.getNum());
             }
         });
 
@@ -433,19 +432,23 @@ public class NetworkStoreRepository {
 
         try (var connection = dataSource.getConnection()) {
             Resource<NetworkAttributes> srcNetwork = getNetwork(uuid, sourceVariantNum).orElseThrow();
-            VariantMode srcVariantMode = srcNetwork.getAttributes().getVariantMode();
-            int srcVariantNum = srcVariantMode == VariantMode.FULL ? sourceVariantNum : srcNetwork.getAttributes().getSrcVariantNum();
+            boolean cloneVariant = variantMode == VariantMode.FULL || variantMode == VariantMode.PARTIAL && srcNetwork.getAttributes().getSrcVariantNum() != -1;
+            int srcVariantNum = -1;
+            if (variantMode == VariantMode.PARTIAL) {
+                srcVariantNum = srcNetwork.getAttributes().getSrcVariantNum() != -1
+                        ? srcNetwork.getAttributes().getSrcVariantNum()
+                        : sourceVariantNum;
+            }
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
                 preparedStmt.setString(3, mapper.writeValueAsString(variantMode));
-                preparedStmt.setInt(4, srcVariantNum); // this is the num of the root network for readings
+                preparedStmt.setInt(4, srcVariantNum); // this is the num of the root network for readings if -1 it's a full variant clone otherwise it's a partial
                 preparedStmt.setObject(5, uuid);
                 preparedStmt.setInt(6, sourceVariantNum);
                 preparedStmt.execute();
             }
-            // copy resources only if source variant is partial
-            if (srcVariantMode == VariantMode.PARTIAL || variantMode == VariantMode.FULL) { // if full clone or if src is partial we could !VariantMode.PARTIAL ?
+            if (cloneVariant) {
                 cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum);
             }
         } catch (SQLException e) {
@@ -590,9 +593,9 @@ public class NetworkStoreRepository {
     private <T extends IdentifiableAttributes> Optional<Resource<T>> getIdentifiable(UUID networkUuid, int variantNum, String equipmentId,
                                                                                      TableMapping tableMapping) {
         Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        VariantMode variantMode = network.getAttributes().getVariantMode();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
-        return (variantMode == VariantMode.PARTIAL)
+        return (srcVariantNum != -1)
                 ? retrieveFromPartialVariant(network, networkUuid, variantNum, equipmentId, tableMapping)
                 : getIdentifiableForVariant(networkUuid, variantNum, equipmentId, tableMapping);
     }
@@ -769,14 +772,12 @@ public class NetworkStoreRepository {
                                                                                              Set<String> containerColumns,
                                                                                              TableMapping tableMapping) {
         Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        VariantMode variantMode = network.getAttributes().getVariantMode();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         List<Resource<T>> identifiables;
 
-        if (variantMode == VariantMode.PARTIAL) {
+        if (srcVariantNum != -1) {
             // Retrieve identifiables from the (full) variant first
-            int srcVariantNum = network.getAttributes().getSrcVariantNum();
-//            List<Resource<T>> identifiables = getIdentifiables(networkUuid, srcVariantNum, tableMapping); to go back to the parent (previous implem)
             identifiables = getIdentifiablesInContainerForVariant(networkUuid, srcVariantNum, containerId, containerColumns, tableMapping);
 
             // Retrieve updated identifiables in partial
@@ -967,7 +968,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateSubstations(UUID networkUuid, List<Resource<SubstationAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getSubstationMappings());
+        update4PartialVariants(networkUuid, resources, SUBSTATION_TABLE, mappings.getSubstationMappings());
     }
 
     public void deleteSubstation(UUID networkUuid, int variantNum, String substationId) {
@@ -1041,11 +1042,8 @@ public class NetworkStoreRepository {
     }
 
     public List<Resource<GeneratorAttributes>> getGenerators(UUID networkUuid, int variantNum) {
-        // get variant mode
-        // get src variant num if partial
-        // get src variant num equipments
-        // override any src variant num equipments by the one in this variant num
         List<Resource<GeneratorAttributes>> generators = getIdentifiables(networkUuid, variantNum, mappings.getGeneratorMappings());
+
         //  reactive capability curves
         Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.GENERATOR.toString());
         insertReactiveCapabilityCurvePointsInEquipments(networkUuid, generators, reactiveCapabilityCurvePoints);
@@ -1058,13 +1056,12 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiables(UUID networkUuid, int variantNum, TableMapping tableMapping) {
         Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        VariantMode variantMode = network.getAttributes().getVariantMode();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         List<Resource<T>> identifiables;
 
-        if (variantMode == VariantMode.PARTIAL) {
+        if (srcVariantNum != -1) {
             // Retrieve identifiables from the (full) variant first
-            int srcVariantNum = network.getAttributes().getSrcVariantNum();
 //            List<Resource<T>> identifiables = getIdentifiables(networkUuid, srcVariantNum, tableMapping); to go back to the parent (previous implem)
             identifiables = getIdentifiablesForVariant(networkUuid, srcVariantNum, tableMapping);
 
@@ -1128,7 +1125,6 @@ public class NetworkStoreRepository {
     }
 
     public void updateGenerators(UUID networkUuid, List<Resource<GeneratorAttributes>> resources) {
-        // Delete + create
         update4PartialVariants(networkUuid, resources, GENERATOR_TABLE, mappings.getGeneratorMappings());
 
         // To update the generator's reactive capability curve points, we will first delete them, then create them again.
@@ -1143,6 +1139,7 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> void update4PartialVariants(UUID networkUuid, List<Resource<T>> resources, String table, TableMapping tableMapping) {
+        //TODO: for now we delete then create, do it better
         resources.stream().forEach(r -> deleteIdentifiable(networkUuid, r.getVariantNum(), r.getId(), table, true));
         createIdentifiables(networkUuid, resources, tableMapping);
     }
@@ -1572,7 +1569,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateTwoWindingsTransformers(UUID networkUuid, List<Resource<TwoWindingsTransformerAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getTwoWindingsTransformerMappings());
+        update4PartialVariants(networkUuid, resources, TWO_WINDINGS_TRANSFORMER_TABLE, mappings.getTwoWindingsTransformerMappings());
 
         // To update the twowindingstransformer's temporary limits, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
@@ -1643,7 +1640,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateThreeWindingsTransformers(UUID networkUuid, List<Resource<ThreeWindingsTransformerAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getThreeWindingsTransformerMappings());
+        update4PartialVariants(networkUuid, resources, THREE_WINDINGS_TRANSFORMER_TABLE, mappings.getThreeWindingsTransformerMappings());
 
         // To update the threewindingstransformer's temporary limits, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
@@ -1731,7 +1728,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateLines(UUID networkUuid, List<Resource<LineAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getLineMappings());
+        update4PartialVariants(networkUuid, resources, LINE_TABLE, mappings.getLineMappings());
 
         // To update the line's temporary limits, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
@@ -1768,7 +1765,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateHvdcLines(UUID networkUuid, List<Resource<HvdcLineAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getHvdcLineMappings());
+        update4PartialVariants(networkUuid, resources, HVDC_LINE_TABLE, mappings.getHvdcLineMappings());
     }
 
     public void deleteHvdcLine(UUID networkUuid, int variantNum, String hvdcLineId) {
@@ -1880,7 +1877,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateTieLines(UUID networkUuid, List<Resource<TieLineAttributes>> resources) {
-        updateIdentifiables(networkUuid, resources, mappings.getTieLineMappings());
+        update4PartialVariants(networkUuid, resources, TIE_LINE_TABLE, mappings.getTieLineMappings());
     }
 
     // configured buses
@@ -1932,9 +1929,9 @@ public class NetworkStoreRepository {
 
     public Optional<Resource<IdentifiableAttributes>> getIdentifiable(UUID networkUuid, int variantNum, String id) {
         Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        VariantMode variantMode = network.getAttributes().getVariantMode();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
-        return (variantMode == VariantMode.PARTIAL)
+        return (srcVariantNum != -1)
                 ? retrieveFromPartialVariant(network, networkUuid, variantNum, id)
                 : getIdentifiableForVariant(networkUuid, variantNum, id);
     }
