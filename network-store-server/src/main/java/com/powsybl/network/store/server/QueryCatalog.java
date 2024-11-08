@@ -714,4 +714,23 @@ public final class QueryCatalog {
     public static String buildDeleteTombstonedEquipmentsQuery() {
         return "delete from tombstoned WHERE networkuuid = ? AND variantnum = ? AND equipmentId = ?";
     }
+
+    // Tap Changer Steps
+    public static String buildCloneTombstonedQuery() {
+        return "insert into tombstoned (" +
+                NETWORK_UUID_COLUMN + ", " +
+                VARIANT_NUM_COLUMN + ", " +
+                //TODO: equipmenttype is not really an equipment type, it's the table name...
+                EQUIPMENT_TYPE_COLUMN + ", " +
+                EQUIPMENT_ID_COLUMN + ") " +
+                "select " +
+                "?" + "," +
+                "?" + "," +
+                EQUIPMENT_TYPE_COLUMN + ", " +
+                EQUIPMENT_ID_COLUMN +
+                " from tombstoned " +
+                "where " +
+                NETWORK_UUID_COLUMN + " = ?" + " and " +
+                VARIANT_NUM_COLUMN + " = ? ";
+    }
 }

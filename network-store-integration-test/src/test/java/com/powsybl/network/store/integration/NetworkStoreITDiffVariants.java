@@ -280,6 +280,76 @@ class NetworkStoreITDiffVariants {
         }
     }
 
+    @Test
+    void testPartialVariantDeleteIdentifiable1() {
+        // import network on initial variant
+        UUID networkUuid;
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
+            networkUuid = service.getNetworkUuid(network);
+            assertEquals(2, network.getGeneratorCount());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+            service.setVariantMode(network, VariantMode.PARTIAL);
+
+            // clone initial to variant "v"
+            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(2, network.getGeneratorCount());
+            assertEquals(4, network.getVoltageLevelCount()); // force collection loading because not yet implemented not collection get
+
+            network.getGenerator("GEN").remove();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            // Initial variant id
+            network.getVariantManager().setWorkingVariant(INITIAL_VARIANT_ID);
+            assertEquals(2, network.getGeneratorCount());
+
+            // first variant
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(1, network.getGeneratorCount());
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+            service.setVariantMode(network, VariantMode.PARTIAL);
+
+            // clone initial to variant "v"
+            network.getVariantManager().cloneVariant("v", "v1");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            // Initial variant id
+            network.getVariantManager().setWorkingVariant(INITIAL_VARIANT_ID);
+            assertEquals(2, network.getGeneratorCount());
+
+            // first variant
+            network.getVariantManager().setWorkingVariant("v");
+            assertEquals(1, network.getGeneratorCount());
+
+            network.getVariantManager().setWorkingVariant("v1");
+            assertEquals(1, network.getGeneratorCount());
+        }
+    }
+
+
     // next test is to recreate the identifiable that was deleted and delete again
     @Test
     void testPartialVariantDeleteAndCreateAndDeleteAgainIdentifiable() {
