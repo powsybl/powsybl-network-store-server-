@@ -226,7 +226,6 @@ public class NetworkStoreRepository {
             for (List<Resource<NetworkAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                 for (Resource<NetworkAttributes> resource : subResources) {
                     NetworkAttributes attributes = resource.getAttributes();
-//                    attributes.setVariantMode(VariantMode.FULL); //Temp
                     values.clear();
                     values.add(resource.getVariantNum());
                     values.add(resource.getId());
@@ -415,7 +414,7 @@ public class NetworkStoreRepository {
                 variantsNotFound.remove(sourceNetworkAttribute.getAttributes().getVariantId());
 
                 createNetworks(connection, List.of(sourceNetworkAttribute));
-                cloneNetworkElements(connection, sourceNetworkUuid, targetNetworkUuid, sourceNetworkAttribute.getVariantNum(), variantInfos.getNum());
+                cloneNetworkElements(connection, sourceNetworkUuid, targetNetworkUuid, sourceNetworkAttribute.getVariantNum(), variantInfos.getNum(), true);
             }
         });
 
@@ -448,9 +447,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(6, sourceVariantNum);
                 preparedStmt.execute();
             }
-            if (cloneVariant) {
-                cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum);
-            }
+            cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum, cloneVariant);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         } catch (IOException e) {
@@ -461,16 +458,20 @@ public class NetworkStoreRepository {
         LOGGER.info("Network variant clone done in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    public void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum) throws SQLException {
-        for (String tableName : ELEMENT_TABLES) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneIdentifiablesQuery(tableName, mappings.getTableMapping(tableName.toLowerCase()).getColumnsMapping().keySet()))) {
-                preparedStmt.setInt(1, targetVariantNum);
-                preparedStmt.setObject(2, targetUuid);
-                preparedStmt.setObject(3, uuid);
-                preparedStmt.setInt(4, sourceVariantNum);
-                preparedStmt.execute();
+    public void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum, boolean isFullClone) throws SQLException {
+        if (isFullClone) {
+            for (String tableName : ELEMENT_TABLES) {
+                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneIdentifiablesQuery(tableName, mappings.getTableMapping(tableName.toLowerCase()).getColumnsMapping().keySet()))) {
+                    preparedStmt.setInt(1, targetVariantNum);
+                    preparedStmt.setObject(2, targetUuid);
+                    preparedStmt.setObject(3, uuid);
+                    preparedStmt.setInt(4, sourceVariantNum);
+                    preparedStmt.execute();
+                }
             }
         }
+
+        // For the moment we always copy the extra info => should be migrated to new way with partial variants
         // Copy of the temporary limits (which are not Identifiables objects)
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTemporaryLimitsQuery())) {
             preparedStmt.setString(1, targetUuid.toString());
@@ -527,6 +528,7 @@ public class NetworkStoreRepository {
 
         // Copy of the tombstoned equipements (which are not Identifiables objects)
         //TODO: add a test
+        //TODO: Do not copy tombstoned if it's a full clone because the data will be stored in full network
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTombstonedQuery())) {
             preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
