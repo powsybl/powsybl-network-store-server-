@@ -30,6 +30,7 @@ import com.powsybl.network.store.server.NetworkStoreApplication;
 import com.powsybl.ucte.converter.UcteImporter;
 import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -69,14 +70,19 @@ class NetworkStoreIT {
 
     @LocalServerPort
     private int randomServerPort;
+    private static Properties properties;
+
+    @BeforeAll
+    static void setUp() {
+        properties = new Properties();
+        properties.setProperty("ucte.import.create-areas", "false");
+    }
 
     @Test
     void test() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             assertTrue(service.getNetworkIds().isEmpty());
-            Properties properties = new Properties();
-            properties.setProperty("ucte.import.create-areas", "false");
             Network network = service.importNetwork(new ResourceDataSource("test", new ResourceSet("/", "test.xiidm")),
                 ReportNode.NO_OP, properties, true);
             service.flush(network);
@@ -1542,8 +1548,6 @@ class NetworkStoreIT {
     void internalConnectionsFromCgmesTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-            Properties properties = new Properties();
-            properties.setProperty("ucte.import.create-areas", "false");
             Network network = service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource(), ReportNode.NO_OP, properties, true);
             service.flush(network);
         }
@@ -1580,8 +1584,6 @@ class NetworkStoreIT {
     void aliasesTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-            Properties properties = new Properties();
-            properties.setProperty("ucte.import.create-areas", "false");
             service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource(), ReportNode.NO_OP, properties, true);
         }
 
@@ -2604,9 +2606,6 @@ class NetworkStoreIT {
     void testConfiguredBus() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-
-            Properties properties = new Properties();
-            properties.setProperty("ucte.import.create-areas", "false");
             Network network = service.importNetwork(CgmesConformity1Catalog.smallBusBranch().dataSource(), ReportNode.NO_OP, properties, true);
 
             Set<String> visitedConnectables = new HashSet<>();
@@ -2793,8 +2792,6 @@ class NetworkStoreIT {
             FilenameUtils.getBaseName(filePath),
             new ResourceSet(FilenameUtils.getPath(filePath),
                 FilenameUtils.getName(filePath)));
-        Properties properties = new Properties();
-        properties.setProperty("ucte.import.create-areas", "false");
         return new UcteImporter().importData(dataSource, networkFactory, properties);
     }
 
@@ -3275,8 +3272,6 @@ class NetworkStoreIT {
     void testVisit2WTConnectedInOneVLOnlyIssue() {
         String filePath = "/BrranchConnectedInOneVLOnlyIssue.uct";
         ReadOnlyDataSource dataSource = getResource(filePath, filePath);
-        Properties properties = new Properties();
-        properties.setProperty("ucte.import.create-areas", "false");
         Network network = new UcteImporter().importData(dataSource, new NetworkFactoryImpl(), properties);
         Set<TwoSides> visitedLineSides = new HashSet<>();
         Set<TwoSides> visited2WTSides = new HashSet<>();
@@ -3547,8 +3542,6 @@ class NetworkStoreIT {
             // There are validationWarnings and xiidmImportDone by default with SerDe
             assertFalse(report.getChildren().isEmpty());
 
-            Properties properties = new Properties();
-            properties.setProperty("ucte.import.create-areas", "false");
             service.importNetwork(getResource("uctNetwork.uct", "/"), report, properties, true);
             assertFalse(report.getChildren().isEmpty());
         }
