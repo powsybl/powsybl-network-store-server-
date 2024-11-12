@@ -120,11 +120,6 @@ public final class QueryCatalog {
                 " and " + ID_COLUMN + " = ?";
     }
 
-    public static String buildAddTombstonedIdentifiableQuery() {
-        return "insert into tombstoned (" + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " + EQUIPMENT_ID_COLUMN + ") " +
-                "values (?, ?, ?, ?)";
-    }
-
     public static String buildDeleteNetworkQuery() {
         return "delete from " + NETWORK_TABLE + " where " + UUID_COLUMN + " = ?";
     }
@@ -720,6 +715,11 @@ public final class QueryCatalog {
                 VARIANT_NUM_COLUMN + " = ?";
     }
 
+    public static String buildAddTombstonedIdentifiableQuery() {
+        return "insert into tombstoned (" + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EQUIPMENT_ID_COLUMN + ") " +
+                "values (?, ?, ?)";
+    }
+
     public static String buildGetTombstonedEquipmentsQuery() {
         return "select " + EQUIPMENT_ID_COLUMN + " FROM tombstoned WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
     }
@@ -733,13 +733,10 @@ public final class QueryCatalog {
         return "insert into tombstoned (" +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", " +
-                //TODO: equipmenttype is not really an equipment type, it's the table name...
-                EQUIPMENT_TYPE_COLUMN + ", " +
                 EQUIPMENT_ID_COLUMN + ") " +
                 "select " +
                 "?" + "," +
                 "?" + "," +
-                EQUIPMENT_TYPE_COLUMN + ", " +
                 EQUIPMENT_ID_COLUMN +
                 " from tombstoned " +
                 "where " +

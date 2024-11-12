@@ -471,6 +471,24 @@ public class NetworkStoreRepository {
                     preparedStmt.execute();
                 }
             }
+
+            // Copy of the temporary limits (which are not Identifiables objects)
+//            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTemporaryLimitsQuery())) {
+//                preparedStmt.setString(1, targetUuid.toString());
+//                preparedStmt.setInt(2, targetVariantNum);
+//                preparedStmt.setString(3, uuid.toString());
+//                preparedStmt.setInt(4, sourceVariantNum);
+//                preparedStmt.execute();
+//            }
+//
+//            // Copy of the permanent limits (which are not Identifiables objects)
+//            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildClonePermanentLimitsQuery())) {
+//                preparedStmt.setString(1, targetUuid.toString());
+//                preparedStmt.setInt(2, targetVariantNum);
+//                preparedStmt.setString(3, uuid.toString());
+//                preparedStmt.setInt(4, sourceVariantNum);
+//                preparedStmt.execute();
+//            }
         }
 
         // For the moment we always copy the extra info => should be migrated to new way with partial variants
@@ -1095,8 +1113,7 @@ public class NetworkStoreRepository {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildAddTombstonedIdentifiableQuery())) {
                 preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
-                preparedStmt.setObject(3, tableName);
-                preparedStmt.setString(4, id);
+                preparedStmt.setString(3, id);
                 preparedStmt.executeUpdate();
             }
         } catch (SQLException e) {
