@@ -79,6 +79,19 @@ public final class QueryCatalog {
                 " and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
+    public static String buildGetIdentifiablesInVariantExcludingOtherVariantQuery(String tableName, Collection<String> columns) {
+        return "select " + ID_COLUMN + ", " +
+                String.join(", ", columns) +
+                " from " + tableName + " outerTable" +
+                " where outerTable." + NETWORK_UUID_COLUMN + " = ?" +
+                " and outerTable." + VARIANT_NUM_COLUMN + " = ?" +
+                " and not exists (" +
+                "select 1 from " + tableName + " innerTable" +
+                " where innerTable." + NETWORK_UUID_COLUMN + " = ?" +
+                " and innerTable." + VARIANT_NUM_COLUMN + " = ?" +
+                " and innerTable." + ID_COLUMN + " = outerTable." + ID_COLUMN + ")";
+    }
+
     public static String buildGetIdentifiablesInContainerQuery(String tableName, Collection<String> columns, Set<String> containerColumns) {
         StringBuilder sql = new StringBuilder()
                 .append("select ").append(ID_COLUMN).append(", ")
@@ -708,11 +721,11 @@ public final class QueryCatalog {
     }
 
     public static String buildGetTombstonedEquipmentsQuery() {
-        return "select equipmentid FROM tombstoned WHERE networkuuid = ? AND variantnum = ?";
+        return "select " + EQUIPMENT_ID_COLUMN + " FROM tombstoned WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
     }
 
     public static String buildDeleteTombstonedEquipmentsQuery() {
-        return "delete from tombstoned WHERE networkuuid = ? AND variantnum = ? AND equipmentId = ?";
+        return "delete from tombstoned WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ? AND " + EQUIPMENT_ID_COLUMN + " = ?";
     }
 
     // Tap Changer Steps

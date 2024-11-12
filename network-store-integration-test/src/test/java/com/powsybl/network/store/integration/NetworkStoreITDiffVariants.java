@@ -6,8 +6,7 @@
  */
 package com.powsybl.network.store.integration;
 
-import com.powsybl.iidm.network.Generator;
-import com.powsybl.iidm.network.Network;
+import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.network.store.model.VariantMode;
@@ -603,4 +602,178 @@ class NetworkStoreITDiffVariants {
     }
 
     // add a getVoltagLevelResource test
+
+    // Add a test => clone full => clone partial => clone full => get on this one
+    @Test
+    void testVariantsModifyOnceUpdateInjectionSv() {
+        // import network on initial variant
+        UUID networkUuid;
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
+            networkUuid = service.getNetworkUuid(network);
+            assertEquals(2, network.getGeneratorCount());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+
+            // clone initial variant to variant "v"
+            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            Terminal loadTerminal = network.getLoad("LOAD").getTerminal();
+            loadTerminal.setQ(2);
+            loadTerminal.setP(3);
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            Terminal loadTerminal = network.getLoad("LOAD").getTerminal();
+            assertEquals(2, loadTerminal.getQ());
+            assertEquals(3, loadTerminal.getP());
+        }
+    }
+
+    @Test
+    void testVariantsModifyOnceUpdateInjectionSvWithModifInThisVariant() {
+        // import network on initial variant
+        UUID networkUuid;
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
+            networkUuid = service.getNetworkUuid(network);
+            assertEquals(2, network.getGeneratorCount());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+
+            // clone initial variant to variant "v"
+            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
+            network.getVariantManager().setWorkingVariant("v");
+            network.getLoad("LOAD").setP0(90);
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            Terminal loadTerminal = network.getLoad("LOAD").getTerminal();
+            loadTerminal.setQ(2);
+            loadTerminal.setP(3);
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            Terminal loadTerminal = network.getLoad("LOAD").getTerminal();
+            assertEquals(2, loadTerminal.getQ());
+            assertEquals(3, loadTerminal.getP());
+            assertEquals(90, network.getLoad("LOAD").getP0());
+
+        }
+    }
+
+    @Test
+    void testVariantsModifyOnceUpdateBranchSv() {
+        // import network on initial variant
+        UUID networkUuid;
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
+            networkUuid = service.getNetworkUuid(network);
+            assertEquals(2, network.getGeneratorCount());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+
+            // clone initial variant to variant "v"
+            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            Terminal loadTerminal1 = network.getLine("NHV1_NHV2_1").getTerminal1();
+            Terminal loadTerminal2 = network.getLine("NHV1_NHV2_1").getTerminal2();
+            loadTerminal1.setQ(2);
+            loadTerminal1.setP(3);
+            loadTerminal2.setQ(4);
+            loadTerminal2.setP(5);
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            Terminal loadTerminal = network.getLine("NHV1_NHV2_1").getTerminal1();
+            Terminal loadTerminal2 = network.getLine("NHV1_NHV2_1").getTerminal2();
+            assertEquals(2, loadTerminal.getQ());
+            assertEquals(3, loadTerminal.getP());
+            assertEquals(4, loadTerminal2.getQ());
+            assertEquals(5, loadTerminal2.getP());
+        }
+    }
+
+    @Test
+    void testVariantsModifyOnceUpdateVoltageLevelSv() {
+        // import network on initial variant
+        UUID networkUuid;
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.createWithMoreGenerators(service.getNetworkFactory());
+            networkUuid = service.getNetworkUuid(network);
+            assertEquals(2, network.getGeneratorCount());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            assertNotNull(network);
+
+            // clone initial variant to variant "v"
+            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v");
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            network.getVoltageLevel("VLGEN").getBusView().getBuses();
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            VoltageLevel vlgen = network.getVoltageLevel("VLGEN");
+            for (Bus b : vlgen.getBusView().getBuses()) {
+                b.setV(399).setAngle(4);
+            }
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = service.getNetwork(networkUuid);
+            network.getVariantManager().setWorkingVariant("v");
+            VoltageLevel vlgen = network.getVoltageLevel("VLGEN");
+            for (Bus b : vlgen.getBusView().getBuses()) {
+                assertEquals(399, b.getV());
+                assertEquals(4, b.getAngle());
+            }
+        }
+    }
+
 }
