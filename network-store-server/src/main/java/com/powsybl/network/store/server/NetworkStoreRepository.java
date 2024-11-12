@@ -2222,23 +2222,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    private <T extends IdentifiableAttributes> void deleteRegulatingPoints(UUID networkUuid, List<Resource<T>> resources, ResourceType type) {
-        Map<Integer, List<String>> resourceIdsByVariant = new HashMap<>();
-        for (Resource<T> resource : resources) {
-            List<String> resourceIds = resourceIdsByVariant.get(resource.getVariantNum());
-            if (resourceIds != null) {
-                resourceIds.add(resource.getId());
-            } else {
-                resourceIds = new ArrayList<>();
-                resourceIds.add(resource.getId());
-            }
-            resourceIdsByVariant.put(resource.getVariantNum(), resourceIds);
-        }
-        resourceIdsByVariant.forEach((k, v) -> deleteRegulatingPoints(networkUuid, k, v, type));
-    }
-
     // Reactive Capability Curve Points
-
     public void insertReactiveCapabilityCurvePoints(Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertReactiveCapabilityCurvePointsQuery())) {
@@ -2482,8 +2466,8 @@ public class NetworkStoreRepository {
     private <T extends IdentifiableAttributes> void insertRegulatingEquipmentsInto(UUID networkUuid, int variantNum,
                                                                                    String equipmentId, Resource<T> resource,
                                                                                    ResourceType type) {
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsForOneEquipmentQuery());
+        try (var connection = dataSource.getConnection();
+             PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsForOneEquipmentQuery())) {
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
