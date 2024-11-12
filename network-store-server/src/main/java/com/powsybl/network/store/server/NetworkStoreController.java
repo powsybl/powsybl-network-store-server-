@@ -1440,6 +1440,7 @@ public class NetworkStoreController {
     })
     public List<String> getIdentifiablesIds(@Parameter(description = "Network ID", required = true) @PathVariable("networkUuid") UUID networkUuid,
                                             @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum) {
+        //TODO: this does not work with partial variants
         return repository.getIdentifiablesIds(networkUuid, variantNum);
     }
 

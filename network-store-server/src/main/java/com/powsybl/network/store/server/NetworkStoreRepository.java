@@ -473,43 +473,25 @@ public class NetworkStoreRepository {
             }
 
             // Copy of the temporary limits (which are not Identifiables objects)
-//            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTemporaryLimitsQuery())) {
-//                preparedStmt.setString(1, targetUuid.toString());
-//                preparedStmt.setInt(2, targetVariantNum);
-//                preparedStmt.setString(3, uuid.toString());
-//                preparedStmt.setInt(4, sourceVariantNum);
-//                preparedStmt.execute();
-//            }
-//
-//            // Copy of the permanent limits (which are not Identifiables objects)
-//            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildClonePermanentLimitsQuery())) {
-//                preparedStmt.setString(1, targetUuid.toString());
-//                preparedStmt.setInt(2, targetVariantNum);
-//                preparedStmt.setString(3, uuid.toString());
-//                preparedStmt.setInt(4, sourceVariantNum);
-//                preparedStmt.execute();
-//            }
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTemporaryLimitsQuery())) {
+                preparedStmt.setString(1, targetUuid.toString());
+                preparedStmt.setInt(2, targetVariantNum);
+                preparedStmt.setString(3, uuid.toString());
+                preparedStmt.setInt(4, sourceVariantNum);
+                preparedStmt.execute();
+            }
+
+            // Copy of the permanent limits (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildClonePermanentLimitsQuery())) {
+                preparedStmt.setString(1, targetUuid.toString());
+                preparedStmt.setInt(2, targetVariantNum);
+                preparedStmt.setString(3, uuid.toString());
+                preparedStmt.setInt(4, sourceVariantNum);
+                preparedStmt.execute();
+            }
         }
 
         // For the moment we always copy the extra info => should be migrated to new way with partial variants
-        // Copy of the temporary limits (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTemporaryLimitsQuery())) {
-            preparedStmt.setString(1, targetUuid.toString());
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setString(3, uuid.toString());
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
-        // Copy of the permanent limits (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildClonePermanentLimitsQuery())) {
-            preparedStmt.setString(1, targetUuid.toString());
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setString(3, uuid.toString());
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
         // Copy of the reactive capability curve points (which are not Identifiables objects)
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneReactiveCapabilityCurvePointsQuery())) {
             preparedStmt.setString(1, targetUuid.toString());
@@ -1245,6 +1227,8 @@ public class NetworkStoreRepository {
                     .map(Resource::getId)
                     .collect(Collectors.toSet());
             // Remove any resources that have been updated in the current variant
+            //TODO: both removeIf can be done in one loop (also in other methods)
+            //TODO: maybe this should be a set to optim lookups...
             identifiables.removeIf(resource -> updatedIds.contains(resource.getId()));
             // Remove tombstoned resources in the current variant
             List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
@@ -2164,6 +2148,37 @@ public class NetworkStoreRepository {
 
     // Temporary Limits
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits;
+
+        if (srcVariantNum != -1) {
+            // Retrieve temporaryLimits from the (full) variant first
+            temporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause);
+
+            // Retrieve updated temporaryLimits in partial
+            Map<OwnerInfo, List<TemporaryLimitAttributes>> updatedTemporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+            Set<String> updatedIds = updatedTemporaryLimits.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            temporaryLimits.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            temporaryLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated temporaryLimits
+            temporaryLimits.putAll(updatedTemporaryLimits);
+            // Set the variantNum of all resources to the current variant
+            temporaryLimits.forEach((ownerInfo, temporaryLimitAttributes) -> ownerInfo.setVariantNum(variantNum));
+        } else {
+            // If the variant is FULL, retrieve temporaryLimits for the specified variant directly
+            temporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+        }
+        return temporaryLimits;
+    }
+
+    private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -2182,6 +2197,37 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits;
+
+        if (srcVariantNum != -1) {
+            // Retrieve permanentLimits from the (full) variant first
+            permanentLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause);
+
+            // Retrieve updated permanentLimits in partial
+            Map<OwnerInfo, List<PermanentLimitAttributes>> updatedTemporaryLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+            Set<String> updatedIds = updatedTemporaryLimits.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            permanentLimits.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            permanentLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated permanentLimits
+            permanentLimits.putAll(updatedTemporaryLimits);
+            // Set the variantNum of all resources to the current variant
+            permanentLimits.forEach((ownerInfo, temporaryLimitAttributes) -> ownerInfo.setVariantNum(variantNum));
+        } else {
+            // If the variant is FULL, retrieve permanentLimits for the specified variant directly
+            permanentLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+        }
+        return permanentLimits;
+    }
+
+    private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -2226,6 +2272,37 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits;
+
+        if (srcVariantNum != -1) {
+            // Retrieve temporaryLimits from the (full) variant first
+            temporaryLimits = getTemporaryLimitsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause);
+
+            // Retrieve updated temporaryLimits in partial
+            Map<OwnerInfo, List<TemporaryLimitAttributes>> updateTemporaryLimits = getTemporaryLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+            Set<String> updatedIds = updateTemporaryLimits.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            temporaryLimits.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            temporaryLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated temporaryLimits
+            temporaryLimits.putAll(updateTemporaryLimits);
+            // Set the variantNum of all resources to the current variant
+            temporaryLimits.forEach((ownerInfo, temporaryLimitAttributes) -> ownerInfo.setVariantNum(variantNum));
+        } else {
+            // If the variant is FULL, retrieve temporaryLimits for the specified variant directly
+            temporaryLimits = getTemporaryLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+        }
+        return temporaryLimits;
+    }
+
+    private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildTemporaryLimitQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid.toString());
@@ -2239,6 +2316,37 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits;
+
+        if (srcVariantNum != -1) {
+            // Retrieve permanentLimits from the (full) variant first
+            permanentLimits = getPermanentLimitsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause);
+
+            // Retrieve updated permanentLimits in partial
+            Map<OwnerInfo, List<PermanentLimitAttributes>> updatedPermanentLimits = getPermanentLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+            Set<String> updatedIds = updatedPermanentLimits.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            permanentLimits.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            permanentLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated permanentLimits
+            permanentLimits.putAll(updatedPermanentLimits);
+            // Set the variantNum of all resources to the current variant
+            permanentLimits.forEach((ownerInfo, permanentLimitAttributes) -> ownerInfo.setVariantNum(variantNum));
+        } else {
+            // If the variant is FULL, retrieve permanentLimits for the specified variant directly
+            permanentLimits = getPermanentLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+        }
+        return permanentLimits;
+    }
+
+    private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildPermanentLimitQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid.toString());
