@@ -1050,7 +1050,7 @@ class NetworkStoreRepositoryTest {
 
     @Test
     void testRegulatingPointForVSC() {
-        String vscId = "svc1";
+        String vscId = "vsc1";
         Resource<VscConverterStationAttributes> staticVarCompensator = Resource.vscConverterStationBuilder()
             .id(vscId)
             .attributes(VscConverterStationAttributes.builder()
