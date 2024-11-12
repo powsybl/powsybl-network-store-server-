@@ -489,19 +489,28 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(4, sourceVariantNum);
                 preparedStmt.execute();
             }
-        }
 
-        // For the moment we always copy the extra info => should be migrated to new way with partial variants
-        // Copy of the reactive capability curve points (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneReactiveCapabilityCurvePointsQuery())) {
-            preparedStmt.setString(1, targetUuid.toString());
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setString(3, uuid.toString());
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
+            // Copy of the reactive capability curve points (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneReactiveCapabilityCurvePointsQuery())) {
+                preparedStmt.setString(1, targetUuid.toString());
+                preparedStmt.setInt(2, targetVariantNum);
+                preparedStmt.setString(3, uuid.toString());
+                preparedStmt.setInt(4, sourceVariantNum);
+                preparedStmt.execute();
+            }
+
+            // Copy of the Tap Changer steps (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTapChangerStepQuery())) {
+                preparedStmt.setObject(1, targetUuid);
+                preparedStmt.setInt(2, targetVariantNum);
+                preparedStmt.setObject(3, uuid);
+                preparedStmt.setInt(4, sourceVariantNum);
+                preparedStmt.execute();
+            }
         }
 
         // Copy of the regulating points (which are not Identifiables objects)
+        //TODO when updated
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneRegulationPointsQuery())) {
             preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
@@ -510,16 +519,8 @@ public class NetworkStoreRepository {
             preparedStmt.execute();
         }
 
-        // Copy of the Tap Changer steps (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTapChangerStepQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
         // Copy of the Extensions (which are not Identifiables objects)
+        //TODO
         try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneExtensionsQuery())) {
             preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
@@ -2155,10 +2156,10 @@ public class NetworkStoreRepository {
 
         if (srcVariantNum != -1) {
             // Retrieve temporaryLimits from the (full) variant first
-            temporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause);
+            temporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, variantNum);
 
             // Retrieve updated temporaryLimits in partial
-            Map<OwnerInfo, List<TemporaryLimitAttributes>> updatedTemporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+            Map<OwnerInfo, List<TemporaryLimitAttributes>> updatedTemporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
             Set<String> updatedIds = updatedTemporaryLimits.keySet().stream()
                     .map(OwnerInfo::getEquipmentId)
                     .collect(Collectors.toSet());
@@ -2169,16 +2170,14 @@ public class NetworkStoreRepository {
             temporaryLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
             // Combine base and updated temporaryLimits
             temporaryLimits.putAll(updatedTemporaryLimits);
-            // Set the variantNum of all resources to the current variant
-            temporaryLimits.forEach((ownerInfo, temporaryLimitAttributes) -> ownerInfo.setVariantNum(variantNum));
         } else {
             // If the variant is FULL, retrieve temporaryLimits for the specified variant directly
-            temporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+            temporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
         }
         return temporaryLimits;
     }
 
-    private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+    private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, int targetVariantNum) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -2190,7 +2189,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setString(3 + i, valuesForInClause.get(i));
             }
 
-            return innerGetTemporaryLimits(preparedStmt);
+            return innerGetTemporaryLimits(preparedStmt, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -2204,10 +2203,10 @@ public class NetworkStoreRepository {
 
         if (srcVariantNum != -1) {
             // Retrieve permanentLimits from the (full) variant first
-            permanentLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause);
+            permanentLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, variantNum);
 
             // Retrieve updated permanentLimits in partial
-            Map<OwnerInfo, List<PermanentLimitAttributes>> updatedTemporaryLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+            Map<OwnerInfo, List<PermanentLimitAttributes>> updatedTemporaryLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
             Set<String> updatedIds = updatedTemporaryLimits.keySet().stream()
                     .map(OwnerInfo::getEquipmentId)
                     .collect(Collectors.toSet());
@@ -2218,16 +2217,14 @@ public class NetworkStoreRepository {
             permanentLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
             // Combine base and updated permanentLimits
             permanentLimits.putAll(updatedTemporaryLimits);
-            // Set the variantNum of all resources to the current variant
-            permanentLimits.forEach((ownerInfo, temporaryLimitAttributes) -> ownerInfo.setVariantNum(variantNum));
         } else {
             // If the variant is FULL, retrieve permanentLimits for the specified variant directly
-            permanentLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
+            permanentLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
         }
         return permanentLimits;
     }
 
-    private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+    private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, int targetVariantNum) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -2239,7 +2236,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setString(3 + i, valuesForInClause.get(i));
             }
 
-            return innerGetPermanentLimits(preparedStmt);
+            return innerGetPermanentLimits(preparedStmt, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -2279,10 +2276,10 @@ public class NetworkStoreRepository {
 
         if (srcVariantNum != -1) {
             // Retrieve temporaryLimits from the (full) variant first
-            temporaryLimits = getTemporaryLimitsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause);
+            temporaryLimits = getTemporaryLimitsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
 
             // Retrieve updated temporaryLimits in partial
-            Map<OwnerInfo, List<TemporaryLimitAttributes>> updateTemporaryLimits = getTemporaryLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+            Map<OwnerInfo, List<TemporaryLimitAttributes>> updateTemporaryLimits = getTemporaryLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
             Set<String> updatedIds = updateTemporaryLimits.keySet().stream()
                     .map(OwnerInfo::getEquipmentId)
                     .collect(Collectors.toSet());
@@ -2293,23 +2290,21 @@ public class NetworkStoreRepository {
             temporaryLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
             // Combine base and updated temporaryLimits
             temporaryLimits.putAll(updateTemporaryLimits);
-            // Set the variantNum of all resources to the current variant
-            temporaryLimits.forEach((ownerInfo, temporaryLimitAttributes) -> ownerInfo.setVariantNum(variantNum));
         } else {
             // If the variant is FULL, retrieve temporaryLimits for the specified variant directly
-            temporaryLimits = getTemporaryLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+            temporaryLimits = getTemporaryLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
         }
         return temporaryLimits;
     }
 
-    private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+    private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildTemporaryLimitQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
 
-            return innerGetTemporaryLimits(preparedStmt);
+            return innerGetTemporaryLimits(preparedStmt, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -2323,10 +2318,10 @@ public class NetworkStoreRepository {
 
         if (srcVariantNum != -1) {
             // Retrieve permanentLimits from the (full) variant first
-            permanentLimits = getPermanentLimitsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause);
+            permanentLimits = getPermanentLimitsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
 
             // Retrieve updated permanentLimits in partial
-            Map<OwnerInfo, List<PermanentLimitAttributes>> updatedPermanentLimits = getPermanentLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+            Map<OwnerInfo, List<PermanentLimitAttributes>> updatedPermanentLimits = getPermanentLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
             Set<String> updatedIds = updatedPermanentLimits.keySet().stream()
                     .map(OwnerInfo::getEquipmentId)
                     .collect(Collectors.toSet());
@@ -2337,29 +2332,27 @@ public class NetworkStoreRepository {
             permanentLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
             // Combine base and updated permanentLimits
             permanentLimits.putAll(updatedPermanentLimits);
-            // Set the variantNum of all resources to the current variant
-            permanentLimits.forEach((ownerInfo, permanentLimitAttributes) -> ownerInfo.setVariantNum(variantNum));
         } else {
             // If the variant is FULL, retrieve permanentLimits for the specified variant directly
-            permanentLimits = getPermanentLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
+            permanentLimits = getPermanentLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
         }
         return permanentLimits;
     }
 
-    private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+    private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildPermanentLimitQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
 
-            return innerGetPermanentLimits(preparedStmt);
+            return innerGetPermanentLimits(preparedStmt, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    private Map<OwnerInfo, List<TemporaryLimitAttributes>> innerGetTemporaryLimits(PreparedStatement preparedStmt) throws SQLException {
+    private Map<OwnerInfo, List<TemporaryLimitAttributes>> innerGetTemporaryLimits(PreparedStatement preparedStmt, int targetVariantNum) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, List<TemporaryLimitAttributes>> map = new HashMap<>();
             while (resultSet.next()) {
@@ -2371,7 +2364,7 @@ public class NetworkStoreRepository {
                 owner.setEquipmentId(resultSet.getString(1));
                 owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
                 owner.setNetworkUuid(UUID.fromString(resultSet.getString(3)));
-                owner.setVariantNum(resultSet.getInt(4));
+                owner.setVariantNum(targetVariantNum);
                 temporaryLimit.setOperationalLimitsGroupId(resultSet.getString(5));
                 temporaryLimit.setSide(resultSet.getInt(6));
                 temporaryLimit.setLimitType(LimitType.valueOf(resultSet.getString(7)));
@@ -2387,7 +2380,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    private Map<OwnerInfo, List<PermanentLimitAttributes>> innerGetPermanentLimits(PreparedStatement preparedStmt) throws SQLException {
+    private Map<OwnerInfo, List<PermanentLimitAttributes>> innerGetPermanentLimits(PreparedStatement preparedStmt, int targetVariantNum) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, List<PermanentLimitAttributes>> map = new HashMap<>();
             while (resultSet.next()) {
@@ -2399,7 +2392,7 @@ public class NetworkStoreRepository {
                 owner.setEquipmentId(resultSet.getString(1));
                 owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
                 owner.setNetworkUuid(UUID.fromString(resultSet.getString(3)));
-                owner.setVariantNum(resultSet.getInt(4));
+                owner.setVariantNum(targetVariantNum);
                 permanentLimit.setOperationalLimitsGroupId(resultSet.getString(5));
                 permanentLimit.setSide(resultSet.getInt(6));
                 permanentLimit.setLimitType(LimitType.valueOf(resultSet.getString(7)));
@@ -2754,6 +2747,35 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints;
+
+        if (srcVariantNum != -1) {
+            // Retrieve reactiveCapabilityCurvePoints from the (full) variant first
+            reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, variantNum);
+
+            // Retrieve updated reactiveCapabilityCurvePoints in partial
+            Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> updatedTemporaryLimits = getReactiveCapabilityCurvePointsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
+            Set<String> updatedIds = updatedTemporaryLimits.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            reactiveCapabilityCurvePoints.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            reactiveCapabilityCurvePoints.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated reactiveCapabilityCurvePoints
+            reactiveCapabilityCurvePoints.putAll(updatedTemporaryLimits);
+        } else {
+            // If the variant is FULL, retrieve reactiveCapabilityCurvePoints for the specified variant directly
+            reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
+        }
+        return reactiveCapabilityCurvePoints;
+    }
+
+    private Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, int targetVariantNum) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -2765,26 +2787,55 @@ public class NetworkStoreRepository {
                 preparedStmt.setString(3 + i, valuesForInClause.get(i));
             }
 
-            return innerGetReactiveCapabilityCurvePoints(preparedStmt);
+            return innerGetReactiveCapabilityCurvePoints(preparedStmt, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
     public Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePoints(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints;
+
+        if (srcVariantNum != -1) {
+            // Retrieve reactiveCapabilityCurvePoints from the (full) variant first
+            reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
+
+            // Retrieve updated reactiveCapabilityCurvePoints in partial
+            Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> updateReactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
+            Set<String> updatedIds = updateReactiveCapabilityCurvePoints.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            reactiveCapabilityCurvePoints.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            reactiveCapabilityCurvePoints.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated reactiveCapabilityCurvePoints
+            reactiveCapabilityCurvePoints.putAll(updateReactiveCapabilityCurvePoints);
+        } else {
+            // If the variant is FULL, retrieve reactiveCapabilityCurvePoints for the specified variant directly
+            reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
+        }
+        return reactiveCapabilityCurvePoints;
+    }
+
+    private Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildReactiveCapabilityCurvePointQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
 
-            return innerGetReactiveCapabilityCurvePoints(preparedStmt);
+            return innerGetReactiveCapabilityCurvePoints(preparedStmt, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    private Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> innerGetReactiveCapabilityCurvePoints(PreparedStatement preparedStmt) throws SQLException {
+    private Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> innerGetReactiveCapabilityCurvePoints(PreparedStatement preparedStmt, int targetVariantNum) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> map = new HashMap<>();
             while (resultSet.next()) {
@@ -2796,7 +2847,7 @@ public class NetworkStoreRepository {
                 owner.setEquipmentId(resultSet.getString(1));
                 owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
                 owner.setNetworkUuid(UUID.fromString(resultSet.getString(3)));
-                owner.setVariantNum(resultSet.getInt(4));
+                owner.setVariantNum(targetVariantNum);
                 reactiveCapabilityCurvePoint.setMinQ(resultSet.getDouble(5));
                 reactiveCapabilityCurvePoint.setMaxQ(resultSet.getDouble(6));
                 reactiveCapabilityCurvePoint.setP(resultSet.getDouble(7));
@@ -2959,8 +3010,36 @@ public class NetworkStoreRepository {
     }
 
     // TapChanger Steps
-
     public Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps;
+
+        if (srcVariantNum != -1) {
+            // Retrieve tapChangerSteps from the (full) variant first
+            tapChangerSteps = getTapChangerStepsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, variantNum);
+
+            // Retrieve updated tapChangerSteps in partial
+            Map<OwnerInfo, List<TapChangerStepAttributes>> updatedTapChangerSteps = getTapChangerStepsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
+            Set<String> updatedIds = updatedTapChangerSteps.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            tapChangerSteps.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            tapChangerSteps.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated tapChangerSteps
+            tapChangerSteps.putAll(updatedTapChangerSteps);
+        } else {
+            // If the variant is FULL, retrieve tapChangerSteps for the specified variant directly
+            tapChangerSteps = getTapChangerStepsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
+        }
+        return tapChangerSteps;
+    }
+
+    private Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, int targetVariantNum) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -2971,26 +3050,55 @@ public class NetworkStoreRepository {
             for (int i = 0; i < valuesForInClause.size(); i++) {
                 preparedStmt.setString(3 + i, valuesForInClause.get(i));
             }
-            return innerGetTapChangerSteps(preparedStmt);
+            return innerGetTapChangerSteps(preparedStmt, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
     public Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerSteps(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps;
+
+        if (srcVariantNum != -1) {
+            // Retrieve tapChangerSteps from the (full) variant first
+            tapChangerSteps = getTapChangerStepsFromVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
+
+            // Retrieve updated tapChangerSteps in partial
+            Map<OwnerInfo, List<TapChangerStepAttributes>> updateTapChangerSteps = getTapChangerStepsFromVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
+            Set<String> updatedIds = updateTapChangerSteps.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            tapChangerSteps.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            tapChangerSteps.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated tapChangerSteps
+            tapChangerSteps.putAll(updateTapChangerSteps);
+        } else {
+            // If the variant is FULL, retrieve tapChangerSteps for the specified variant directly
+            tapChangerSteps = getTapChangerStepsFromVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
+        }
+        return tapChangerSteps;
+    }
+
+    private Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsFromVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildTapChangerStepQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
 
-            return innerGetTapChangerSteps(preparedStmt);
+            return innerGetTapChangerSteps(preparedStmt, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    private Map<OwnerInfo, List<TapChangerStepAttributes>> innerGetTapChangerSteps(PreparedStatement preparedStmt) throws SQLException {
+    private Map<OwnerInfo, List<TapChangerStepAttributes>> innerGetTapChangerSteps(PreparedStatement preparedStmt, int targetVariantNum) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, List<TapChangerStepAttributes>> map = new HashMap<>();
             while (resultSet.next()) {
@@ -3001,7 +3109,7 @@ public class NetworkStoreRepository {
                 owner.setEquipmentId(resultSet.getString(1));
                 owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
                 owner.setNetworkUuid(resultSet.getObject(3, UUID.class));
-                owner.setVariantNum(resultSet.getInt(4));
+                owner.setVariantNum(targetVariantNum);
 
                 TapChangerStepAttributes tapChangerStep = new TapChangerStepAttributes();
                 if (TapChangerType.valueOf(resultSet.getString(7)) == TapChangerType.RATIO) {
@@ -3290,6 +3398,7 @@ public class NetworkStoreRepository {
     }
 
     public void removeExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
+        //TODO: tombstoned extensions? or reinsert extensions without the updated one?
         extensionHandler.deleteExtensionsFromIdentifiables(networkId, variantNum, Map.of(identifiableId, Set.of(extensionName)));
     }
 }
