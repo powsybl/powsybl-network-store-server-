@@ -82,14 +82,15 @@ public final class QueryCatalog {
     public static String buildGetIdentifiablesInVariantExcludingOtherVariantQuery(String tableName, Collection<String> columns) {
         return "select " + ID_COLUMN + ", " +
                 String.join(", ", columns) +
-                " from " + tableName + " outerTable" +
-                " where outerTable." + NETWORK_UUID_COLUMN + " = ?" +
-                " and outerTable." + VARIANT_NUM_COLUMN + " = ?" +
-                " and not exists (" +
-                "select 1 from " + tableName + " innerTable" +
-                " where innerTable." + NETWORK_UUID_COLUMN + " = ?" +
-                " and innerTable." + VARIANT_NUM_COLUMN + " = ?" +
-                " and innerTable." + ID_COLUMN + " = outerTable." + ID_COLUMN + ")";
+                " from " + tableName +
+                " where " + NETWORK_UUID_COLUMN + " = ?" +
+                " and " + VARIANT_NUM_COLUMN + " = ?" +
+                " and " + ID_COLUMN + " not in (" +
+                "select " + ID_COLUMN +
+                " from " + tableName +
+                " where " + NETWORK_UUID_COLUMN + " = ?" +
+                " and " + VARIANT_NUM_COLUMN + " = ?)" +
+                " and " + ID_COLUMN + " = ANY (?)"; //TODO: do we need this or do we retrieve all the equipments from full variant once for all? works only in postgres
     }
 
     public static String buildGetIdentifiablesInContainerQuery(String tableName, Collection<String> columns, Set<String> containerColumns) {

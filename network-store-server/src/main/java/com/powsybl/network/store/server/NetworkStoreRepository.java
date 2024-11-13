@@ -575,6 +575,7 @@ public class NetworkStoreRepository {
                         bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
                     }
+                    //TODO: why not batched? maybe delete can't be batched, instead get all ids and delete all from tombstoned in one request?
                     preparedStmt.executeBatch();
                 }
             }
@@ -920,19 +921,25 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
 
             // Update existing resources in variant num
+            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateInjectionSvQuery(tableName))) {
                 List<Object> values = new ArrayList<>(5);
                 for (List<Resource<InjectionSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<InjectionSvAttributes> resource : subResources) {
-                        InjectionSvAttributes attributes = resource.getAttributes();
-                        values.clear();
-                        values.add(attributes.getP());
-                        values.add(attributes.getQ());
-                        values.add(networkUuid);
-                        values.add(resource.getVariantNum());
-                        values.add(resource.getId());
-                        bindValues(preparedStmt, values, mapper);
-                        preparedStmt.addBatch();
+                        int variantNum = resource.getVariantNum();
+                        String resourceId = resource.getId();
+                        //TODO: do I need a getOrDefault here?
+                        if (existingIds.get(variantNum).contains(resourceId)) {
+                            InjectionSvAttributes attributes = resource.getAttributes();
+                            values.clear();
+                            values.add(attributes.getP());
+                            values.add(attributes.getQ());
+                            values.add(networkUuid);
+                            values.add(variantNum);
+                            values.add(resourceId);
+                            bindValues(preparedStmt, values, mapper);
+                            preparedStmt.addBatch();
+                        }
                     }
                     preparedStmt.executeBatch();
                 }
@@ -961,13 +968,14 @@ public class NetworkStoreRepository {
                         Collectors.toMap(Resource::getId, Function.identity())
                 ));
 
-        List<Resource<T>> missingVariantResources = retrieveResourcesMissingFromVariants(networkUuid, tableMapping, updatedResourcesByVariant.keySet(), connection);
+        List<Resource<T>> missingVariantResources = retrieveResourcesMissingFromVariants(networkUuid, tableMapping, updatedResourcesByVariant, connection);
 
         // Update identifiables with values from updatedResources, using the provided update function
         updateAttributesFromMissingVariantResources(attributesUpdater, missingVariantResources, updatedResourcesByVariant);
 
         // Batch insert the modified identifiables from srcVariant updated with values from updatedResources
         batchInsertIdentifiables(networkUuid, missingVariantResources, tableMapping, connection);
+        LOGGER.info("Inserted {} missing identifiables in variants (updated with new SV values)", missingVariantResources.size());
     }
 
     private static <T extends IdentifiableAttributes, U extends Attributes> void updateAttributesFromMissingVariantResources(BiConsumer<T, U> attributesUpdater, List<Resource<T>> missingVariantResources, Map<Integer, Map<String, Resource<U>>> updatedResourcesByVariant) {
@@ -979,11 +987,13 @@ public class NetworkStoreRepository {
         }
     }
 
-    private <T extends IdentifiableAttributes> List<Resource<T>> retrieveResourcesMissingFromVariants(UUID networkUuid, TableMapping tableMapping,
-                                                                                                      Set<Integer> variantNums,
+    private <T extends IdentifiableAttributes, U extends Attributes> List<Resource<T>> retrieveResourcesMissingFromVariants(UUID networkUuid, TableMapping tableMapping,
+                                                                                                      Map<Integer, Map<String, Resource<U>>> updatedResourcesByVariant,
                                                                                                       Connection connection) throws SQLException {
         List<Resource<T>> missingVariantResources = new ArrayList<>();
-        for (int variantNum : variantNums) {
+        for (var entry : updatedResourcesByVariant.entrySet()) {
+            int variantNum = entry.getKey();
+            Set<String> equipmentIds = entry.getValue().keySet();
             int srcVariantNum = getNetwork(networkUuid, variantNum).orElseThrow().getAttributes().getSrcVariantNum();
             // If the variant is a full clone, all resources are already present in the variant
             if (srcVariantNum == -1) {
@@ -995,6 +1005,8 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(2, srcVariantNum);
                 preparedStmt.setObject(3, networkUuid);
                 preparedStmt.setInt(4, variantNum);
+                String[] equipmentIdsArray = equipmentIds.toArray(new String[0]);
+                preparedStmt.setArray(5, connection.createArrayOf("VARCHAR", equipmentIdsArray));
 
                 List<Resource<T>> foundResourcesInSrcVariant = getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
                 // Set variant num of identifiables from srcVariant to variantNum
@@ -1007,21 +1019,26 @@ public class NetworkStoreRepository {
 
     public void updateBranchesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources, String tableName, TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
+            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateBranchSvQuery(tableName))) {
                 List<Object> values = new ArrayList<>(7);
                 for (List<Resource<BranchSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<BranchSvAttributes> resource : subResources) {
-                        BranchSvAttributes attributes = resource.getAttributes();
-                        values.clear();
-                        values.add(attributes.getP1());
-                        values.add(attributes.getQ1());
-                        values.add(attributes.getP2());
-                        values.add(attributes.getQ2());
-                        values.add(networkUuid);
-                        values.add(resource.getVariantNum());
-                        values.add(resource.getId());
-                        bindValues(preparedStmt, values, mapper);
-                        preparedStmt.addBatch();
+                        int variantNum = resource.getVariantNum();
+                        String resourceId = resource.getId();
+                        if (existingIds.get(variantNum).contains(resourceId)) {
+                            BranchSvAttributes attributes = resource.getAttributes();
+                            values.clear();
+                            values.add(attributes.getP1());
+                            values.add(attributes.getQ1());
+                            values.add(attributes.getP2());
+                            values.add(attributes.getQ2());
+                            values.add(networkUuid);
+                            values.add(variantNum);
+                            values.add(resourceId);
+                            bindValues(preparedStmt, values, mapper);
+                            preparedStmt.addBatch();
+                        }
                     }
                     preparedStmt.executeBatch();
                 }
@@ -1139,19 +1156,24 @@ public class NetworkStoreRepository {
 
     public void updateVoltageLevelsSv(UUID networkUuid, List<Resource<VoltageLevelSvAttributes>> resources) {
         try (var connection = dataSource.getConnection()) {
+            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, mappings.getVoltageLevelMappings().getTable(), connection);
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateVoltageLevelSvQuery())) {
                 List<Object> values = new ArrayList<>(5);
                 for (List<Resource<VoltageLevelSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<VoltageLevelSvAttributes> resource : subResources) {
-                        VoltageLevelSvAttributes attributes = resource.getAttributes();
-                        values.clear();
-                        values.add(attributes.getCalculatedBusesForBusView());
-                        values.add(attributes.getCalculatedBusesForBusBreakerView());
-                        values.add(networkUuid);
-                        values.add(resource.getVariantNum());
-                        values.add(resource.getId());
-                        bindValues(preparedStmt, values, mapper);
-                        preparedStmt.addBatch();
+                        int variantNum = resource.getVariantNum();
+                        String resourceId = resource.getId();
+                        if (existingIds.get(variantNum).contains(resourceId)) {
+                            VoltageLevelSvAttributes attributes = resource.getAttributes();
+                            values.clear();
+                            values.add(attributes.getCalculatedBusesForBusView());
+                            values.add(attributes.getCalculatedBusesForBusBreakerView());
+                            values.add(networkUuid);
+                            values.add(variantNum);
+                            values.add(resourceId);
+                            bindValues(preparedStmt, values, mapper);
+                            preparedStmt.addBatch();
+                        }
                     }
                     preparedStmt.executeBatch();
                 }
