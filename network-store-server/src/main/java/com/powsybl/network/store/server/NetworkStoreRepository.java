@@ -3005,23 +3005,81 @@ public class NetworkStoreRepository {
     }
 
     private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipments(UUID networkUuid, int variantNum, ResourceType type) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments;
+
+        if (srcVariantNum != -1) {
+            // Retrieve regulatingEquipments from the (full) variant first
+            regulatingEquipments = getRegulatingEquipmentsForVariant(networkUuid, srcVariantNum, type, variantNum);
+
+            // Retrieve updated regulatingEquipments in partial
+            Map<OwnerInfo, Map<String, ResourceType>> updateRegulatingEquipments = getRegulatingEquipmentsForVariant(networkUuid, variantNum, type, variantNum);
+            Set<String> updatedIds = updateRegulatingEquipments.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            regulatingEquipments.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            regulatingEquipments.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated regulatingEquipments
+            regulatingEquipments.putAll(updateRegulatingEquipments);
+        } else {
+            // If the variant is FULL, retrieve regulatingEquipments for the specified variant directly
+            regulatingEquipments = getRegulatingEquipmentsForVariant(networkUuid, variantNum, type, variantNum);
+        }
+        return regulatingEquipments;
+    }
+
+    private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsForVariant(UUID networkUuid, int variantNum, ResourceType type, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsQuery());
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
 
-            return innerGetRegulatingEquipments(preparedStmt, type);
+            return innerGetRegulatingEquipments(preparedStmt, type, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    //TODO: get Regulating equipments
     public Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, ResourceType type) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
         }
+
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments;
+
+        if (srcVariantNum != -1) {
+            // Retrieve regulatingEquipments from the (full) variant first
+            regulatingEquipments = getRegulatingEquipmentsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
+
+            // Retrieve updated regulatingEquipments in partial
+            Map<OwnerInfo, Map<String, ResourceType>> updateRegulatingEquipments = getRegulatingEquipmentsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
+            Set<String> updatedIds = updateRegulatingEquipments.keySet().stream()
+                    .map(OwnerInfo::getEquipmentId)
+                    .collect(Collectors.toSet());
+            // Remove any resources that have been updated in the current variant
+            regulatingEquipments.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            regulatingEquipments.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+            // Combine base and updated regulatingEquipments
+            regulatingEquipments.putAll(updateRegulatingEquipments);
+        } else {
+            // If the variant is FULL, retrieve regulatingEquipments for the specified variant directly
+            regulatingEquipments = getRegulatingEquipmentsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
+        }
+        return regulatingEquipments;
+    }
+
+    private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, ResourceType type, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
             preparedStmt.setObject(1, networkUuid);
@@ -3031,13 +3089,13 @@ public class NetworkStoreRepository {
                 preparedStmt.setString(4 + i, valuesForInClause.get(i));
             }
 
-            return innerGetRegulatingEquipments(preparedStmt, type);
+            return innerGetRegulatingEquipments(preparedStmt, type, targetVariantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    public Map<OwnerInfo, Map<String, ResourceType>> innerGetRegulatingEquipments(PreparedStatement preparedStmt, ResourceType type) throws SQLException {
+    public Map<OwnerInfo, Map<String, ResourceType>> innerGetRegulatingEquipments(PreparedStatement preparedStmt, ResourceType type, int targetVariantNum) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, Map<String, ResourceType>> map = new HashMap<>();
             while (resultSet.next()) {
@@ -3047,7 +3105,7 @@ public class NetworkStoreRepository {
                 ResourceType regulatingEquipmentType = ResourceType.valueOf(resultSet.getString(5));
                 owner.setEquipmentId(regulatedConnectableId);
                 owner.setNetworkUuid(UUID.fromString(resultSet.getString(1)));
-                owner.setVariantNum(resultSet.getInt(2));
+                owner.setVariantNum(targetVariantNum);
                 owner.setEquipmentType(type);
                 if (map.containsKey(owner)) {
                     map.get(owner).put(regulatingEquipmentId, regulatingEquipmentType);
@@ -3064,19 +3122,41 @@ public class NetworkStoreRepository {
     private <T extends IdentifiableAttributes> void insertRegulatingEquipmentsInto(UUID networkUuid, int variantNum,
                                                                                    String equipmentId, Resource<T> resource,
                                                                                    ResourceType type) {
+        Map<String, ResourceType> regulatingEquipments = getRegulatingEquipmentsForIdentifiable(networkUuid, variantNum, equipmentId, type);
+        IdentifiableAttributes identifiableAttributes = resource.getAttributes();
+        if (identifiableAttributes instanceof RegulatedEquipmentAttributes regulatedEquipmentAttributes) {
+            regulatedEquipmentAttributes.setRegulatingEquipments(regulatingEquipments);
+        }
+    }
+
+    private Map<String, ResourceType> getRegulatingEquipmentsForIdentifiable(UUID networkUuid, int variantNum, String equipmentId, ResourceType type) {
+        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        if (srcVariantNum != -1) {
+            // Retrieve updated regulatingEquipments in partial
+            Map<String, ResourceType> updateRegulatingEquipments = getRegulatingEquipmentsForIdentifiableForVariant(networkUuid, variantNum, equipmentId, type);
+            if (!updateRegulatingEquipments.isEmpty()) {
+                return updateRegulatingEquipments;
+            }
+        }
+        return getRegulatingEquipmentsForIdentifiableForVariant(networkUuid, srcVariantNum, equipmentId, type);
+
+    }
+
+    private Map<String, ResourceType> getRegulatingEquipmentsForIdentifiableForVariant(UUID networkUuid, int variantNum, String equipmentId, ResourceType type) {
+        Map<String, ResourceType> regulatingEquipments = new HashMap<>();
         try (var connection = dataSource.getConnection();
              PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsForOneEquipmentQuery())) {
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
             preparedStmt.setObject(4, equipmentId);
-            IdentifiableAttributes identifiableAttributes = resource.getAttributes();
-            if (identifiableAttributes instanceof RegulatedEquipmentAttributes regulatedEquipmentAttributes) {
-                regulatedEquipmentAttributes.setRegulatingEquipments(getRegulatingEquipments(preparedStmt));
-            }
+            regulatingEquipments.putAll(getRegulatingEquipments(preparedStmt));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+        return regulatingEquipments;
     }
 
     private Map<String, ResourceType> getRegulatingEquipments(PreparedStatement preparedStmt) throws SQLException {
