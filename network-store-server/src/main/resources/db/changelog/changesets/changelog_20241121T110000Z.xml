@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="2986331049275-5" author="lesoteti">
+        <sqlFile
+                path="limit_violation-arrays_20241121T110000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmenttype, equipmentid"
+                       constraintName="newtemporarylimits_pkey" tableName="newtemporarylimits"/>
+    </changeSet>
+
+</databaseChangeLog>
