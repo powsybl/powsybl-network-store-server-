@@ -31,6 +31,7 @@ import com.powsybl.network.store.server.NetworkStoreApplication;
 import com.powsybl.ucte.converter.UcteImporter;
 import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -70,13 +71,21 @@ class NetworkStoreIT {
 
     @LocalServerPort
     private int randomServerPort;
+    private static Properties properties;
+
+    @BeforeAll
+    static void setUp() {
+        properties = new Properties();
+        properties.setProperty("ucte.import.create-areas", "false");
+    }
 
     @Test
     void test() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             assertTrue(service.getNetworkIds().isEmpty());
-            Network network = service.importNetwork(new ResourceDataSource("test", new ResourceSet("/", "test.xiidm")));
+            Network network = service.importNetwork(new ResourceDataSource("test", new ResourceSet("/", "test.xiidm")),
+                ReportNode.NO_OP, properties, true);
             service.flush(network);
 
             assertEquals(1, service.getNetworkIds().size());
@@ -1540,7 +1549,7 @@ class NetworkStoreIT {
     void internalConnectionsFromCgmesTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-            Network network = service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource());
+            Network network = service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource(), ReportNode.NO_OP, properties, true);
             service.flush(network);
         }
 
@@ -1576,7 +1585,7 @@ class NetworkStoreIT {
     void aliasesTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-            service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource());
+            service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource(), ReportNode.NO_OP, properties, true);
         }
 
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -2598,7 +2607,7 @@ class NetworkStoreIT {
     void testConfiguredBus() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-            Network network = service.importNetwork(CgmesConformity1Catalog.smallBusBranch().dataSource());
+            Network network = service.importNetwork(CgmesConformity1Catalog.smallBusBranch().dataSource(), ReportNode.NO_OP, properties, true);
 
             Set<String> visitedConnectables = new HashSet<>();
             TopologyVisitor tv = new DefaultTopologyVisitor() {
@@ -2784,7 +2793,7 @@ class NetworkStoreIT {
             FilenameUtils.getBaseName(filePath),
             new ResourceSet(FilenameUtils.getPath(filePath),
                 FilenameUtils.getName(filePath)));
-        return new UcteImporter().importData(dataSource, networkFactory, null);
+        return new UcteImporter().importData(dataSource, networkFactory, properties);
     }
 
     private static void assertEqualsPhaseTapChangerStep(PhaseTapChangerStep phaseTapChangerStep, double alpha, double b, double g, double r, double rho, double x) {
@@ -3264,7 +3273,7 @@ class NetworkStoreIT {
     void testVisit2WTConnectedInOneVLOnlyIssue() {
         String filePath = "/BrranchConnectedInOneVLOnlyIssue.uct";
         ReadOnlyDataSource dataSource = getResource(filePath, filePath);
-        Network network = new UcteImporter().importData(dataSource, new NetworkFactoryImpl(), null);
+        Network network = new UcteImporter().importData(dataSource, new NetworkFactoryImpl(), properties);
         Set<TwoSides> visitedLineSides = new HashSet<>();
         Set<TwoSides> visited2WTSides = new HashSet<>();
         Set<ThreeSides> visited3WTSides = new HashSet<>();
@@ -3534,11 +3543,8 @@ class NetworkStoreIT {
             // There are validationWarnings and xiidmImportDone by default with SerDe
             assertFalse(report.getChildren().isEmpty());
 
-            service.importNetwork(getResource("uctNetwork.uct", "/"), report);
+            service.importNetwork(getResource("uctNetwork.uct", "/"), report, properties, true);
             assertFalse(report.getChildren().isEmpty());
-
-            service.importNetwork(getResource("uctNetwork.uct", "/"));
-
         }
     }
 
