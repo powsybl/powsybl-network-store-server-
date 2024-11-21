@@ -524,18 +524,19 @@ public final class QueryCatalog {
             " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
-    public static String buildUpdateRegulatingPointsQuery() {
-        return "Update " + REGULATING_POINT_TABLE +
-            " set " + REGULATION_MODE + " = ?, " +
-            "regulatingterminalconnectableid = ?, " +
-            "regulatingterminalside = ?, " +
-            REGULATED_EQUIPMENT_TYPE_COLUMN + " = ? " +
-            "where " +
-            NETWORK_UUID_COLUMN + " = ? AND " +
-            VARIANT_NUM_COLUMN + " = ? AND " +
-            REGULATING_EQUIPMENT_ID + " = ? AND " +
-            REGULATING_EQUIPMENT_TYPE_COLUMN + " = ?";
-    }
+    //TODO: delete + insert for now
+//    public static String buildUpdateRegulatingPointsQuery() {
+//        return "Update " + REGULATING_POINT_TABLE +
+//            " set " + REGULATION_MODE + " = ?, " +
+//            "regulatingterminalconnectableid = ?, " +
+//            "regulatingterminalside = ?, " +
+//            REGULATED_EQUIPMENT_TYPE_COLUMN + " = ? " +
+//            "where " +
+//            NETWORK_UUID_COLUMN + " = ? AND " +
+//            VARIANT_NUM_COLUMN + " = ? AND " +
+//            REGULATING_EQUIPMENT_ID + " = ? AND " +
+//            REGULATING_EQUIPMENT_TYPE_COLUMN + " = ?";
+//    }
 
     public static String buildCloneRegulatingPointsQuery() {
         return "insert into " + REGULATING_POINT_TABLE + " (" + NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN + ", " +
