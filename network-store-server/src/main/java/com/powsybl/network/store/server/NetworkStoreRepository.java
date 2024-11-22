@@ -3677,7 +3677,12 @@ public class NetworkStoreRepository {
 
     //FIXME: deal with tombstoned extensions
     public Optional<ExtensionAttributes> getExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
-        Resource<NetworkAttributes> network = getNetwork(networkId, variantNum).orElseThrow();
+        //TODO:  what to do when there is no network??...
+        Optional<Resource<NetworkAttributes>> networkOpt = getNetwork(networkId, variantNum);
+        if (networkOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        Resource<NetworkAttributes> network = networkOpt.get();
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         if (srcVariantNum != -1) {
@@ -3726,7 +3731,12 @@ public class NetworkStoreRepository {
 
     //FIXME: deal with tombstoned extensions
     public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableId(UUID networkId, int variantNum, String identifiableId) {
-        Resource<NetworkAttributes> network = getNetwork(networkId, variantNum).orElseThrow();
+        //TODO:  what to do when there is no network??...
+        Optional<Resource<NetworkAttributes>> networkOpt = getNetwork(networkId, variantNum);
+        if (networkOpt.isEmpty()) {
+            return Map.of();
+        }
+        Resource<NetworkAttributes> network = networkOpt.get();
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         Map<String, ExtensionAttributes> extensionsAttributesByIdentifiableId;
