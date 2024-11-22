@@ -10,8 +10,21 @@
                 relativeToChangelogFile="true"
                 splitStatements="true"
                 stripComments="true"/>
-        <addPrimaryKey columnNames="networkuuid, variantnum, equipmenttype, equipmentid"
-                       constraintName="newtemporarylimits_pkey" tableName="newtemporarylimits"/>
+        <createTable tableName="newtemporarylimits">
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
+            </column>
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
+            </column>
+            <column name="equipmenttype" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
+            </column>
+            <column name="temporarylimits" type="TEXT"/>
+        </createTable>
     </changeSet>
 
 </databaseChangeLog>

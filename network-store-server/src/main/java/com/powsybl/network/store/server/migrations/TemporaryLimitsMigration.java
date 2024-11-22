@@ -16,13 +16,14 @@ import com.powsybl.network.store.server.TemporaryLimitSqlData;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import liquibase.change.custom.CustomSqlChange;
 import liquibase.database.Database;
+import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.CustomChangeException;
+import liquibase.exception.DatabaseException;
 import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
 import liquibase.statement.SqlStatement;
 import liquibase.statement.core.InsertStatement;
-import org.postgresql.jdbc.PgConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,7 @@ public class TemporaryLimitsMigration implements CustomSqlChange {
 
     @Override
     public SqlStatement[] generateStatements(Database database) throws CustomChangeException {
-        PgConnection connection = (PgConnection) database.getConnection();
+        JdbcConnection connection = (JdbcConnection) database.getConnection();
         List<SqlStatement> statements = new ArrayList<>();
         String requestStatement = "select equipmentid, equipmenttype, networkUuid, variantNum, operationalLimitsGroupId, side," +
             "limitType, name, value_, acceptableDuration, fictitious from temporarylimit";
@@ -49,7 +50,7 @@ public class TemporaryLimitsMigration implements CustomSqlChange {
             prepareStatements(oldTemporaryLimits, database, statements);
         } catch (SQLException e) {
             throw new CustomChangeException(e);
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | DatabaseException e) {
             throw new RuntimeException(e);
         }
         return statements.toArray(new SqlStatement[0]);
@@ -90,7 +91,7 @@ public class TemporaryLimitsMigration implements CustomSqlChange {
                         .addColumnValue("equipmentType", entry.getKey().getEquipmentType())
                         .addColumnValue("networkuuid", entry.getKey().getNetworkUuid())
                         .addColumnValue("variantnum", entry.getKey().getVariantNum())
-                        .addColumnValue("temporarylimits", temporaryLimitSqlData)
+                        .addColumnValue("temporarylimits", serializedtemporaryLimitSqlData)
                     );
                 }
 

@@ -1838,7 +1838,6 @@ public class NetworkStoreRepository {
     }
 
     private Map<OwnerInfo, List<TemporaryLimitAttributes>> innerGetTemporaryLimits(PreparedStatement preparedStmt) throws SQLException {
-        preparedStmt.getConnection().getTypeMap().put("TemporaryLimitClass", TemporaryLimitSqlData.class);
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, List<TemporaryLimitAttributes>> map = new HashMap<>();
             while (resultSet.next()) {
@@ -1909,7 +1908,6 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = limitsInfos.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getTemporaryLimits()));
         try (var connection = dataSource.getConnection()) {
-            connection.getTypeMap().put("TemporaryLimitClass", TemporaryLimitSqlData.class);
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertNewTemporaryLimitsQuery())) {
                 List<Object> values = new ArrayList<>(5);
                 List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> list = new ArrayList<>(temporaryLimits.entrySet());
