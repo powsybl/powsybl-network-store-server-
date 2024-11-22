@@ -11,7 +11,7 @@
                 splitStatements="true"
                 stripComments="true"/>
         <createTable tableName="newtemporarylimits">
-            <column name="networkuuid" type="UUID">
+            <column name="networkuuid" type="VARCHAR(255)">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
             </column>
             <column name="variantnum" type="INTEGER">
