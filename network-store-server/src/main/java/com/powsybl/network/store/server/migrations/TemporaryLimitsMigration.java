@@ -6,10 +6,13 @@
  */
 package com.powsybl.network.store.server.migrations;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.powsybl.iidm.network.LimitType;
 import com.powsybl.network.store.model.ResourceType;
 import com.powsybl.network.store.model.TemporaryLimitAttributes;
+import com.powsybl.network.store.server.TemporaryLimitSqlData;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import liquibase.change.custom.CustomSqlChange;
 import liquibase.database.Database;
@@ -23,7 +26,6 @@ import org.postgresql.jdbc.PgConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -34,6 +36,7 @@ import java.util.*;
  */
 public class TemporaryLimitsMigration implements CustomSqlChange {
     private static final Logger LOGGER = LoggerFactory.getLogger(TemporaryLimitsMigration.class);
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public SqlStatement[] generateStatements(Database database) throws CustomChangeException {
@@ -43,9 +46,11 @@ public class TemporaryLimitsMigration implements CustomSqlChange {
             "limitType, name, value_, acceptableDuration, fictitious from temporarylimit";
         try (PreparedStatement stmt = connection.prepareStatement(requestStatement)) {
             Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits = getTemporaryLimits(stmt);
-            prepareStatements(oldTemporaryLimits, connection, database, statements);
+            prepareStatements(oldTemporaryLimits, database, statements);
         } catch (SQLException e) {
             throw new CustomChangeException(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
         return statements.toArray(new SqlStatement[0]);
     }
@@ -73,27 +78,19 @@ public class TemporaryLimitsMigration implements CustomSqlChange {
         return map;
     }
 
-    private void prepareStatements(Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits, PgConnection connection, Database database, List<SqlStatement> statements) throws SQLException {
+    private void prepareStatements(Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits, Database database, List<SqlStatement> statements) throws SQLException, JsonProcessingException {
         List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> list = new ArrayList<>(oldTemporaryLimits.entrySet());
         for (List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> subUnit : Lists.partition(list, 1000)) {
             for (Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>> entry : subUnit) {
                 if (!entry.getValue().isEmpty()) {
-                    Array array = connection.createArrayOf("TemporaryLimitClass", entry.getValue().stream().map(temporaryLimitAttributes ->
-                            "(" + temporaryLimitAttributes.getOperationalLimitsGroupId() + ","
-                                + temporaryLimitAttributes.getSide() + ","
-                                + temporaryLimitAttributes.getLimitType() + ","
-                                + temporaryLimitAttributes.getName() + ","
-                                + temporaryLimitAttributes.getValue() + ","
-                                + temporaryLimitAttributes.getAcceptableDuration() + ","
-                                + temporaryLimitAttributes.isFictitious()
-                                + ")")
-                        .toArray());
+                    List<TemporaryLimitSqlData> temporaryLimitSqlData = entry.getValue().stream().map(TemporaryLimitSqlData::of).toList();
+                    String serializedtemporaryLimitSqlData = mapper.writeValueAsString(temporaryLimitSqlData);
                     statements.add(new InsertStatement(database.getDefaultCatalogName(), database.getDefaultSchemaName(), "newtemporarylimits")
                         .addColumnValue("equipmentId", entry.getKey().getEquipmentId())
                         .addColumnValue("equipmentType", entry.getKey().getEquipmentType())
                         .addColumnValue("networkuuid", entry.getKey().getNetworkUuid())
                         .addColumnValue("variantnum", entry.getKey().getVariantNum())
-                        .addColumnValue("temporarylimits", array)
+                        .addColumnValue("temporarylimits", temporaryLimitSqlData)
                     );
                 }
 

@@ -6,9 +6,9 @@
  */
 package com.powsybl.network.store.server;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
@@ -1838,6 +1838,7 @@ public class NetworkStoreRepository {
     }
 
     private Map<OwnerInfo, List<TemporaryLimitAttributes>> innerGetTemporaryLimits(PreparedStatement preparedStmt) throws SQLException {
+        preparedStmt.getConnection().getTypeMap().put("TemporaryLimitClass", TemporaryLimitSqlData.class);
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, List<TemporaryLimitAttributes>> map = new HashMap<>();
             while (resultSet.next()) {
@@ -1848,26 +1849,16 @@ public class NetworkStoreRepository {
                 owner.setEquipmentType(ResourceType.valueOf(resultSet.getString(2)));
                 owner.setNetworkUuid(UUID.fromString(resultSet.getString(3)));
                 owner.setVariantNum(resultSet.getInt(4));
-                Array array = resultSet.getArray(5);
-                Object[] objects = (Object[]) array.getArray();
-                List<TemporaryLimitAttributes> temporaryLimits = new ArrayList<>();
-                for (Object tl : objects) {
-                    String[] split = tl.toString().replace("(", "").replace(")", "").replace("\"", "").split(",");
-                    TemporaryLimitAttributes temporaryLimit = new TemporaryLimitAttributes();
-                    temporaryLimit.setOperationalLimitsGroupId(split[0]);
-                    temporaryLimit.setSide(Integer.valueOf(split[1]));
-                    temporaryLimit.setLimitType(LimitType.valueOf(split[2]));
-                    temporaryLimit.setName(split[3]);
-                    temporaryLimit.setValue(Double.parseDouble(split[4]));
-                    temporaryLimit.setAcceptableDuration(Integer.valueOf(split[5]));
-                    temporaryLimit.setFictitious(split[6].equals("t"));
-                    temporaryLimits.add(temporaryLimit);
-                }
+                String temporaryLimitData = resultSet.getString(5);
+                List<TemporaryLimitSqlData> parsedTemporaryLimitData = mapper.readValue(temporaryLimitData, new TypeReference<>() { });
+                List<TemporaryLimitAttributes> temporaryLimits = parsedTemporaryLimitData.stream().map(TemporaryLimitSqlData::toTemporaryLimitAttributes).toList();
                 if (!temporaryLimits.isEmpty()) {
                     map.put(owner, temporaryLimits);
                 }
             }
             return map;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -1918,6 +1909,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = limitsInfos.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getTemporaryLimits()));
         try (var connection = dataSource.getConnection()) {
+            connection.getTypeMap().put("TemporaryLimitClass", TemporaryLimitSqlData.class);
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertNewTemporaryLimitsQuery())) {
                 List<Object> values = new ArrayList<>(5);
                 List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> list = new ArrayList<>(temporaryLimits.entrySet());
@@ -1929,19 +1921,11 @@ public class NetworkStoreRepository {
                             values.add(entry.getKey().getEquipmentType().toString());
                             values.add(entry.getKey().getNetworkUuid());
                             values.add(entry.getKey().getVariantNum());
-                            Array array = connection.createArrayOf("TemporaryLimitClass", entry.getValue().stream().map(temporaryLimitAttributes ->
-                                    "(" + temporaryLimitAttributes.getOperationalLimitsGroupId() + ","
-                                        + temporaryLimitAttributes.getSide() + ","
-                                        + temporaryLimitAttributes.getLimitType() + ","
-                                        + temporaryLimitAttributes.getName() + ","
-                                        + temporaryLimitAttributes.getValue() + ","
-                                        + temporaryLimitAttributes.getAcceptableDuration() + ","
-                                        + temporaryLimitAttributes.isFictitious()
-                                        + ")")
-                                .toArray());
-                            values.add(array);
+                            values.add(entry.getValue().stream()
+                                .map(TemporaryLimitSqlData::of).toList());
                             bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
+
                         }
                     }
                     preparedStmt.executeBatch();

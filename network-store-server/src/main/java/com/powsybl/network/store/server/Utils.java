@@ -14,7 +14,6 @@ import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -49,8 +48,6 @@ public final class Utils {
                 statement.setDate(++idx, new java.sql.Date(d.toEpochMilli()));
             } else if (o == null || !isCustomTypeJsonified(o.getClass())) {
                 statement.setObject(++idx, o);
-            } else if (o instanceof Array array) {
-                statement.setArray(++idx, array);
             } else {
                 try {
                     statement.setObject(++idx, mapper.writeValueAsString(o));
