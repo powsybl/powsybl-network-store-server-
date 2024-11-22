@@ -85,7 +85,7 @@ public class NetworkStoreRepository {
     public List<NetworkInfos> getNetworksInfos() {
         try (var connection = dataSource.getConnection()) {
             try (var stmt = connection.createStatement()) {
-                try (ResultSet resultSet = stmt.executeQuery(QueryCatalog.buildGetNetworkInfos())) {
+                try (ResultSet resultSet = stmt.executeQuery(buildGetNetworkInfos())) {
                     List<NetworkInfos> networksInfos = new ArrayList<>();
                     while (resultSet.next()) {
                         networksInfos.add(new NetworkInfos(resultSet.getObject(1, UUID.class),
@@ -101,7 +101,7 @@ public class NetworkStoreRepository {
 
     public List<VariantInfos> getVariantsInfos(UUID networkUuid) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetVariantsInfos())) {
+            try (var preparedStmt = connection.prepareStatement(buildGetVariantsInfos())) {
                 preparedStmt.setObject(1, networkUuid);
                 try (ResultSet resultSet = preparedStmt.executeQuery()) {
                     List<VariantInfos> variantsInfos = new ArrayList<>();
@@ -121,7 +121,7 @@ public class NetworkStoreRepository {
     public Optional<Resource<NetworkAttributes>> getNetwork(UUID uuid, int variantNum) {
         var networkMapping = mappings.getNetworkMappings();
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetNetworkQuery(networkMapping.getColumnsMapping().keySet()))) {
+            try (var preparedStmt = connection.prepareStatement(buildGetNetworkQuery(networkMapping.getColumnsMapping().keySet()))) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 try (ResultSet resultSet = preparedStmt.executeQuery()) {
@@ -153,16 +153,27 @@ public class NetworkStoreRepository {
 
         List<String> ids = new ArrayList<>();
         try (var connection = dataSource.getConnection()) {
-            for (String table : ELEMENT_TABLES) {
-                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdsQuery(table))) {
-                    preparedStmt.setObject(1, networkUuid);
-                    preparedStmt.setObject(2, variantNum);
-                    try (ResultSet resultSet = preparedStmt.executeQuery()) {
-                        while (resultSet.next()) {
-                            ids.add(resultSet.getString(1));
-                        }
-                    }
-                }
+            Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+            int srcVariantNum = network.getAttributes().getSrcVariantNum();
+            if (srcVariantNum != -1) {
+                // Retrieve identifiables from the (full) variant first
+                ids.addAll(getIdentifiablesIdsForVariant(networkUuid, srcVariantNum, connection));
+
+                // Retrieve updated identifiables in partial
+                List<String> updatedIds = getIdentifiablesIdsForVariant(networkUuid, variantNum, connection);
+                // Remove any resources that have been updated in the current variant
+                //TODO: both removeIf can be done in one loop (also in other methods)
+                //TODO: maybe this should be a set to optim lookups...
+                //TODO: this is overkill to merge string lists
+                ids.removeIf(updatedIds::contains);
+                // Remove tombstoned resources in the current variant
+                List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+                ids.removeIf(tombstonedIds::contains);
+                // Combine base and updated identifiables
+                ids.addAll(updatedIds);
+            } else {
+                // If the variant is FULL, retrieve identifiables for the specified variant directly
+                ids = getIdentifiablesIdsForVariant(networkUuid, variantNum, connection);
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
@@ -171,6 +182,22 @@ public class NetworkStoreRepository {
         stopwatch.stop();
         LOGGER.info("Get identifiables IDs done in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
+        return ids;
+    }
+
+    private static List<String> getIdentifiablesIdsForVariant(UUID networkUuid, int variantNum, Connection connection) throws SQLException {
+        List<String> ids = new ArrayList<>();
+        for (String table : ELEMENT_TABLES) {
+            try (var preparedStmt = connection.prepareStatement(buildGetIdsQuery(table))) {
+                preparedStmt.setObject(1, networkUuid);
+                preparedStmt.setObject(2, variantNum);
+                try (ResultSet resultSet = preparedStmt.executeQuery()) {
+                    while (resultSet.next()) {
+                        ids.add(resultSet.getString(1));
+                    }
+                }
+            }
+        }
         return ids;
     }
 
@@ -223,7 +250,7 @@ public class NetworkStoreRepository {
 
     private void createNetworks(Connection connection, List<Resource<NetworkAttributes>> resources) throws SQLException {
         var tableMapping = mappings.getNetworkMappings();
-        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertNetworkQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()))) {
+        try (var preparedStmt = connection.prepareStatement(buildInsertNetworkQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()))) {
             List<Object> values = new ArrayList<>(2 + tableMapping.getColumnsMapping().size());
             for (List<Resource<NetworkAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                 for (Resource<NetworkAttributes> resource : subResources) {
@@ -246,7 +273,7 @@ public class NetworkStoreRepository {
     public void updateNetworks(List<Resource<NetworkAttributes>> resources) {
         executeWithoutAutoCommit(connection -> {
             TableMapping networkMapping = mappings.getNetworkMappings();
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateNetworkQuery(networkMapping.getColumnsMapping().keySet()))) {
+            try (var preparedStmt = connection.prepareStatement(buildUpdateNetworkQuery(networkMapping.getColumnsMapping().keySet()))) {
                 List<Object> values = new ArrayList<>(3 + networkMapping.getColumnsMapping().size());
                 for (List<Resource<NetworkAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<NetworkAttributes> resource : subResources) {
@@ -274,42 +301,42 @@ public class NetworkStoreRepository {
 
     public void deleteNetwork(UUID uuid) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteNetworkQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteNetworkQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.execute();
             }
             for (String table : ELEMENT_TABLES) {
-                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiablesQuery(table))) {
+                try (var preparedStmt = connection.prepareStatement(buildDeleteIdentifiablesQuery(table))) {
                     preparedStmt.setObject(1, uuid);
                     preparedStmt.execute();
                 }
             }
             // Delete of the temporary limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteTemporaryLimitsQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.executeUpdate();
             }
 
             // Delete permanent limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeletePermanentLimitsQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.executeUpdate();
             }
 
             // Delete of the reactive capability curve points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteReactiveCapabilityCurvePointsQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.executeUpdate();
             }
 
             // Delete of the regulating points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteRegulatingPointsQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.executeUpdate();
             }
 
             // Delete of the tap changer steps (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteTapChangerStepQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.executeUpdate();
             }
@@ -332,48 +359,48 @@ public class NetworkStoreRepository {
             throw new IllegalArgumentException("Cannot delete initial variant");
         }
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteNetworkVariantQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteNetworkVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.execute();
             }
             for (String table : ELEMENT_TABLES) {
-                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiablesVariantQuery(table))) {
+                try (var preparedStmt = connection.prepareStatement(buildDeleteIdentifiablesVariantQuery(table))) {
                     preparedStmt.setObject(1, uuid);
                     preparedStmt.setInt(2, variantNum);
                     preparedStmt.execute();
                 }
             }
             // Delete of the temporary limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsVariantQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteTemporaryLimitsVariantQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
             }
 
             // Delete permanent limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsVariantQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeletePermanentLimitsVariantQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
             }
 
             // Delete of the reactive capability curve points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsVariantQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteReactiveCapabilityCurvePointsVariantQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
             }
 
             // Delete of the regulating points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsVariantQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteRegulatingPointsVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
             }
 
             // Delete of the Tap Changer steps (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepVariantQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteTapChangerStepVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
@@ -440,7 +467,7 @@ public class NetworkStoreRepository {
                         ? srcNetwork.getAttributes().getSrcVariantNum()
                         : sourceVariantNum;
             }
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
+            try (var preparedStmt = connection.prepareStatement(buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
                 preparedStmt.setString(3, mapper.writeValueAsString(variantMode));
@@ -463,7 +490,7 @@ public class NetworkStoreRepository {
     public void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum, boolean isFullClone) throws SQLException {
         if (isFullClone) {
             for (String tableName : ELEMENT_TABLES) {
-                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneIdentifiablesQuery(tableName, mappings.getTableMapping(tableName.toLowerCase()).getColumnsMapping().keySet()))) {
+                try (var preparedStmt = connection.prepareStatement(buildCloneIdentifiablesQuery(tableName, mappings.getTableMapping(tableName.toLowerCase()).getColumnsMapping().keySet()))) {
                     preparedStmt.setInt(1, targetVariantNum);
                     preparedStmt.setObject(2, targetUuid);
                     preparedStmt.setObject(3, uuid);
@@ -473,7 +500,7 @@ public class NetworkStoreRepository {
             }
 
             // Copy of the temporary limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTemporaryLimitsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildCloneTemporaryLimitsQuery())) {
                 preparedStmt.setString(1, targetUuid.toString());
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setString(3, uuid.toString());
@@ -482,7 +509,7 @@ public class NetworkStoreRepository {
             }
 
             // Copy of the permanent limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildClonePermanentLimitsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildClonePermanentLimitsQuery())) {
                 preparedStmt.setString(1, targetUuid.toString());
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setString(3, uuid.toString());
@@ -491,7 +518,7 @@ public class NetworkStoreRepository {
             }
 
             // Copy of the reactive capability curve points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneReactiveCapabilityCurvePointsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildCloneReactiveCapabilityCurvePointsQuery())) {
                 preparedStmt.setString(1, targetUuid.toString());
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setString(3, uuid.toString());
@@ -500,7 +527,7 @@ public class NetworkStoreRepository {
             }
 
             // Copy of the Tap Changer steps (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTapChangerStepQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildCloneTapChangerStepQuery())) {
                 preparedStmt.setObject(1, targetUuid);
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
@@ -509,7 +536,7 @@ public class NetworkStoreRepository {
             }
 
             // Copy of the regulating points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneRegulatingPointsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildCloneRegulatingPointsQuery())) {
                 preparedStmt.setObject(1, targetUuid);
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
@@ -531,7 +558,7 @@ public class NetworkStoreRepository {
         // Copy of the tombstoned equipements (which are not Identifiables objects)
         //TODO: add a test
         //TODO: Do not copy tombstoned if it's a full clone because the data will be stored in full network (this partial clone => full clone need to be coded too)
-        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildCloneTombstonedQuery())) {
+        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedQuery())) {
             preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
             preparedStmt.setObject(3, uuid);
@@ -563,7 +590,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             batchInsertIdentifiables(networkUuid, resources, tableMapping, connection);
             // Remove tombstoned from db
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedEquipmentsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteTombstonedEquipmentsQuery())) {
                 List<Object> values = new ArrayList<>(3);
                 for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<T> resource : subResources) {
@@ -586,7 +613,7 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> void batchInsertIdentifiables(UUID networkUuid, List<Resource<T>> resources, TableMapping tableMapping, Connection connection) throws SQLException {
-        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()))) {
+        try (var preparedStmt = connection.prepareStatement(buildInsertIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()))) {
             List<Object> values = new ArrayList<>(3 + tableMapping.getColumnsMapping().size());
             for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                 for (Resource<T> resource : subResources) {
@@ -641,7 +668,7 @@ public class NetworkStoreRepository {
     private <T extends IdentifiableAttributes> Optional<Resource<T>> getIdentifiableForVariant(UUID networkUuid, int variantNum, String equipmentId,
                                                                                      TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
+            var preparedStmt = connection.prepareStatement(buildGetIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, equipmentId);
@@ -779,7 +806,7 @@ public class NetworkStoreRepository {
                                                                                             TableMapping tableMapping) {
         List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
+            var preparedStmt = connection.prepareStatement(buildGetIdentifiablesQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             identifiables = getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
@@ -827,7 +854,7 @@ public class NetworkStoreRepository {
                                                                                              TableMapping tableMapping) {
         List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesInContainerQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), containerColumns));
+            var preparedStmt = connection.prepareStatement(buildGetIdentifiablesInContainerQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), containerColumns));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < containerColumns.size(); i++) {
@@ -849,9 +876,9 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
 
-            String updateQuery = QueryCatalog.buildUpdateIdentifiableQuery(
+            String updateQuery = buildUpdateIdentifiableQuery(
                     tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause);
-            String insertQuery = QueryCatalog.buildInsertIdentifiableQuery(
+            String insertQuery = buildInsertIdentifiableQuery(
                     tableMapping.getTable(), tableMapping.getColumnsMapping().keySet());
             try (var updateStatement = connection.prepareStatement(updateQuery);
                  var insertStatement = connection.prepareStatement(insertQuery)) {
@@ -905,7 +932,7 @@ public class NetworkStoreRepository {
         // or can we H2 in compatibility mode POSTGRES?
         Set<Integer> variantNums = resources.stream().map(Resource::getVariantNum).collect(Collectors.toSet());
         Map<Integer, Set<String>> existingIds = new HashMap<>();
-        try (var selectStatement = connection.prepareStatement(QueryCatalog.buildGetIdsQuery(table))) {
+        try (var selectStatement = connection.prepareStatement(buildGetIdsQuery(table))) {
             selectStatement.setObject(1, networkUuid);
             for (int variantNum : variantNums) {
                 selectStatement.setInt(2, variantNum);
@@ -926,7 +953,7 @@ public class NetworkStoreRepository {
 
             // Update existing resources in variant num
             Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateInjectionSvQuery(tableName))) {
+            try (var preparedStmt = connection.prepareStatement(buildUpdateInjectionSvQuery(tableName))) {
                 List<Object> values = new ArrayList<>(5);
                 for (List<Resource<InjectionSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<InjectionSvAttributes> resource : subResources) {
@@ -1003,7 +1030,7 @@ public class NetworkStoreRepository {
             if (srcVariantNum == -1) {
                 continue;
             }
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesInVariantExcludingOtherVariantQuery(
+            try (var preparedStmt = connection.prepareStatement(buildGetIdentifiablesInVariantExcludingOtherVariantQuery(
                     tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()))) {
                 preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, srcVariantNum);
@@ -1024,7 +1051,7 @@ public class NetworkStoreRepository {
     public void updateBranchesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources, String tableName, TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
             Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateBranchSvQuery(tableName))) {
+            try (var preparedStmt = connection.prepareStatement(buildUpdateBranchSvQuery(tableName))) {
                 List<Object> values = new ArrayList<>(7);
                 for (List<Resource<BranchSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<BranchSvAttributes> resource : subResources) {
@@ -1065,9 +1092,9 @@ public class NetworkStoreRepository {
         executeWithoutAutoCommit(connection -> {
             Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
 
-            String updateQuery = QueryCatalog.buildUpdateIdentifiableQuery(
+            String updateQuery = buildUpdateIdentifiableQuery(
                     tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), null);
-            String insertQuery = QueryCatalog.buildInsertIdentifiableQuery(
+            String insertQuery = buildInsertIdentifiableQuery(
                     tableMapping.getTable(), tableMapping.getColumnsMapping().keySet());
             try (var updateStatement = connection.prepareStatement(updateQuery);
                  var insertStatement = connection.prepareStatement(insertQuery)) {
@@ -1108,13 +1135,13 @@ public class NetworkStoreRepository {
 
     public void deleteIdentifiable(UUID networkUuid, int variantNum, String id, String tableName) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiableQuery(tableName))) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteIdentifiableQuery(tableName))) {
                 preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.setString(3, id);
                 preparedStmt.executeUpdate();
             }
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildAddTombstonedIdentifiableQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildAddTombstonedIdentifiableQuery())) {
                 preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.setString(3, id);
@@ -1161,7 +1188,7 @@ public class NetworkStoreRepository {
     public void updateVoltageLevelsSv(UUID networkUuid, List<Resource<VoltageLevelSvAttributes>> resources) {
         try (var connection = dataSource.getConnection()) {
             Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, mappings.getVoltageLevelMappings().getTable(), connection);
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateVoltageLevelSvQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildUpdateVoltageLevelSvQuery())) {
                 List<Object> values = new ArrayList<>(5);
                 for (List<Resource<VoltageLevelSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<VoltageLevelSvAttributes> resource : subResources) {
@@ -1272,7 +1299,7 @@ public class NetworkStoreRepository {
         List<String> identifiables = new ArrayList<>();
 
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetTombstonedEquipmentsQuery());
+            var preparedStmt = connection.prepareStatement(buildGetTombstonedEquipmentsQuery());
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
 
@@ -1787,7 +1814,7 @@ public class NetworkStoreRepository {
 
     public void updateThreeWindingsTransformersSv(UUID networkUuid, List<Resource<ThreeWindingsTransformerSvAttributes>> resources) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateThreeWindingsTransformerSvQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildUpdateThreeWindingsTransformerSvQuery())) {
                 List<Object> values = new ArrayList<>(9);
                 for (List<Resource<ThreeWindingsTransformerSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
                     for (Resource<ThreeWindingsTransformerSvAttributes> resource : subResources) {
@@ -2092,7 +2119,7 @@ public class NetworkStoreRepository {
 
     public Optional<Resource<IdentifiableAttributes>> getIdentifiableForVariant(UUID networkUuid, int variantNum, String id) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiableForAllTablesQuery());
+            var preparedStmt = connection.prepareStatement(buildGetIdentifiableForAllTablesQuery());
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, id);
@@ -2162,7 +2189,7 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildTemporaryLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            var preparedStmt = connection.prepareStatement(buildTemporaryLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
             preparedStmt.setString(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < valuesForInClause.size(); i++) {
@@ -2209,7 +2236,7 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildPermanentLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            var preparedStmt = connection.prepareStatement(buildPermanentLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
             preparedStmt.setString(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < valuesForInClause.size(); i++) {
@@ -2279,7 +2306,7 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildTemporaryLimitQuery(columnNameForWhereClause));
+            var preparedStmt = connection.prepareStatement(buildTemporaryLimitQuery(columnNameForWhereClause));
             preparedStmt.setString(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
@@ -2321,7 +2348,7 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildPermanentLimitQuery(columnNameForWhereClause));
+            var preparedStmt = connection.prepareStatement(buildPermanentLimitQuery(columnNameForWhereClause));
             preparedStmt.setString(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
@@ -2407,7 +2434,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = limitsInfos.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getTemporaryLimits()));
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertTemporaryLimitsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildInsertTemporaryLimitsQuery())) {
                 List<Object> values = new ArrayList<>(11);
                 List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> list = new ArrayList<>(temporaryLimits.entrySet());
                 for (List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> subUnit : Lists.partition(list, BATCH_SIZE)) {
@@ -2443,7 +2470,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits = limitsInfos.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getPermanentLimits()));
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertPermanentLimitsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildInsertPermanentLimitsQuery())) {
                 List<Object> values = new ArrayList<>(8);
                 List<Map.Entry<OwnerInfo, List<PermanentLimitAttributes>>> list = new ArrayList<>(permanentLimits.entrySet());
                 for (List<Map.Entry<OwnerInfo, List<PermanentLimitAttributes>>> subUnit : Lists.partition(list, BATCH_SIZE)) {
@@ -2528,7 +2555,7 @@ public class NetworkStoreRepository {
 
     private void deleteTemporaryLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteTemporaryLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setString(1, networkUuid.toString());
                 preparedStmt.setInt(2, variantNum);
                 for (int i = 0; i < equipmentIds.size(); i++) {
@@ -2543,7 +2570,7 @@ public class NetworkStoreRepository {
 
     private void deletePermanentLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
+            try (var preparedStmt = connection.prepareStatement(buildDeletePermanentLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setString(1, networkUuid.toString());
                 preparedStmt.setInt(2, variantNum);
                 for (int i = 0; i < equipmentIds.size(); i++) {
@@ -2589,7 +2616,7 @@ public class NetworkStoreRepository {
     // Regulating Points
     public void insertRegulatingPoints(Map<OwnerInfo, RegulatingPointAttributes> regulatingPoints) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertRegulatingPointsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildInsertRegulatingPointsQuery())) {
                 List<Object> values = new ArrayList<>(10);
                 List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> list = new ArrayList<>(regulatingPoints.entrySet());
                 for (List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> subUnit : Lists.partition(list, BATCH_SIZE)) {
@@ -2685,7 +2712,7 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPointsForVariant(UUID networkUuid, int variantNum, ResourceType type, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingPointsQuery());
+            var preparedStmt = connection.prepareStatement(buildRegulatingPointsQuery());
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
@@ -2731,7 +2758,7 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPointsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, ResourceType type, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingPointsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            var preparedStmt = connection.prepareStatement(buildRegulatingPointsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
@@ -2747,7 +2774,7 @@ public class NetworkStoreRepository {
 
     private void deleteRegulatingPoints(UUID networkUuid, int variantNum, List<String> equipmentIds, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsVariantEquipmentINQuery(equipmentIds.size()))) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteRegulatingPointsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.setObject(3, type.toString());
@@ -2764,7 +2791,7 @@ public class NetworkStoreRepository {
     // Reactive Capability Curve Points
     public void insertReactiveCapabilityCurvePoints(Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertReactiveCapabilityCurvePointsQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildInsertReactiveCapabilityCurvePointsQuery())) {
                 List<Object> values = new ArrayList<>(7);
                 List<Map.Entry<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>>> list = new ArrayList<>(reactiveCapabilityCurvePoints.entrySet());
                 for (List<Map.Entry<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>>> subUnit : Lists.partition(list, BATCH_SIZE)) {
@@ -2826,7 +2853,7 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildReactiveCapabilityCurvePointWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            var preparedStmt = connection.prepareStatement(buildReactiveCapabilityCurvePointWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
             preparedStmt.setString(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < valuesForInClause.size(); i++) {
@@ -2870,7 +2897,7 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildReactiveCapabilityCurvePointQuery(columnNameForWhereClause));
+            var preparedStmt = connection.prepareStatement(buildReactiveCapabilityCurvePointQuery(columnNameForWhereClause));
             preparedStmt.setString(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
@@ -3035,7 +3062,7 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsForVariant(UUID networkUuid, int variantNum, ResourceType type, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsQuery());
+            var preparedStmt = connection.prepareStatement(buildRegulatingEquipmentsQuery());
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
@@ -3081,7 +3108,7 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, ResourceType type, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            var preparedStmt = connection.prepareStatement(buildRegulatingEquipmentsWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
@@ -3134,6 +3161,11 @@ public class NetworkStoreRepository {
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         if (srcVariantNum != -1) {
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
+            if (tombstonedIds.contains(equipmentId)) {
+                return Map.of();
+            }
             // Retrieve updated regulatingEquipments in partial
             Map<String, ResourceType> updateRegulatingEquipments = getRegulatingEquipmentsForIdentifiableForVariant(networkUuid, variantNum, equipmentId, type);
             if (!updateRegulatingEquipments.isEmpty()) {
@@ -3147,7 +3179,7 @@ public class NetworkStoreRepository {
     private Map<String, ResourceType> getRegulatingEquipmentsForIdentifiableForVariant(UUID networkUuid, int variantNum, String equipmentId, ResourceType type) {
         Map<String, ResourceType> regulatingEquipments = new HashMap<>();
         try (var connection = dataSource.getConnection();
-             PreparedStatement preparedStmt = connection.prepareStatement(QueryCatalog.buildRegulatingEquipmentsForOneEquipmentQuery())) {
+             PreparedStatement preparedStmt = connection.prepareStatement(buildRegulatingEquipmentsForOneEquipmentQuery())) {
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, type.toString());
@@ -3245,7 +3277,7 @@ public class NetworkStoreRepository {
 
     private void deleteReactiveCapabilityCurvePoints(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsVariantEquipmentINQuery(equipmentIds.size()))) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteReactiveCapabilityCurvePointsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setString(1, networkUuid.toString());
                 preparedStmt.setInt(2, variantNum);
                 for (int i = 0; i < equipmentIds.size(); i++) {
@@ -3308,7 +3340,7 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildTapChangerStepWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            var preparedStmt = connection.prepareStatement(buildTapChangerStepWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < valuesForInClause.size(); i++) {
@@ -3351,7 +3383,7 @@ public class NetworkStoreRepository {
 
     private Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsFromVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryCatalog.buildTapChangerStepQuery(columnNameForWhereClause));
+            var preparedStmt = connection.prepareStatement(buildTapChangerStepQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
@@ -3461,7 +3493,7 @@ public class NetworkStoreRepository {
     private <T extends TapChangerStepAttributes>
         void insertTapChangerSteps(Map<OwnerInfo, List<T>> tapChangerSteps) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertTapChangerStepQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildInsertTapChangerStepQuery())) {
                 List<Object> values = new ArrayList<>(13);
 
                 List<Map.Entry<OwnerInfo, List<T>>> list = new ArrayList<>(tapChangerSteps.entrySet());
@@ -3557,7 +3589,7 @@ public class NetworkStoreRepository {
 
     private void deleteTapChangerSteps(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepVariantEquipmentINQuery(equipmentIds.size()))) {
+            try (var preparedStmt = connection.prepareStatement(buildDeleteTapChangerStepVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 for (int i = 0; i < equipmentIds.size(); i++) {
