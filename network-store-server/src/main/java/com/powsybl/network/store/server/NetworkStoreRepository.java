@@ -543,16 +543,14 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(4, sourceVariantNum);
                 preparedStmt.execute();
             }
-        }
 
-        // Copy of the Extensions (which are not Identifiables objects)
-        //TODO
-        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneExtensionsQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneExtensionsQuery())) {
+                preparedStmt.setObject(1, targetUuid);
+                preparedStmt.setInt(2, targetVariantNum);
+                preparedStmt.setObject(3, uuid);
+                preparedStmt.setInt(4, sourceVariantNum);
+                preparedStmt.execute();
+            }
         }
 
         // Copy of the tombstoned equipements (which are not Identifiables objects)
@@ -3677,20 +3675,135 @@ public class NetworkStoreRepository {
         };
     }
 
+    //FIXME: deal with tombstoned extensions
     public Optional<ExtensionAttributes> getExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
+        Resource<NetworkAttributes> network = getNetwork(networkId, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        if (srcVariantNum != -1) {
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkId, variantNum);
+            if (tombstonedIds.contains(identifiableId)) {
+                return Optional.empty();
+            }
+            // Retrieve updated extension in partial variant
+            Optional<ExtensionAttributes> extensionAttributes = extensionHandler.getExtensionAttributes(networkId, variantNum, identifiableId, extensionName);
+            if (extensionAttributes.isPresent()) {
+                return extensionAttributes;
+            }
+        }
         return extensionHandler.getExtensionAttributes(networkId, variantNum, identifiableId, extensionName);
     }
 
+    //FIXME: deal with tombstoned extensions
     public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionName(UUID networkId, int variantNum, ResourceType type, String extensionName) {
-        return extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(networkId, variantNum, type.toString(), extensionName);
+        Resource<NetworkAttributes> network = getNetwork(networkId, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<String, ExtensionAttributes> extensionsAttributesByResourceTypeAndExtensionName;
+
+        if (srcVariantNum != -1) {
+            // Retrieve extensionsAttributesByResourceTypeAndExtensionName from the (full) variant first
+            extensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(networkId, srcVariantNum, type.toString(), extensionName);
+
+            // Retrieve updated extensionsAttributesByResourceTypeAndExtensionName in partial
+            Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(networkId, variantNum, type.toString(), extensionName);
+            Set<String> updatedIds = updatedExtensionsAttributesByResourceTypeAndExtensionName.keySet();
+            // Remove any resources that have been updated in the current variant
+            //NOTE: this one is simple because we retrieve only one type of extension
+            extensionsAttributesByResourceTypeAndExtensionName.keySet().removeIf(updatedIds::contains);
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkId, variantNum);
+            extensionsAttributesByResourceTypeAndExtensionName.keySet().removeIf(tombstonedIds::contains);
+            // Combine base and updated extensionsAttributesByResourceTypeAndExtensionName
+            extensionsAttributesByResourceTypeAndExtensionName.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
+        } else {
+            // If the variant is FULL, retrieve extensionsAttributesByResourceTypeAndExtensionName for the specified variant directly
+            extensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(networkId, variantNum, type.toString(), extensionName);
+        }
+        return extensionsAttributesByResourceTypeAndExtensionName;
     }
 
+    //FIXME: deal with tombstoned extensions
     public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableId(UUID networkId, int variantNum, String identifiableId) {
-        return extensionHandler.getAllExtensionsAttributesByIdentifiableId(networkId, variantNum, identifiableId);
+        Resource<NetworkAttributes> network = getNetwork(networkId, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<String, ExtensionAttributes> extensionsAttributesByIdentifiableId;
+
+        if (srcVariantNum != -1) {
+            // If the equipment is tombstoned, we return directly
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkId, variantNum);
+            if (tombstonedIds.contains(identifiableId)) {
+                return Map.of();
+            }
+
+            // Retrieve extensionsAttributesByIdentifiableId from the (full) variant first
+            extensionsAttributesByIdentifiableId = extensionHandler.getAllExtensionsAttributesByIdentifiableId(networkId, variantNum, identifiableId);
+
+            // Retrieve updated extensionsAttributesByIdentifiableId in partial
+            Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByIdentifiableId(networkId, variantNum, identifiableId);
+            Set<String> updatedExtensionNames = updatedExtensionsAttributesByResourceTypeAndExtensionName.keySet();
+            // Remove any resources that have been updated in the current variant
+            extensionsAttributesByIdentifiableId.keySet().removeIf(updatedExtensionNames::contains);
+            // Combine base and updated extensionsAttributesByIdentifiableId
+            extensionsAttributesByIdentifiableId.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
+        } else {
+            // If the variant is FULL, retrieve extensionsAttributesByIdentifiableId for the specified variant directly
+            extensionsAttributesByIdentifiableId = extensionHandler.getAllExtensionsAttributesByIdentifiableId(networkId, variantNum, identifiableId);
+        }
+        return extensionsAttributesByIdentifiableId;
     }
 
     public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceType(UUID networkId, int variantNum, ResourceType type) {
-        return extensionHandler.getAllExtensionsAttributesByResourceType(networkId, variantNum, type.toString());
+
+        Resource<NetworkAttributes> network = getNetwork(networkId, variantNum).orElseThrow();
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        Map<String, Map<String, ExtensionAttributes>> extensionsAttributesByResourceType;
+
+        if (srcVariantNum != -1) {
+            // Retrieve extensionsAttributesByResourceType from the (full) variant first
+            extensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(networkId, variantNum, type.toString());
+
+            // Retrieve updated extensionsAttributesByResourceType in partial
+            // Remove tombstoned resources in the current variant
+            List<String> tombstonedIds = getTombstonedIdentifiables(networkId, variantNum);
+            extensionsAttributesByResourceType.keySet().removeIf(tombstonedIds::contains);
+            // Combine base and updated extensionsAttributesByResourceType
+            Map<String, Map<String, ExtensionAttributes>> updatedExtensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(networkId, srcVariantNum, type.toString());
+            // Merge maps and nested maps of updatedExtensionsAttributesByResourceType in extensionsAttributesByResourceType
+            for (Map.Entry<String, Map<String, ExtensionAttributes>> entry : updatedExtensionsAttributesByResourceType.entrySet()) {
+                String resourceId = entry.getKey();
+                Map<String, ExtensionAttributes> updatedNestedMap = entry.getValue();
+
+                extensionsAttributesByResourceType.merge(
+                        resourceId,
+                        updatedNestedMap,
+                        (existingNestedMap, newNestedMap) -> {
+                            // Merge the nested maps
+                            for (Map.Entry<String, ExtensionAttributes> nestedEntry : newNestedMap.entrySet()) {
+                                String nestedKey = nestedEntry.getKey();
+                                ExtensionAttributes updatedAttributes = nestedEntry.getValue();
+
+                                // Add or update the nested map entry
+                                existingNestedMap.merge(
+                                        nestedKey,
+                                        updatedAttributes,
+                                        (existingAttributes, newAttributes) -> {
+                                            return newAttributes;
+                                        }
+                                );
+                            }
+                            return existingNestedMap;
+                        }
+                );
+            }
+        } else {
+            // If the variant is FULL, retrieve extensionsAttributesByResourceType for the specified variant directly
+            extensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(networkId, variantNum, type.toString());
+        }
+        return extensionsAttributesByResourceType;
     }
 
     public void removeExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
