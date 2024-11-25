@@ -147,6 +147,7 @@ public class NetworkStoreController {
                                              @Parameter(description = "Target variant id", required = true) @RequestParam(required = false) String targetVariantId,
                                              @Parameter(description = "Variant mode", required = true) @RequestParam(required = false) String variantMode) {
         //TODO: not sure about the default?
+        //TODO: clone full from partial
         repository.cloneNetworkVariant(networkId, sourceVariantNum, targetVariantNum, targetVariantId, variantMode != null ? VariantMode.valueOf(variantMode) : VariantMode.PARTIAL);
         return ResponseEntity.ok().build();
     }

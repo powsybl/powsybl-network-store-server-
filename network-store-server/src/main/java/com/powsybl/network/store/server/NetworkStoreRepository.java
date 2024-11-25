@@ -638,7 +638,7 @@ public class NetworkStoreRepository {
 
         return (srcVariantNum != -1)
                 ? retrieveFromPartialVariant(network, networkUuid, variantNum, equipmentId, tableMapping)
-                : getIdentifiableForVariant(networkUuid, variantNum, equipmentId, tableMapping);
+                : getIdentifiableForVariant(networkUuid, variantNum, equipmentId, tableMapping, variantNum);
     }
 
     private <T extends IdentifiableAttributes> Optional<Resource<T>> retrieveFromPartialVariant(
@@ -649,22 +649,18 @@ public class NetworkStoreRepository {
             return Optional.empty();
         }
 
-        int sourceVariantNum = network.getAttributes().getSrcVariantNum();
-        Optional<Resource<T>> identifiable = getIdentifiableForVariant(networkUuid, sourceVariantNum, equipmentId, tableMapping);
+        int sourceVariantNum = network.getAttributes().getSrcVariantNum(); // we already retrieve it above
 
-        if (identifiable.isPresent()) {
-            Optional<Resource<T>> variantSpecificIdentifiable = getIdentifiableForVariant(networkUuid, variantNum, equipmentId, tableMapping);
-            if (variantSpecificIdentifiable.isPresent()) {
-                return variantSpecificIdentifiable;
-            } else {
-                identifiable.get().setVariantNum(variantNum);
-            }
+        // Get variant identifiable if it exists, otherwise get source variant identifiable with variant num
+        Optional<Resource<T>> variantSpecificIdentifiable = getIdentifiableForVariant(networkUuid, variantNum, equipmentId, tableMapping, variantNum);
+        if (variantSpecificIdentifiable.isEmpty()) {
+            return getIdentifiableForVariant(networkUuid, sourceVariantNum, equipmentId, tableMapping, variantNum);
         }
-        return identifiable;
+        return variantSpecificIdentifiable;
     }
 
     private <T extends IdentifiableAttributes> Optional<Resource<T>> getIdentifiableForVariant(UUID networkUuid, int variantNum, String equipmentId,
-                                                                                     TableMapping tableMapping) {
+                                                                                     TableMapping tableMapping, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(buildGetIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()));
             preparedStmt.setObject(1, networkUuid);
@@ -681,10 +677,10 @@ public class NetworkStoreRepository {
                     Resource.Builder<T> resourceBuilder = (Resource.Builder<T>) tableMapping.getResourceBuilderSupplier().get();
                     Resource<T> resource = resourceBuilder
                             .id(equipmentId)
-                            .variantNum(variantNum)
+                            .variantNum(targetVariantNum)
                             .attributes(attributes)
                             .build();
-                    return Optional.of(completeResourceInfos(resource, networkUuid, variantNum, equipmentId));
+                    return Optional.of(completeResourceInfos(resource, networkUuid, targetVariantNum, equipmentId));
                 }
             }
             return Optional.empty();
