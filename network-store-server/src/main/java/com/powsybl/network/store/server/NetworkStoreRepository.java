@@ -641,6 +641,7 @@ public class NetworkStoreRepository {
                 : getIdentifiableForVariant(networkUuid, variantNum, equipmentId, tableMapping, variantNum);
     }
 
+    //FIXME: this method is very similar to the other getIdentifiable method
     private <T extends IdentifiableAttributes> Optional<Resource<T>> retrieveFromPartialVariant(
             Resource<NetworkAttributes> network, UUID networkUuid, int variantNum, String equipmentId, TableMapping tableMapping) {
 
@@ -823,7 +824,7 @@ public class NetworkStoreRepository {
             identifiables = getIdentifiablesInContainerForVariant(networkUuid, srcVariantNum, containerId, containerColumns, tableMapping);
 
             // Retrieve updated identifiables in partial
-            List<Resource<T>> updatedIdentifiables = getIdentifiablesInContainerForVariant(networkUuid, variantNum, containerId, containerColumns, tableMapping);
+            List<Resource<T>> updatedIdentifiables = getIdentifiablesForVariant(networkUuid, variantNum, tableMapping); // here we should use the getIdentifiables()! to avoid updating voltageLevel not accounted for
             Set<String> updatedIds = updatedIdentifiables.stream()
                     .map(Resource::getId)
                     .collect(Collectors.toSet());
@@ -2090,7 +2091,7 @@ public class NetworkStoreRepository {
 
         return (srcVariantNum != -1)
                 ? retrieveFromPartialVariant(network, networkUuid, variantNum, id)
-                : getIdentifiableForVariant(networkUuid, variantNum, id);
+                : getIdentifiableForVariant(networkUuid, variantNum, id, variantNum);
     }
 
     private Optional<Resource<IdentifiableAttributes>> retrieveFromPartialVariant(
@@ -2101,21 +2102,18 @@ public class NetworkStoreRepository {
             return Optional.empty();
         }
 
+        // we already know the srcVariantNum here...
         int sourceVariantNum = network.getAttributes().getSrcVariantNum();
-        Optional<Resource<IdentifiableAttributes>> identifiable = getIdentifiableForVariant(networkUuid, sourceVariantNum, id);
+        Optional<Resource<IdentifiableAttributes>> variantSpecificIdentifiable = getIdentifiableForVariant(networkUuid, variantNum, id, variantNum);
 
-        if (identifiable.isPresent()) {
-            Optional<Resource<IdentifiableAttributes>> variantSpecificIdentifiable = getIdentifiableForVariant(networkUuid, variantNum, id);
-            if (variantSpecificIdentifiable.isPresent()) {
-                return variantSpecificIdentifiable;
-            } else {
-                identifiable.get().setVariantNum(variantNum);
-            }
+        if (variantSpecificIdentifiable.isEmpty()) {
+            return getIdentifiableForVariant(networkUuid, sourceVariantNum, id, variantNum);
         }
-        return identifiable;
+
+        return variantSpecificIdentifiable;
     }
 
-    public Optional<Resource<IdentifiableAttributes>> getIdentifiableForVariant(UUID networkUuid, int variantNum, String id) {
+    public Optional<Resource<IdentifiableAttributes>> getIdentifiableForVariant(UUID networkUuid, int variantNum, String id, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(buildGetIdentifiableForAllTablesQuery());
             preparedStmt.setObject(1, networkUuid);
@@ -2139,10 +2137,10 @@ public class NetworkStoreRepository {
 
                         Resource<IdentifiableAttributes> resource = new Resource.Builder<>(tableMapping.getResourceType())
                                 .id(id)
-                                .variantNum(variantNum)
+                                .variantNum(targetVariantNum)
                                 .attributes(attributes)
                                 .build();
-                        return Optional.of(completeResourceInfos(resource, networkUuid, variantNum, id));
+                        return Optional.of(completeResourceInfos(resource, networkUuid, targetVariantNum, id));
                     }
                 }
             }
@@ -2964,12 +2962,13 @@ public class NetworkStoreRepository {
     }
 
     // using the request on a small number of ids and not on all elements
+    //TODO: anything to do?
     private <T extends RegulatedEquipmentAttributes> void setRegulatingEquipmentsWithIds(List<Resource<T>> elements, UUID networkUuid, int variantNum, ResourceType type, List<String> elementIds) {
         // regulating equipments
         Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipmentsWithInClause(networkUuid, variantNum, "regulatingterminalconnectableid", elementIds, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
-            element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
+            element.getAttributes().setRegulatingEquipments(regulatingEquipments.getOrDefault(ownerInfo, Map.of()));
         });
     }
 
@@ -2979,7 +2978,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
-            element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
+            element.getAttributes().setRegulatingEquipments(regulatingEquipments.getOrDefault(ownerInfo, Map.of()));
         });
     }
 

@@ -480,7 +480,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void getIdentifiablesIdsFromPartialCloneWithoutCreatedIdentifiables() {
+    void getIdentifiablesIdsFromPartialCloneWithNoIdentifiableInPartialVariant() {
         String networkId = "network1";
         String loadId = "load1";
         String lineId = "line1";
@@ -516,13 +516,7 @@ class NetworkStoreRepositoryPartialVariantTest {
                         .voltageLevelId2("vl2")
                         .build())
                 .build();
-        Resource<LoadAttributes> load1 = Resource.loadBuilder()
-                .id(loadId)
-                .variantNum(variantNum)
-                .attributes(LoadAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .build())
-                .build();
+        Resource<LoadAttributes> load1 = buildLoad(loadId, variantNum, "vl1");
         networkStoreRepository.createLines(NETWORK_UUID, List.of(line1));
         networkStoreRepository.createLoads(NETWORK_UUID, List.of(load1));
     }
@@ -542,7 +536,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void getIdentifiablesIdsFromPartialCloneWithCreatedIdentifiables() {
+    void getIdentifiablesIdsFromPartialClone() {
         String networkId = "network1";
         String loadId1 = "load1";
         String lineId1 = "line1";
@@ -587,22 +581,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void getIdentifiablesIdsFromPartialCloneWithoutCreatedIdentifiablesWithTombstoned() {
-        String networkId = "network1";
-        String loadId = "load1";
-        String lineId = "line1";
-        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
-        createLineAndLoad(0, loadId, lineId);
-        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId, LOAD_TABLE);
-
-        List<String> identifiablesIds = networkStoreRepository.getIdentifiablesIds(NETWORK_UUID, 1);
-
-        assertEquals(List.of(lineId), identifiablesIds);
-    }
-
-    @Test
-    void getIdentifiablesIdsFromPartialCloneWithCreatedIdentifiablesWithTombstoned() {
+    void getIdentifiablesIdsFromPartialCloneWithTombstoned() {
         String networkId = "network1";
         String loadId1 = "load1";
         String lineId1 = "line1";
@@ -620,6 +599,425 @@ class NetworkStoreRepositoryPartialVariantTest {
 
         assertEquals(List.of(lineId2), identifiablesIds);
     }
+
+    @Test
+    @Disabled("Not implemented")
+    void getIdentifiableWithoutNetwork() {
+        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getIdentifiable(NETWORK_UUID, 0, "unknownId"));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+    }
+
+    @Test
+    void getIdentifiableFromPartialCloneWithNoIdentifiableInPartialVariant() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl1");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        Optional<Resource<IdentifiableAttributes>> resLoad1 = networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId);
+
+        // Variant num of load1 must be 1
+        Optional<Resource<LoadAttributes>> expLoad1 = Optional.of(buildLoad(loadId, 1, "vl1"));
+        assertEquals(expLoad1, resLoad1);
+    }
+
+    @Test
+    void getIdentifiableFromPartialCloneWithIdentifiableInPartialVariant() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        createLoad(loadId, 1, "vl1");
+
+        Optional<Resource<IdentifiableAttributes>> resLoad = networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId);
+
+        Optional<Resource<LoadAttributes>> expLoad = Optional.of(buildLoad(loadId, 1, "vl1"));
+        assertEquals(expLoad, resLoad);
+    }
+
+    @Test
+    void getIdentifiableFromPartialCloneWithUpdatedIdentifiable() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl1");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        createLoad(loadId, 1, "vl2");
+
+        Optional<Resource<IdentifiableAttributes>> resLoad = networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId);
+
+        Optional<Resource<LoadAttributes>> expLoad = Optional.of(buildLoad(loadId, 1, "vl2"));
+        assertEquals(expLoad, resLoad);
+    }
+
+    private void createLoad(String loadId, int variantNum, String voltageLevel) {
+        Resource<LoadAttributes> load = buildLoad(loadId, variantNum, voltageLevel);
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(load));
+    }
+
+    private static Resource<LoadAttributes> buildLoad(String loadId, int variantNum, String voltageLevel) {
+        return Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(variantNum)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId(voltageLevel)
+                        .build())
+                .build();
+    }
+
+    @Test
+    void getIdentifiableFromFullClone() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 2, "variant2", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 2, "vl2");
+
+        Optional<Resource<IdentifiableAttributes>> resLoad = networkStoreRepository.getIdentifiable(NETWORK_UUID, 2, loadId);
+
+        Optional<Resource<LoadAttributes>> expLoad = Optional.of(buildLoad(loadId, 2, "vl2"));
+        assertEquals(expLoad, resLoad);
+    }
+
+    @Test
+    void getIdentifiableFromPartialCloneWithTombstoned() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl2");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId, LOAD_TABLE);
+
+        Optional<Resource<IdentifiableAttributes>> resLoad1 = networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId);
+
+        assertEquals(Optional.empty(), resLoad1);
+    }
+
+    @Test
+    void getIdentifiableFromPartialCloneWithExternalAttributes() {
+        String networkId = "network1";
+        String lineId1 = "line1";
+        String lineId2 = "line2";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        Resource<LineAttributes> line1 = Resource.lineBuilder()
+                .id(lineId1)
+                .variantNum(0)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(30.).build())
+                                .build()))
+                        .build())
+                .build();
+        networkStoreRepository.createLines(NETWORK_UUID, List.of(line1));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        Resource<LineAttributes> line2 = Resource.lineBuilder()
+                .id(lineId2)
+                .variantNum(1)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl2")
+                        .voltageLevelId2("vl3")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
+                        .build())
+                .build();
+        networkStoreRepository.createLines(NETWORK_UUID, List.of(line2));
+
+        Optional<Resource<IdentifiableAttributes>> resLine1 = networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, lineId1);
+        Optional<Resource<IdentifiableAttributes>> resLine2 = networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, lineId2);
+
+        // Line1 is retrieved from variant 1 so variantNum must be 1
+        Resource<LineAttributes> expLine1 = Resource.lineBuilder()
+                .id(lineId1)
+                .variantNum(1)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(30.).build())
+                                .build()))
+                        .build())
+                .build();
+
+        assertEquals(Optional.of(expLine1), resLine1);
+        assertEquals(Optional.of(line2), resLine2);
+    }
+
+    @Test
+    @Disabled("Not implemented")
+    void getIdentifiableWithMappingWithoutNetwork() {
+        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getLoad(NETWORK_UUID, 0, "unknownId"));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+    }
+
+    @Test
+    void getIdentifiableWithMappingFromPartialCloneWithNoIdentifiableInPartialVariant() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl1");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        Optional<Resource<LoadAttributes>> resLoad1 = networkStoreRepository.getLoad(NETWORK_UUID, 1, loadId);
+
+        // Variant num of load1 must be 1
+        Optional<Resource<LoadAttributes>> expLoad1 = Optional.of(buildLoad(loadId, 1, "vl1"));
+        assertEquals(expLoad1, resLoad1);
+    }
+
+    @Test
+    void getIdentifiableWithMappingFromPartialCloneWithIdentifiableInPartialVariant() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        createLoad(loadId, 1, "vl1");
+
+        Optional<Resource<LoadAttributes>> resLoad = networkStoreRepository.getLoad(NETWORK_UUID, 1, loadId);
+
+        Optional<Resource<LoadAttributes>> expLoad = Optional.of(buildLoad(loadId, 1, "vl1"));
+        assertEquals(expLoad, resLoad);
+    }
+
+    @Test
+    void getIdentifiableWithMappingFromPartialCloneWithUpdatedIdentifiable() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl1");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        createLoad(loadId, 1, "vl2");
+
+        Optional<Resource<LoadAttributes>> resLoad = networkStoreRepository.getLoad(NETWORK_UUID, 1, loadId);
+
+        Optional<Resource<LoadAttributes>> expLoad = Optional.of(buildLoad(loadId, 1, "vl2"));
+        assertEquals(expLoad, resLoad);
+    }
+
+    @Test
+    void getIdentifiableWithMappingFromFullClone() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 2, "variant2", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 2, "vl2");
+
+        Optional<Resource<LoadAttributes>> resLoad = networkStoreRepository.getLoad(NETWORK_UUID, 2, loadId);
+
+        Optional<Resource<LoadAttributes>> expLoad = Optional.of(buildLoad(loadId, 2, "vl2"));
+        assertEquals(expLoad, resLoad);
+    }
+
+    @Test
+    void getIdentifiableWithMappingFromPartialCloneWithTombstoned() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl2");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId, LOAD_TABLE);
+
+        Optional<Resource<LoadAttributes>> resLoad1 = networkStoreRepository.getLoad(NETWORK_UUID, 1, loadId);
+
+        assertEquals(Optional.empty(), resLoad1);
+    }
+
+    @Test
+    void getIdentifiableWithMappingFromPartialCloneWithExternalAttributes() {
+        String networkId = "network1";
+        String lineId1 = "line1";
+        String lineId2 = "line2";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        Resource<LineAttributes> line1 = Resource.lineBuilder()
+                .id(lineId1)
+                .variantNum(0)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(30.).build())
+                                .build()))
+                        .build())
+                .build();
+        networkStoreRepository.createLines(NETWORK_UUID, List.of(line1));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        Resource<LineAttributes> line2 = Resource.lineBuilder()
+                .id(lineId2)
+                .variantNum(1)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl2")
+                        .voltageLevelId2("vl3")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
+                        .build())
+                .build();
+        networkStoreRepository.createLines(NETWORK_UUID, List.of(line2));
+
+        Optional<Resource<LineAttributes>> resLine1 = networkStoreRepository.getLine(NETWORK_UUID, 1, lineId1);
+        Optional<Resource<LineAttributes>> resLine2 = networkStoreRepository.getLine(NETWORK_UUID, 1, lineId2);
+
+        // Line1 is retrieved from variant 1 so variantNum must be 1
+        Resource<LineAttributes> expLine1 = Resource.lineBuilder()
+                .id(lineId1)
+                .variantNum(1)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(30.).build())
+                                .build()))
+                        .build())
+                .build();
+
+        assertEquals(Optional.of(expLine1), resLine1);
+        assertEquals(Optional.of(line2), resLine2);
+    }
+
+    @Test
+    @Disabled("Not implemented")
+    void getIdentifiablesInContainerWithoutNetwork() {
+        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 0, "unknownId"));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+    }
+
+    @Test
+    void getIdentifiablesInContainerFromPartialCloneWithNoIdentifiableInPartialVariant() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl1");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        List<Resource<LoadAttributes>> resLoad1 = networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl1");
+
+        // Variant num of load1 must be 1
+        List<Resource<LoadAttributes>> expLoad1 = List.of(buildLoad(loadId, 1, "vl1"));
+        assertEquals(expLoad1, resLoad1);
+    }
+
+    @Test
+    void getIdentifiablesInContainerFromPartialCloneWithIdentifiableInPartialVariant() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        createLoad(loadId, 1, "vl1");
+
+        List<Resource<LoadAttributes>> resLoad = networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl1");
+
+        List<Resource<LoadAttributes>> expLoad = List.of(buildLoad(loadId, 1, "vl1"));
+        assertEquals(expLoad, resLoad);
+    }
+
+    @Test
+    void getIdentifiablesInContainerFromPartialCloneWithUpdatedIdentifiable() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl1");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        createLoad(loadId, 1, "vl2");
+
+        List<Resource<LoadAttributes>> resLoadVl1 = networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl1");
+        List<Resource<LoadAttributes>> resLoadVl2 = networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl2");
+
+        Optional<Resource<LoadAttributes>> expLoad = Optional.of(buildLoad(loadId, 1, "vl2"));
+        assertTrue(resLoadVl1.isEmpty());
+        //I stopped here
+        assertEquals(expLoad, resLoadVl2);
+    }
+
+    @Test
+    void getIdentifiablesInContainerFromFullClone() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 2, "variant2", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 2, "vl2");
+
+        Optional<Resource<LoadAttributes>> resLoad = networkStoreRepository.getLoad(NETWORK_UUID, 2, loadId);
+
+        Optional<Resource<LoadAttributes>> expLoad = Optional.of(buildLoad(loadId, 2, "vl2"));
+        assertEquals(expLoad, resLoad);
+    }
+
+    @Test
+    void getIdentifiablesInContainerFromPartialCloneWithTombstoned() {
+        String networkId = "network1";
+        String loadId = "load1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        createLoad(loadId, 0, "vl2");
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId, LOAD_TABLE);
+
+        Optional<Resource<LoadAttributes>> resLoad1 = networkStoreRepository.getLoad(NETWORK_UUID, 1, loadId);
+
+        assertEquals(Optional.empty(), resLoad1);
+    }
+
+    @Test
+    void getIdentifiablesInContainerFromPartialCloneWithExternalAttributes() {
+        String networkId = "network1";
+        String lineId1 = "line1";
+        String lineId2 = "line2";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL, -1);
+        Resource<LineAttributes> line1 = Resource.lineBuilder()
+                .id(lineId1)
+                .variantNum(0)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(30.).build())
+                                .build()))
+                        .build())
+                .build();
+        networkStoreRepository.createLines(NETWORK_UUID, List.of(line1));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        Resource<LineAttributes> line2 = Resource.lineBuilder()
+                .id(lineId2)
+                .variantNum(1)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl2")
+                        .voltageLevelId2("vl3")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
+                        .build())
+                .build();
+        networkStoreRepository.createLines(NETWORK_UUID, List.of(line2));
+
+        Optional<Resource<LineAttributes>> resLine1 = networkStoreRepository.getLine(NETWORK_UUID, 1, lineId1);
+        Optional<Resource<LineAttributes>> resLine2 = networkStoreRepository.getLine(NETWORK_UUID, 1, lineId2);
+
+        // Line1 is retrieved from variant 1 so variantNum must be 1
+        Resource<LineAttributes> expLine1 = Resource.lineBuilder()
+                .id(lineId1)
+                .variantNum(1)
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .operationalLimitsGroups1(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(30.).build())
+                                .build()))
+                        .build())
+                .build();
+
+        assertEquals(Optional.of(expLine1), resLine1);
+        assertEquals(Optional.of(line2), resLine2);
+    }
+
+    //FIXME: mutualize code of these two getIdentifiable() test series?
 
     @Test
     void deleteIdentifiableWithoutNetwork() {
