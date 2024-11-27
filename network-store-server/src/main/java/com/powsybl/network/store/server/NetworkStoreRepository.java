@@ -153,7 +153,7 @@ public class NetworkStoreRepository {
 
         List<String> ids = new ArrayList<>();
         try (var connection = dataSource.getConnection()) {
-            Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+            Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + networkUuid + ", variantNum : " + variantNum));
             int srcVariantNum = network.getAttributes().getSrcVariantNum();
             if (srcVariantNum != -1) {
                 // Retrieve identifiables from the (full) variant first
@@ -185,7 +185,7 @@ public class NetworkStoreRepository {
         return ids;
     }
 
-    private static List<String> getIdentifiablesIdsForVariant(UUID networkUuid, int variantNum, Connection connection) throws SQLException {
+    public static List<String> getIdentifiablesIdsForVariant(UUID networkUuid, int variantNum, Connection connection) throws SQLException {
         List<String> ids = new ArrayList<>();
         for (String table : ELEMENT_TABLES) {
             try (var preparedStmt = connection.prepareStatement(buildGetIdsQuery(table))) {
@@ -455,7 +455,7 @@ public class NetworkStoreRepository {
 
     public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId, VariantMode variantMode) {
         String nonNullTargetVariantId = targetVariantId == null ? "variant-" + UUID.randomUUID() : targetVariantId;
-        LOGGER.info("Cloning network {} variant {} to variant {}", uuid, sourceVariantNum, targetVariantNum);
+        LOGGER.info("Cloning network {} variant {} to variant {} ({} clone)", uuid, sourceVariantNum, targetVariantNum, variantMode);
         var stopwatch = Stopwatch.createStarted();
 
         try (var connection = dataSource.getConnection()) {
@@ -471,7 +471,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
                 preparedStmt.setString(3, mapper.writeValueAsString(variantMode));
-                preparedStmt.setInt(4, srcVariantNum); // this is the num of the root network for readings if -1 it's a full variant clone otherwise it's a partial
+                preparedStmt.setInt(4, srcVariantNum);
                 preparedStmt.setObject(5, uuid);
                 preparedStmt.setInt(6, sourceVariantNum);
                 preparedStmt.execute();
@@ -487,7 +487,7 @@ public class NetworkStoreRepository {
         LOGGER.info("Network variant clone done in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    public void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum, boolean isFullClone) throws SQLException {
+    private void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum, boolean isFullClone) throws SQLException {
         if (isFullClone) {
             for (String tableName : ELEMENT_TABLES) {
                 try (var preparedStmt = connection.prepareStatement(buildCloneIdentifiablesQuery(tableName, mappings.getTableMapping(tableName.toLowerCase()).getColumnsMapping().keySet()))) {
@@ -796,7 +796,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesForVariant(UUID networkUuid, int variantNum,
+    protected <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesForVariant(UUID networkUuid, int variantNum,
                                                                                             TableMapping tableMapping) {
         List<Resource<T>> identifiables;
         try (var connection = dataSource.getConnection()) {
@@ -1135,11 +1135,15 @@ public class NetworkStoreRepository {
                 preparedStmt.setString(3, id);
                 preparedStmt.executeUpdate();
             }
-            try (var preparedStmt = connection.prepareStatement(buildAddTombstonedIdentifiableQuery())) {
-                preparedStmt.setObject(1, networkUuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.setString(3, id);
-                preparedStmt.executeUpdate();
+            Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + networkUuid + ", variantNum : " + variantNum));
+            int srcVariantNum = network.getAttributes().getSrcVariantNum();
+            if (srcVariantNum != -1) {
+                try (var preparedStmt = connection.prepareStatement(buildAddTombstonedIdentifiableQuery())) {
+                    preparedStmt.setObject(1, networkUuid);
+                    preparedStmt.setInt(2, variantNum);
+                    preparedStmt.setString(3, id);
+                    preparedStmt.executeUpdate();
+                }
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
@@ -1289,7 +1293,7 @@ public class NetworkStoreRepository {
         return identifiables;
     }
 
-    private List<String> getTombstonedIdentifiables(UUID networkUuid, int variantNum) {
+    public List<String> getTombstonedIdentifiables(UUID networkUuid, int variantNum) {
         List<String> identifiables = new ArrayList<>();
 
         try (var connection = dataSource.getConnection()) {
@@ -2298,7 +2302,7 @@ public class NetworkStoreRepository {
         return temporaryLimits;
     }
 
-    private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
+    public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(buildTemporaryLimitQuery(columnNameForWhereClause));
             preparedStmt.setString(1, networkUuid.toString());
@@ -2340,7 +2344,7 @@ public class NetworkStoreRepository {
         return permanentLimits;
     }
 
-    private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
+    public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(buildPermanentLimitQuery(columnNameForWhereClause));
             preparedStmt.setString(1, networkUuid.toString());
@@ -2704,7 +2708,7 @@ public class NetworkStoreRepository {
         return regulatingPoints;
     }
 
-    private Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPointsForVariant(UUID networkUuid, int variantNum, ResourceType type, int targetVariantNum) {
+    public Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPointsForVariant(UUID networkUuid, int variantNum, ResourceType type, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(buildRegulatingPointsQuery());
             preparedStmt.setObject(1, networkUuid);
@@ -2889,7 +2893,7 @@ public class NetworkStoreRepository {
         return reactiveCapabilityCurvePoints;
     }
 
-    private Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
+    public Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(buildReactiveCapabilityCurvePointQuery(columnNameForWhereClause));
             preparedStmt.setString(1, networkUuid.toString());
@@ -3375,7 +3379,7 @@ public class NetworkStoreRepository {
         return tapChangerSteps;
     }
 
-    private Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsFromVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
+    public Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsFromVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
         try (var connection = dataSource.getConnection()) {
             var preparedStmt = connection.prepareStatement(buildTapChangerStepQuery(columnNameForWhereClause));
             preparedStmt.setObject(1, networkUuid);
@@ -3484,7 +3488,7 @@ public class NetworkStoreRepository {
         return Collections.emptyMap();
     }
 
-    private <T extends TapChangerStepAttributes>
+    public <T extends TapChangerStepAttributes>
         void insertTapChangerSteps(Map<OwnerInfo, List<T>> tapChangerSteps) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(buildInsertTapChangerStepQuery())) {
