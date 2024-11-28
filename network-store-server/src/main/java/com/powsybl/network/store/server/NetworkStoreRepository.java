@@ -1926,7 +1926,10 @@ public class NetworkStoreRepository {
 
                         }
                     }
+                    Stopwatch stopwatch = Stopwatch.createStarted();
                     preparedStmt.executeBatch();
+                    stopwatch.stop();
+                    LOGGER.info("one batch of temporary limits was created in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 }
             }
         } catch (SQLException e) {
