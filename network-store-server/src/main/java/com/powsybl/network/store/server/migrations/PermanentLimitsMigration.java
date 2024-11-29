@@ -48,10 +48,8 @@ public class PermanentLimitsMigration implements CustomSqlChange {
         try (PreparedStatement stmt = connection.prepareStatement(requestStatement)) {
             Map<OwnerInfo, List<PermanentLimitAttributes>> oldPermanentLimits = getPermanentLimits(stmt);
             prepareStatements(oldPermanentLimits, database, statements);
-        } catch (SQLException e) {
+        } catch (SQLException | JsonProcessingException | DatabaseException e) {
             throw new CustomChangeException(e);
-        } catch (JsonProcessingException | DatabaseException e) {
-            throw new RuntimeException(e);
         }
         return statements.toArray(new SqlStatement[0]);
     }
@@ -76,7 +74,7 @@ public class PermanentLimitsMigration implements CustomSqlChange {
         return map;
     }
 
-    private void prepareStatements(Map<OwnerInfo, List<PermanentLimitAttributes>> oldPermanentLimits, Database database, List<SqlStatement> statements) throws SQLException, JsonProcessingException {
+    private void prepareStatements(Map<OwnerInfo, List<PermanentLimitAttributes>> oldPermanentLimits, Database database, List<SqlStatement> statements) throws JsonProcessingException {
         List<Map.Entry<OwnerInfo, List<PermanentLimitAttributes>>> list = new ArrayList<>(oldPermanentLimits.entrySet());
         for (List<Map.Entry<OwnerInfo, List<PermanentLimitAttributes>>> subUnit : Lists.partition(list, 1000)) {
             for (Map.Entry<OwnerInfo, List<PermanentLimitAttributes>> entry : subUnit) {

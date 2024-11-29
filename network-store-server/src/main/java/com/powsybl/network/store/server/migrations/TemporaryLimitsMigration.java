@@ -48,10 +48,8 @@ public class TemporaryLimitsMigration implements CustomSqlChange {
         try (PreparedStatement stmt = connection.prepareStatement(requestStatement)) {
             Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits = getTemporaryLimits(stmt);
             prepareStatements(oldTemporaryLimits, database, statements);
-        } catch (SQLException e) {
+        } catch (SQLException | JsonProcessingException | DatabaseException e) {
             throw new CustomChangeException(e);
-        } catch (JsonProcessingException | DatabaseException e) {
-            throw new RuntimeException(e);
         }
         return statements.toArray(new SqlStatement[0]);
     }
@@ -79,7 +77,7 @@ public class TemporaryLimitsMigration implements CustomSqlChange {
         return map;
     }
 
-    private void prepareStatements(Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits, Database database, List<SqlStatement> statements) throws SQLException, JsonProcessingException {
+    private void prepareStatements(Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits, Database database, List<SqlStatement> statements) throws JsonProcessingException {
         List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> list = new ArrayList<>(oldTemporaryLimits.entrySet());
         for (List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> subUnit : Lists.partition(list, 1000)) {
             for (Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>> entry : subUnit) {
