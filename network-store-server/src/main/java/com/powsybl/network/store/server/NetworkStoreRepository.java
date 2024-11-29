@@ -823,11 +823,11 @@ public class NetworkStoreRepository {
             // Retrieve identifiables from the (full) variant first
             identifiables = getIdentifiablesInContainerForVariant(networkUuid, srcVariantNum, containerId, containerColumns, tableMapping);
 
-            // Retrieve updated identifiables in partial
-            List<Resource<T>> updatedIdentifiables = getIdentifiablesForVariant(networkUuid, variantNum, tableMapping); // here we should use the getIdentifiables()! to avoid updating voltageLevel not accounted for
-            Set<String> updatedIds = updatedIdentifiables.stream()
+            // Retrieve updated identifiables in partial // actually, we only need ids...
+            List<Resource<T>> updatedIdentifiables = getIdentifiablesInContainerForVariant(networkUuid, variantNum, containerId, containerColumns, tableMapping); // here we should use the getIdentifiables()! to avoid updating voltageLevel not accounted for
+            Set<String> updatedIds = getIdentifiablesForVariant(networkUuid, variantNum, tableMapping).stream()
                     .map(Resource::getId)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toSet()); // here we should use the getIdentifiables()! to avoid updating voltageLevel not accounted for
             // Remove any resources that have been updated in the current variant
             identifiables.removeIf(resource -> updatedIds.contains(resource.getId()));
             // Remove tombstoned resources in the current variant
