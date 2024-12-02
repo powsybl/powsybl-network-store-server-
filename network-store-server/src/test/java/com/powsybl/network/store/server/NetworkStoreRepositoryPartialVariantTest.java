@@ -485,6 +485,8 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 0, "unknownId"));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getLoads(NETWORK_UUID, 0));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
     }
 
     @Test
@@ -511,6 +513,9 @@ class NetworkStoreRepositoryPartialVariantTest {
 
         assertTrue(networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "unknown").isEmpty());
         assertEquals(List.of(expLoad1), networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl1"));
+
+        Resource<LoadAttributes> expLoad2 = buildLoad(loadId2, 1, "vl3");
+        assertEquals(List.of(expLoad1, expLoad2), networkStoreRepository.getLoads(NETWORK_UUID, 1));
     }
 
     private void createSourceNetwork(String networkId, int variantNum, String variantId, VariantMode variantMode) {
@@ -576,6 +581,8 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(Optional.of(expLoad2), networkStoreRepository.getLoad(NETWORK_UUID, 1, loadId2));
 
         assertEquals(List.of(expLoad1, expLoad2), networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl1"));
+
+        assertEquals(List.of(expLoad1, expLoad2), networkStoreRepository.getLoads(NETWORK_UUID, 1));
     }
 
     @Test
@@ -597,6 +604,8 @@ class NetworkStoreRepositoryPartialVariantTest {
 
         assertTrue(networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl1").isEmpty());
         assertEquals(List.of(expLoad), networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl2"));
+
+        assertEquals(List.of(expLoad), networkStoreRepository.getLoads(NETWORK_UUID, 1));
     }
 
     @Test
@@ -615,6 +624,8 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(Optional.of(expLoad), networkStoreRepository.getLoad(NETWORK_UUID, 2, loadId1));
 
         assertEquals(List.of(expLoad), networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 2, "vl1"));
+
+        assertEquals(List.of(expLoad), networkStoreRepository.getLoads(NETWORK_UUID, 2));
     }
 
     @Test
@@ -642,6 +653,8 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(Optional.of(expLoad), networkStoreRepository.getLoad(NETWORK_UUID, 1, loadId2));
 
         assertEquals(List.of(expLoad), networkStoreRepository.getVoltageLevelLoads(NETWORK_UUID, 1, "vl1"));
+
+        assertEquals(List.of(expLoad), networkStoreRepository.getLoads(NETWORK_UUID, 1));
     }
 
     private static Resource<LoadAttributes> buildLoad(String loadId, int variantNum, String voltageLevel) {
@@ -709,6 +722,8 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(Optional.of(line2), networkStoreRepository.getLine(NETWORK_UUID, 1, lineId2));
 
         assertEquals(List.of(expLine1, line2), networkStoreRepository.getVoltageLevelLines(NETWORK_UUID, 1, "vl1"));
+
+        assertEquals(List.of(expLine1, line2), networkStoreRepository.getLines(NETWORK_UUID, 1));
     }
 
     @Test
