@@ -25,6 +25,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 import static com.powsybl.network.store.server.Mappings.*;
 import static com.powsybl.network.store.server.QueryCatalog.*;
@@ -861,6 +862,193 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(List.of(lineVariant2), networkStoreRepository.getIdentifiablesForVariant(NETWORK_UUID, 2, mappings.getLineMappings()));
         assertEquals(List.of(lineId1), getStoredIdentifiablesInVariant(NETWORK_UUID, 2));
         assertTrue(networkStoreRepository.getTombstonedIdentifiables(NETWORK_UUID, 2).isEmpty());
+    }
+
+    @Test
+    void updateIdentifiablesWithWhereClauseNotExistingInPartialVariant() {
+        testUpdateIdentifiablesNotExistingInPartialVariant((networkId, resources) ->
+                networkStoreRepository.updateIdentifiables(
+                        networkId,
+                        resources,
+                        mappings.getLoadMappings(),
+                        VOLTAGE_LEVEL_ID_COLUMN
+                )
+        );
+    }
+
+    @Test
+    void updateIdentifiablesNotExistingInPartialVariant() {
+        testUpdateIdentifiablesNotExistingInPartialVariant((networkId, resources) ->
+                networkStoreRepository.updateIdentifiables(
+                        networkId,
+                        resources,
+                        mappings.getLoadMappings()
+                )
+        );
+    }
+
+    private void testUpdateIdentifiablesNotExistingInPartialVariant(BiConsumer<UUID, List<Resource<LoadAttributes>>> updateMethod) {
+        String networkId = "network1";
+        String loadId = "load";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        Resource<LoadAttributes> initialLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(0)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .build())
+                .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        Resource<LoadAttributes> updatedLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.6)
+                        .build())
+                .build();
+        updateMethod.accept(NETWORK_UUID, List.of(updatedLoad));
+
+        assertEquals(Optional.of(updatedLoad), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId));
+    }
+
+    @Test
+    void updateIdentifiablesWithWhereClauseAlreadyExistingInPartialVariant() {
+        testUpdateIdentifiablesAlreadyExistingInPartialVariant((networkId, resources) ->
+                networkStoreRepository.updateIdentifiables(
+                        networkId,
+                        resources,
+                        mappings.getLoadMappings(),
+                        VOLTAGE_LEVEL_ID_COLUMN
+                )
+        );
+    }
+
+    @Test
+    void updateIdentifiablesAlreadyExistingInPartialVariant() {
+        testUpdateIdentifiablesAlreadyExistingInPartialVariant((networkId, resources) ->
+                networkStoreRepository.updateIdentifiables(
+                        networkId,
+                        resources,
+                        mappings.getLoadMappings()
+                )
+        );
+    }
+
+    private void testUpdateIdentifiablesAlreadyExistingInPartialVariant(BiConsumer<UUID, List<Resource<LoadAttributes>>> updateMethod) {
+        String networkId = "network1";
+        String loadId = "load";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        Resource<LoadAttributes> initialLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(0)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .build())
+                .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        Resource<LoadAttributes> updatedLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.6)
+                        .build())
+                .build();
+        updateMethod.accept(NETWORK_UUID, List.of(updatedLoad));
+
+        updatedLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(8.1)
+                        .build())
+                .build();
+        updateMethod.accept(NETWORK_UUID, List.of(updatedLoad));
+
+        assertEquals(Optional.of(updatedLoad), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId));
+    }
+
+    @Test
+    void updateIdentifiablesWithWhereClauseNotExistingAndExistingInPartialVariant() {
+        testUpdateIdentifiablesNotExistingAndExistingInPartialVariant((networkId, resources) ->
+                networkStoreRepository.updateIdentifiables(
+                        networkId,
+                        resources,
+                        mappings.getLoadMappings(),
+                        VOLTAGE_LEVEL_ID_COLUMN
+                )
+        );
+    }
+
+    @Test
+    void updateIdentifiablesNotExistingAndExistingInPartialVariant() {
+        testUpdateIdentifiablesNotExistingAndExistingInPartialVariant((networkId, resources) ->
+                networkStoreRepository.updateIdentifiables(
+                        networkId,
+                        resources,
+                        mappings.getLoadMappings()
+                )
+        );
+    }
+
+    private void testUpdateIdentifiablesNotExistingAndExistingInPartialVariant(BiConsumer<UUID, List<Resource<LoadAttributes>>> updateMethod) {
+            String networkId = "network1";
+            String loadId1 = "load1";
+            String loadId2 = "load2";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+            Resource<LoadAttributes> initialLoad1 = Resource.loadBuilder()
+                    .id(loadId1)
+                    .variantNum(0)
+                    .attributes(LoadAttributes.builder()
+                            .voltageLevelId("vl1")
+                            .p(5.6)
+                            .build())
+                    .build();
+            Resource<LoadAttributes> initialLoad2 = Resource.loadBuilder()
+                    .id(loadId2)
+                    .variantNum(0)
+                    .attributes(LoadAttributes.builder()
+                            .voltageLevelId("vl1")
+                            .p(7.6)
+                            .build())
+                    .build();
+            networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad1, initialLoad2));
+            networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+            Resource<LoadAttributes> updatedLoad2 = Resource.loadBuilder()
+                    .id(loadId2)
+                    .variantNum(1)
+                    .attributes(LoadAttributes.builder()
+                            .voltageLevelId("vl1")
+                            .p(5.4)
+                            .build())
+                    .build();
+            updateMethod.accept(NETWORK_UUID, List.of(updatedLoad2));
+
+            updatedLoad2 = Resource.loadBuilder()
+                    .id(loadId2)
+                    .variantNum(1)
+                    .attributes(LoadAttributes.builder()
+                            .voltageLevelId("vl1")
+                            .p(8.1)
+                            .build())
+                    .build();
+            updateMethod.accept(NETWORK_UUID, List.of(updatedLoad2));
+
+        Resource<LoadAttributes> expLoad1 = Resource.loadBuilder()
+                .id(loadId1)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.6)
+                        .build())
+                .build();
+        assertEquals(Optional.of(expLoad1), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId1));
+        assertEquals(Optional.of(updatedLoad2), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId2));
     }
 
     //TODO: add tests for cloneNetwork without network? actually juste create a method to reuse everywhere

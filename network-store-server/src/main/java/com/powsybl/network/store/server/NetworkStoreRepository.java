@@ -869,6 +869,7 @@ public class NetworkStoreRepository {
     public <T extends IdentifiableAttributes & Contained> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
                                                                                    TableMapping tableMapping, String columnToAddToWhereClause) {
         try (var connection = dataSource.getConnection()) {
+            //TODO: do not call this if it's a full variant.. but it's complicated as we can insert resources from various variants...
             Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
 
             String updateQuery = buildUpdateIdentifiableQuery(
@@ -1811,6 +1812,7 @@ public class NetworkStoreRepository {
         insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
     }
 
+    //TODO!
     public void updateThreeWindingsTransformersSv(UUID networkUuid, List<Resource<ThreeWindingsTransformerSvAttributes>> resources) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(buildUpdateThreeWindingsTransformerSvQuery())) {
