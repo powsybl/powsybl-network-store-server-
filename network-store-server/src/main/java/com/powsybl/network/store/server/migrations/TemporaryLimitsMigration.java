@@ -12,7 +12,7 @@ import com.google.common.collect.Lists;
 import com.powsybl.iidm.network.LimitType;
 import com.powsybl.network.store.model.ResourceType;
 import com.powsybl.network.store.model.TemporaryLimitAttributes;
-import com.powsybl.network.store.server.TemporaryLimitSqlData;
+import com.powsybl.network.store.server.json.TemporaryLimitSqlData;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import liquibase.change.custom.CustomSqlChange;
 import liquibase.database.Database;
@@ -85,9 +85,9 @@ public class TemporaryLimitsMigration implements CustomSqlChange {
                     List<TemporaryLimitSqlData> temporaryLimitSqlData = entry.getValue().stream().map(TemporaryLimitSqlData::of).toList();
                     String serializedtemporaryLimitSqlData = mapper.writeValueAsString(temporaryLimitSqlData);
                     statements.add(new InsertStatement(database.getDefaultCatalogName(), database.getDefaultSchemaName(), "newtemporarylimits")
-                        .addColumnValue("equipmentId", entry.getKey().getEquipmentId())
-                        .addColumnValue("equipmentType", entry.getKey().getEquipmentType())
-                        .addColumnValue("networkuuid", entry.getKey().getNetworkUuid())
+                        .addColumnValue("equipmentid", entry.getKey().getEquipmentId())
+                        .addColumnValue("equipmenttype", entry.getKey().getEquipmentType().toString())
+                        .addColumnValue("networkuuid", entry.getKey().getNetworkUuid().toString())
                         .addColumnValue("variantnum", entry.getKey().getVariantNum())
                         .addColumnValue("temporarylimits", serializedtemporaryLimitSqlData)
                     );

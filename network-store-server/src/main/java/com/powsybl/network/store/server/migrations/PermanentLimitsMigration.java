@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.powsybl.iidm.network.LimitType;
 import com.powsybl.network.store.model.ResourceType;
-import com.powsybl.network.store.server.PermanentLimitSqlData;
+import com.powsybl.network.store.server.json.PermanentLimitSqlData;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import com.powsybl.network.store.server.dto.PermanentLimitAttributes;
 import liquibase.change.custom.CustomSqlChange;
@@ -67,7 +67,7 @@ public class PermanentLimitsMigration implements CustomSqlChange {
             permanentLimit.setOperationalLimitsGroupId(resultSet.getString(5));
             permanentLimit.setSide(resultSet.getInt(6));
             permanentLimit.setLimitType(LimitType.valueOf(resultSet.getString(7)));
-            permanentLimit.setValue(resultSet.getDouble(9));
+            permanentLimit.setValue(resultSet.getDouble(8));
             map.computeIfAbsent(owner, k -> new ArrayList<>());
             map.get(owner).add(permanentLimit);
         }
@@ -82,9 +82,9 @@ public class PermanentLimitsMigration implements CustomSqlChange {
                     List<PermanentLimitSqlData> permanentLimitSqlData = entry.getValue().stream().map(PermanentLimitSqlData::of).toList();
                     String serializedpermanentLimitSqlData = mapper.writeValueAsString(permanentLimitSqlData);
                     statements.add(new InsertStatement(database.getDefaultCatalogName(), database.getDefaultSchemaName(), "newpermanentlimits")
-                        .addColumnValue("equipmentId", entry.getKey().getEquipmentId())
-                        .addColumnValue("equipmentType", entry.getKey().getEquipmentType())
-                        .addColumnValue("networkuuid", entry.getKey().getNetworkUuid())
+                        .addColumnValue("equipmentid", entry.getKey().getEquipmentId())
+                        .addColumnValue("equipmenttype", entry.getKey().getEquipmentType().toString())
+                        .addColumnValue("networkuuid", entry.getKey().getNetworkUuid().toString())
                         .addColumnValue("variantnum", entry.getKey().getVariantNum())
                         .addColumnValue("permanentlimits", serializedpermanentLimitSqlData)
                     );

@@ -18,7 +18,7 @@
             <column name="equipmenttype" type="VARCHAR(255)">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
             </column>
-            <column name="temporarylimits" type="TEXT"/>
+                <column name="temporarylimits" type="TEXT"/>
         </createTable>
         <createTable tableName="newpermanentlimits">
             <column name="networkuuid" type="VARCHAR(255)">
@@ -37,6 +37,8 @@
         </createTable>
         <customChange class="com.powsybl.network.store.server.migrations.PermanentLimitsMigration"/>
         <customChange class="com.powsybl.network.store.server.migrations.TemporaryLimitsMigration"/>
+        <dropTable tableName="permanentlimit"/>
+        <dropTable tableName="temporarylimit"/>
         <renameTable oldTableName="newpermanentlimits"
                      newTableName="permanentlimits"/>
         <renameTable oldTableName="newtemporarylimits"

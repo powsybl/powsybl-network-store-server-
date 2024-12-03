@@ -281,7 +281,7 @@ public final class QueryCatalog {
     }
 
     // temporary limits
-    public static String buildInsertNewTemporaryLimitsQuery() {
+    public static String buildInsertTemporaryLimitsQuery() {
         return "insert into " + TEMPORARY_LIMITS + "(" +
             EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " +
@@ -289,18 +289,18 @@ public final class QueryCatalog {
             " values (?, ?, ?, ?, ?)";
     }
 
-    public static String buildDeleteNewTemporaryLimitsQuery() {
+    public static String buildDeleteTemporaryLimitsQuery() {
         return "delete from " + TEMPORARY_LIMITS + " where " +
             NETWORK_UUID_COLUMN + " = ?";
     }
 
-    public static String buildDeleteNewTemporaryLimitsVariantQuery() {
+    public static String buildDeleteTemporaryLimitsVariantQuery() {
         return "delete from " + TEMPORARY_LIMITS + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildDeleteNewTemporaryLimitsVariantEquipmentINQuery(int numberOfValues) {
+    public static String buildDeleteTemporaryLimitsVariantEquipmentINQuery(int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
@@ -311,7 +311,7 @@ public final class QueryCatalog {
             "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
-    public static String buildNewTemporaryLimitWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
+    public static String buildTemporaryLimitWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
@@ -327,14 +327,14 @@ public final class QueryCatalog {
             "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
-    public static String buildCloneNewTemporaryLimitsQuery() {
+    public static String buildCloneTemporaryLimitsQuery() {
         return "insert into " + TEMPORARY_LIMITS + "(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + TEMPORARY_LIMITS + ") " + "select " + EQUIPMENT_ID_COLUMN + ", " +
             EQUIPMENT_TYPE_COLUMN + ", ?, ?, " + TEMPORARY_LIMITS + " from " + TEMPORARY_LIMITS + " where " + NETWORK_UUID_COLUMN +
             " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildNewTemporaryLimitQuery(String columnNameForWhereClause) {
+    public static String buildTemporaryLimitQuery(String columnNameForWhereClause) {
         return "select " + EQUIPMENT_ID_COLUMN + ", " +
             EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " +
@@ -347,7 +347,7 @@ public final class QueryCatalog {
     }
 
     // permanent limits
-    public static String buildInsertNewPermanentLimitsQuery() {
+    public static String buildInsertPermanentLimitsQuery() {
         return "insert into " + PERMANENT_LIMITS + " (" +
             EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " +
@@ -355,18 +355,18 @@ public final class QueryCatalog {
             " values (?, ?, ?, ?, ?)";
     }
 
-    public static String buildDeleteNewPermanentLimitsQuery() {
+    public static String buildDeletePermanentLimitsQuery() {
         return "delete from " + PERMANENT_LIMITS + " where " +
             NETWORK_UUID_COLUMN + " = ?";
     }
 
-    public static String buildDeleteNewPermanentLimitsVariantQuery() {
+    public static String buildDeletePermanentLimitsVariantQuery() {
         return "delete from " + PERMANENT_LIMITS + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildDeleteNewPermanentLimitsVariantEquipmentINQuery(int numberOfValues) {
+    public static String buildDeletePermanentLimitsVariantEquipmentINQuery(int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
@@ -377,7 +377,7 @@ public final class QueryCatalog {
             "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
-    public static String buildNewPermanentLimitWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
+    public static String buildPermanentLimitWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
@@ -393,14 +393,14 @@ public final class QueryCatalog {
             "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
-    public static String buildCloneNewPermanentLimitsQuery() {
+    public static String buildClonePermanentLimitsQuery() {
         return "insert into " + PERMANENT_LIMITS + "(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + PERMANENT_LIMITS + ") " + "select " + EQUIPMENT_ID_COLUMN + ", " +
             EQUIPMENT_TYPE_COLUMN + ", ?, ?, " + PERMANENT_LIMITS + " from " + PERMANENT_LIMITS + " where " + NETWORK_UUID_COLUMN +
             " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildNewPermanentLimitQuery(String columnNameForWhereClause) {
+    public static String buildPermanentLimitQuery(String columnNameForWhereClause) {
         return "select " + EQUIPMENT_ID_COLUMN + ", " +
             EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " +
