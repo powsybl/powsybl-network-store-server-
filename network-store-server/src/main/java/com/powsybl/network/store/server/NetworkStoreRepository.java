@@ -153,7 +153,7 @@ public class NetworkStoreRepository {
 
         List<String> ids = new ArrayList<>();
         try (var connection = dataSource.getConnection()) {
-            Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + networkUuid + ", variantNum : " + variantNum));
+            Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
             int srcVariantNum = network.getAttributes().getSrcVariantNum();
             if (srcVariantNum != -1) {
                 // Retrieve identifiables from the (full) variant first
@@ -439,7 +439,7 @@ public class NetworkStoreRepository {
 
         executeWithoutAutoCommit(connection -> {
             for (VariantInfos variantInfos : variantsInfoList) {
-                Resource<NetworkAttributes> sourceNetworkAttribute = getNetwork(sourceNetworkUuid, variantInfos.getNum()).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + sourceNetworkUuid + ", variantId : " + variantInfos.getId()));
+                Resource<NetworkAttributes> sourceNetworkAttribute = getNetworkAttributes(sourceNetworkUuid, variantInfos.getNum());
                 sourceNetworkAttribute.getAttributes().setUuid(targetNetworkUuid);
                 sourceNetworkAttribute.getAttributes().setExtensionAttributes(Collections.emptyMap());
                 sourceNetworkAttribute.setVariantNum(VariantUtils.findFistAvailableVariantNum(newNetworkVariants));
@@ -465,7 +465,7 @@ public class NetworkStoreRepository {
         var stopwatch = Stopwatch.createStarted();
 
         try (var connection = dataSource.getConnection()) {
-            Resource<NetworkAttributes> srcNetwork = getNetwork(uuid, sourceVariantNum).orElseThrow();
+            Resource<NetworkAttributes> srcNetwork = getNetworkAttributes(uuid, sourceVariantNum);
             boolean cloneVariant = variantMode == VariantMode.FULL || variantMode == VariantMode.PARTIAL && srcNetwork.getAttributes().getSrcVariantNum() != -1;
             int srcVariantNum = -1;
             if (variantMode == VariantMode.PARTIAL) {
@@ -639,7 +639,7 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes> Optional<Resource<T>> getIdentifiable(UUID networkUuid, int variantNum, String equipmentId,
                                                                                      TableMapping tableMapping) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         return (srcVariantNum != -1)
@@ -820,7 +820,7 @@ public class NetworkStoreRepository {
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInContainer(UUID networkUuid, int variantNum, String containerId,
                                                                                              Set<String> containerColumns,
                                                                                              TableMapping tableMapping) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         List<Resource<T>> identifiables;
@@ -1042,7 +1042,8 @@ public class NetworkStoreRepository {
         for (var entry : updatedSvResourcesByVariant.entrySet()) {
             int variantNum = entry.getKey();
             Set<String> equipmentIds = entry.getValue().keySet();
-            int srcVariantNum = getNetwork(networkUuid, variantNum).orElseThrow().getAttributes().getSrcVariantNum();
+            Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
+            int srcVariantNum = network.getAttributes().getSrcVariantNum();
             // If the variant is a full clone, all resources are already present in the variant
             if (srcVariantNum == -1) {
                 continue;
@@ -1130,7 +1131,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setString(3, id);
                 preparedStmt.executeUpdate();
             }
-            Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + networkUuid + ", variantNum : " + variantNum));
+            Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
             int srcVariantNum = network.getAttributes().getSrcVariantNum();
             if (srcVariantNum != -1) {
                 try (var preparedStmt = connection.prepareStatement(buildAddTombstonedIdentifiableQuery())) {
@@ -1144,6 +1145,10 @@ public class NetworkStoreRepository {
             throw new UncheckedSqlException(e);
         }
         extensionHandler.deleteExtensionsFromIdentifiable(networkUuid, variantNum, id);
+    }
+
+    private Resource<NetworkAttributes> getNetworkAttributes(UUID networkUuid, int variantNum) {
+        return getNetwork(networkUuid, variantNum).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + networkUuid + ", variantNum : " + variantNum));
     }
 
     // substation
@@ -1232,7 +1237,7 @@ public class NetworkStoreRepository {
     }
 
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiables(UUID networkUuid, int variantNum, TableMapping tableMapping) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         List<Resource<T>> identifiables;
@@ -1252,6 +1257,7 @@ public class NetworkStoreRepository {
             //TODO: maybe this should be a set to optim lookups...
             identifiables.removeIf(resource -> updatedIds.contains(resource.getId()));
             // Remove tombstoned resources in the current variant
+            //TODO: safer to remove tombstoned at the very end!
             List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
             identifiables.removeIf(resource -> tombstonedIds.contains(resource.getId()));
             // Combine base and updated identifiables
@@ -2040,7 +2046,7 @@ public class NetworkStoreRepository {
     }
 
     public Optional<Resource<IdentifiableAttributes>> getIdentifiable(UUID networkUuid, int variantNum, String id) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         return (srcVariantNum != -1)
@@ -2106,32 +2112,12 @@ public class NetworkStoreRepository {
 
     // Temporary Limits
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits;
-
-        if (srcVariantNum != -1) {
-            // Retrieve temporaryLimits from the (full) variant first
-            temporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-
-            // Retrieve updated temporaryLimits in partial
-            Map<OwnerInfo, List<TemporaryLimitAttributes>> updatedTemporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-            Set<String> updatedIds = updatedTemporaryLimits.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            temporaryLimits.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            temporaryLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated temporaryLimits
-            temporaryLimits.putAll(updatedTemporaryLimits);
-        } else {
-            // If the variant is FULL, retrieve temporaryLimits for the specified variant directly
-            temporaryLimits = getTemporaryLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-        }
-        return temporaryLimits;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getTemporaryLimitsWithInClauseForVariant(uuid, variant, columnNameForWhereClause, valuesForInClause, targetVariant));
     }
 
     private Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, int targetVariantNum) {
@@ -2153,32 +2139,12 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits;
-
-        if (srcVariantNum != -1) {
-            // Retrieve permanentLimits from the (full) variant first
-            permanentLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-
-            // Retrieve updated permanentLimits in partial
-            Map<OwnerInfo, List<PermanentLimitAttributes>> updatedTemporaryLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-            Set<String> updatedIds = updatedTemporaryLimits.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            permanentLimits.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            permanentLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated permanentLimits
-            permanentLimits.putAll(updatedTemporaryLimits);
-        } else {
-            // If the variant is FULL, retrieve permanentLimits for the specified variant directly
-            permanentLimits = getPermanentLimitsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-        }
-        return permanentLimits;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getPermanentLimitsWithInClauseForVariant(uuid, variant, columnNameForWhereClause, valuesForInClause, targetVariant));
     }
 
     private Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, int targetVariantNum) {
@@ -2226,32 +2192,12 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits;
-
-        if (srcVariantNum != -1) {
-            // Retrieve temporaryLimits from the (full) variant first
-            temporaryLimits = getTemporaryLimitsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-
-            // Retrieve updated temporaryLimits in partial
-            Map<OwnerInfo, List<TemporaryLimitAttributes>> updateTemporaryLimits = getTemporaryLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-            Set<String> updatedIds = updateTemporaryLimits.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            temporaryLimits.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            temporaryLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated temporaryLimits
-            temporaryLimits.putAll(updateTemporaryLimits);
-        } else {
-            // If the variant is FULL, retrieve temporaryLimits for the specified variant directly
-            temporaryLimits = getTemporaryLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-        }
-        return temporaryLimits;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getTemporaryLimitsForVariant(uuid, variant, columnNameForWhereClause, valueForWhereClause, targetVariant));
     }
 
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
@@ -2268,32 +2214,12 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits;
-
-        if (srcVariantNum != -1) {
-            // Retrieve permanentLimits from the (full) variant first
-            permanentLimits = getPermanentLimitsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-
-            // Retrieve updated permanentLimits in partial
-            Map<OwnerInfo, List<PermanentLimitAttributes>> updatedPermanentLimits = getPermanentLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-            Set<String> updatedIds = updatedPermanentLimits.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            permanentLimits.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            permanentLimits.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated permanentLimits
-            permanentLimits.putAll(updatedPermanentLimits);
-        } else {
-            // If the variant is FULL, retrieve permanentLimits for the specified variant directly
-            permanentLimits = getPermanentLimitsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-        }
-        return permanentLimits;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getPermanentLimitsForVariant(uuid, variant, columnNameForWhereClause, valueForWhereClause, targetVariant));
     }
 
     public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
@@ -2632,32 +2558,12 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPoints(UUID networkUuid, int variantNum, ResourceType type) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, RegulatingPointAttributes> regulatingPoints;
-
-        if (srcVariantNum != -1) {
-            // Retrieve regulatingPoints from the (full) variant first
-            regulatingPoints = getRegulatingPointsForVariant(networkUuid, srcVariantNum, type, variantNum);
-
-            // Retrieve updated regulatingPoints in partial
-            Map<OwnerInfo, RegulatingPointAttributes> updateRegulatingPoints = getRegulatingPointsForVariant(networkUuid, variantNum, type, variantNum);
-            Set<String> updatedIds = updateRegulatingPoints.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            regulatingPoints.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            regulatingPoints.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated regulatingPoints
-            regulatingPoints.putAll(updateRegulatingPoints);
-        } else {
-            // If the variant is FULL, retrieve regulatingPoints for the specified variant directly
-            regulatingPoints = getRegulatingPointsForVariant(networkUuid, variantNum, type, variantNum);
-        }
-        return regulatingPoints;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getRegulatingPointsForVariant(uuid, variant, type, targetVariant));
     }
 
     public Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPointsForVariant(UUID networkUuid, int variantNum, ResourceType type, int targetVariantNum) {
@@ -2678,32 +2584,12 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
 
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, RegulatingPointAttributes> regulatingPoints;
-
-        if (srcVariantNum != -1) {
-            // Retrieve regulatingPoints from the (full) variant first
-            regulatingPoints = getRegulatingPointsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
-
-            // Retrieve updated regulatingPoints in partial
-            Map<OwnerInfo, RegulatingPointAttributes> updateRegulatingPoints = getRegulatingPointsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
-            Set<String> updatedIds = updateRegulatingPoints.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            regulatingPoints.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            regulatingPoints.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated regulatingPoints
-            regulatingPoints.putAll(updateRegulatingPoints);
-        } else {
-            // If the variant is FULL, retrieve regulatingPoints for the specified variant directly
-            regulatingPoints = getRegulatingPointsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
-        }
-        return regulatingPoints;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getRegulatingPointsWithInClauseForVariant(uuid, variant, columnNameForWhereClause, valuesForInClause, type, targetVariant));
     }
 
     private Map<OwnerInfo, RegulatingPointAttributes> getRegulatingPointsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, ResourceType type, int targetVariantNum) {
@@ -2770,32 +2656,12 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints;
-
-        if (srcVariantNum != -1) {
-            // Retrieve reactiveCapabilityCurvePoints from the (full) variant first
-            reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-
-            // Retrieve updated reactiveCapabilityCurvePoints in partial
-            Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> updatedTemporaryLimits = getReactiveCapabilityCurvePointsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-            Set<String> updatedIds = updatedTemporaryLimits.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            reactiveCapabilityCurvePoints.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            reactiveCapabilityCurvePoints.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated reactiveCapabilityCurvePoints
-            reactiveCapabilityCurvePoints.putAll(updatedTemporaryLimits);
-        } else {
-            // If the variant is FULL, retrieve reactiveCapabilityCurvePoints for the specified variant directly
-            reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-        }
-        return reactiveCapabilityCurvePoints;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getReactiveCapabilityCurvePointsWithInClauseForVariant(uuid, variant, columnNameForWhereClause, valuesForInClause, targetVariant));
     }
 
     private Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, int targetVariantNum) {
@@ -2817,32 +2683,12 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePoints(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePoints;
-
-        if (srcVariantNum != -1) {
-            // Retrieve reactiveCapabilityCurvePoints from the (full) variant first
-            reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-
-            // Retrieve updated reactiveCapabilityCurvePoints in partial
-            Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> updateReactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-            Set<String> updatedIds = updateReactiveCapabilityCurvePoints.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            reactiveCapabilityCurvePoints.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            reactiveCapabilityCurvePoints.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated reactiveCapabilityCurvePoints
-            reactiveCapabilityCurvePoints.putAll(updateReactiveCapabilityCurvePoints);
-        } else {
-            // If the variant is FULL, retrieve reactiveCapabilityCurvePoints for the specified variant directly
-            reactiveCapabilityCurvePoints = getReactiveCapabilityCurvePointsForVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-        }
-        return reactiveCapabilityCurvePoints;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getReactiveCapabilityCurvePointsForVariant(uuid, variant, columnNameForWhereClause, valueForWhereClause, targetVariant));
     }
 
     public Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
@@ -2983,32 +2829,12 @@ public class NetworkStoreRepository {
     }
 
     private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipments(UUID networkUuid, int variantNum, ResourceType type) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments;
-
-        if (srcVariantNum != -1) {
-            // Retrieve regulatingEquipments from the (full) variant first
-            regulatingEquipments = getRegulatingEquipmentsForVariant(networkUuid, srcVariantNum, type, variantNum);
-
-            // Retrieve updated regulatingEquipments in partial
-            Map<OwnerInfo, Map<String, ResourceType>> updateRegulatingEquipments = getRegulatingEquipmentsForVariant(networkUuid, variantNum, type, variantNum);
-            Set<String> updatedIds = updateRegulatingEquipments.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            regulatingEquipments.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            regulatingEquipments.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated regulatingEquipments
-            regulatingEquipments.putAll(updateRegulatingEquipments);
-        } else {
-            // If the variant is FULL, retrieve regulatingEquipments for the specified variant directly
-            regulatingEquipments = getRegulatingEquipmentsForVariant(networkUuid, variantNum, type, variantNum);
-        }
-        return regulatingEquipments;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getRegulatingEquipmentsForVariant(uuid, variant, type, targetVariant));
     }
 
     private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsForVariant(UUID networkUuid, int variantNum, ResourceType type, int targetVariantNum) {
@@ -3029,32 +2855,12 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
 
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipments;
-
-        if (srcVariantNum != -1) {
-            // Retrieve regulatingEquipments from the (full) variant first
-            regulatingEquipments = getRegulatingEquipmentsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
-
-            // Retrieve updated regulatingEquipments in partial
-            Map<OwnerInfo, Map<String, ResourceType>> updateRegulatingEquipments = getRegulatingEquipmentsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
-            Set<String> updatedIds = updateRegulatingEquipments.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            regulatingEquipments.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            regulatingEquipments.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated regulatingEquipments
-            regulatingEquipments.putAll(updateRegulatingEquipments);
-        } else {
-            // If the variant is FULL, retrieve regulatingEquipments for the specified variant directly
-            regulatingEquipments = getRegulatingEquipmentsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, type, variantNum);
-        }
-        return regulatingEquipments;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getRegulatingEquipmentsWithInClauseForVariant(uuid, variant, columnNameForWhereClause, valuesForInClause, type, targetVariant));
     }
 
     private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, ResourceType type, int targetVariantNum) {
@@ -3108,7 +2914,7 @@ public class NetworkStoreRepository {
     }
 
     private Map<String, ResourceType> getRegulatingEquipmentsForIdentifiable(UUID networkUuid, int variantNum, String equipmentId, ResourceType type) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
+        Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         if (srcVariantNum != -1) {
@@ -3258,32 +3064,12 @@ public class NetworkStoreRepository {
 
     // TapChanger Steps
     public Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps;
-
-        if (srcVariantNum != -1) {
-            // Retrieve tapChangerSteps from the (full) variant first
-            tapChangerSteps = getTapChangerStepsWithInClauseForVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-
-            // Retrieve updated tapChangerSteps in partial
-            Map<OwnerInfo, List<TapChangerStepAttributes>> updatedTapChangerSteps = getTapChangerStepsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-            Set<String> updatedIds = updatedTapChangerSteps.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            tapChangerSteps.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            tapChangerSteps.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated tapChangerSteps
-            tapChangerSteps.putAll(updatedTapChangerSteps);
-        } else {
-            // If the variant is FULL, retrieve tapChangerSteps for the specified variant directly
-            tapChangerSteps = getTapChangerStepsWithInClauseForVariant(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause, variantNum);
-        }
-        return tapChangerSteps;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getTapChangerStepsWithInClauseForVariant(uuid, variant, columnNameForWhereClause, valuesForInClause, targetVariant));
     }
 
     private Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsWithInClauseForVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, int targetVariantNum) {
@@ -3304,32 +3090,12 @@ public class NetworkStoreRepository {
     }
 
     public Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerSteps(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
-        Resource<NetworkAttributes> network = getNetwork(networkUuid, variantNum).orElseThrow();
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-        Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps;
-
-        if (srcVariantNum != -1) {
-            // Retrieve tapChangerSteps from the (full) variant first
-            tapChangerSteps = getTapChangerStepsFromVariant(networkUuid, srcVariantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-
-            // Retrieve updated tapChangerSteps in partial
-            Map<OwnerInfo, List<TapChangerStepAttributes>> updateTapChangerSteps = getTapChangerStepsFromVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-            Set<String> updatedIds = updateTapChangerSteps.keySet().stream()
-                    .map(OwnerInfo::getEquipmentId)
-                    .collect(Collectors.toSet());
-            // Remove any resources that have been updated in the current variant
-            tapChangerSteps.keySet().removeIf(ownerInfo -> updatedIds.contains(ownerInfo.getEquipmentId()));
-            // Remove tombstoned resources in the current variant
-            List<String> tombstonedIds = getTombstonedIdentifiables(networkUuid, variantNum);
-            tapChangerSteps.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
-            // Combine base and updated tapChangerSteps
-            tapChangerSteps.putAll(updateTapChangerSteps);
-        } else {
-            // If the variant is FULL, retrieve tapChangerSteps for the specified variant directly
-            tapChangerSteps = getTapChangerStepsFromVariant(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause, variantNum);
-        }
-        return tapChangerSteps;
+        return PartialVariantUtils.getExternalAttributes(
+                networkUuid,
+                variantNum,
+                getNetworkAttributes(networkUuid, variantNum),
+                getTombstonedIdentifiables(networkUuid, variantNum),
+                (uuid, variant, targetVariant) -> getTapChangerStepsFromVariant(uuid, variant, columnNameForWhereClause, valueForWhereClause, targetVariant));
     }
 
     public Map<OwnerInfo, List<TapChangerStepAttributes>> getTapChangerStepsFromVariant(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int targetVariantNum) {
@@ -3655,7 +3421,7 @@ public class NetworkStoreRepository {
 
     //FIXME: deal with tombstoned extensions
     public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionName(UUID networkId, int variantNum, ResourceType type, String extensionName) {
-        Resource<NetworkAttributes> network = getNetwork(networkId, variantNum).orElseThrow();
+        Resource<NetworkAttributes> network = getNetworkAttributes(networkId, variantNum);
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         Map<String, ExtensionAttributes> extensionsAttributesByResourceTypeAndExtensionName;
@@ -3720,7 +3486,7 @@ public class NetworkStoreRepository {
 
     public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceType(UUID networkId, int variantNum, ResourceType type) {
 
-        Resource<NetworkAttributes> network = getNetwork(networkId, variantNum).orElseThrow();
+        Resource<NetworkAttributes> network = getNetworkAttributes(networkId, variantNum);
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         Map<String, Map<String, ExtensionAttributes>> extensionsAttributesByResourceType;

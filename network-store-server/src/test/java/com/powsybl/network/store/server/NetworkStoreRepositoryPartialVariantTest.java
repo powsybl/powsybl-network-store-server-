@@ -476,7 +476,6 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    @Disabled("Not implemented")
     void getIdentifiableWithoutNetwork() {
         PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getIdentifiablesIds(NETWORK_UUID, 0));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
