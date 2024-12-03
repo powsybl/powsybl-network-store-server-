@@ -188,13 +188,19 @@ public class NetworkStoreRepository {
     public static List<String> getIdentifiablesIdsForVariant(UUID networkUuid, int variantNum, Connection connection) throws SQLException {
         List<String> ids = new ArrayList<>();
         for (String table : ELEMENT_TABLES) {
-            try (var preparedStmt = connection.prepareStatement(buildGetIdsQuery(table))) {
-                preparedStmt.setObject(1, networkUuid);
-                preparedStmt.setObject(2, variantNum);
-                try (ResultSet resultSet = preparedStmt.executeQuery()) {
-                    while (resultSet.next()) {
-                        ids.add(resultSet.getString(1));
-                    }
+            ids.addAll(fetchIdsForTable(networkUuid, variantNum, connection, table));
+        }
+        return ids;
+    }
+
+    private static List<String> fetchIdsForTable(UUID networkUuid, int variantNum, Connection connection, String table) throws SQLException {
+        List<String> ids = new ArrayList<>();
+        try (var preparedStmt = connection.prepareStatement(buildGetIdsQuery(table))) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setObject(2, variantNum);
+            try (ResultSet resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    ids.add(resultSet.getString(1));
                 }
             }
         }
@@ -825,9 +831,13 @@ public class NetworkStoreRepository {
 
             // Retrieve updated identifiables in partial // actually, we only need ids...
             List<Resource<T>> updatedIdentifiables = getIdentifiablesInContainerForVariant(networkUuid, variantNum, containerId, containerColumns, tableMapping); // here we should use the getIdentifiables()! to avoid updating voltageLevel not accounted for
-            Set<String> updatedIds = getIdentifiablesForVariant(networkUuid, variantNum, tableMapping).stream()
-                    .map(Resource::getId)
-                    .collect(Collectors.toSet()); // here we should use the getIdentifiables()! to avoid updating voltageLevel not accounted for
+            // FIXME: share the connection
+            List<String> updatedIds = new ArrayList<>();
+            try (var connection = dataSource.getConnection()) {
+                updatedIds.addAll(fetchIdsForTable(networkUuid, variantNum, connection, tableMapping.getTable()));
+            } catch (SQLException e) {
+                throw new UncheckedSqlException(e);
+            }
             // Remove any resources that have been updated in the current variant
             identifiables.removeIf(resource -> updatedIds.contains(resource.getId()));
             // Remove tombstoned resources in the current variant
