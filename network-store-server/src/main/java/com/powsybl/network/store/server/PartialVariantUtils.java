@@ -41,10 +41,10 @@ public final class PartialVariantUtils {
         // Retrieve updated external attributes in partial variant
         Map<OwnerInfo, T> externalAttributesUpdatedInPartialVariant = fetchFunction.apply(networkUuid, variantNum, variantNum);
 
-        // Combine base and updated externalAttributes
+        // Combine external attributes from full and partial variant
         externalAttributes.putAll(externalAttributesUpdatedInPartialVariant);
 
-        // Remove tombstoned resources in the current variant
+        // Remove external attributes associated to tombstoned resources
         externalAttributes.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
         return externalAttributes;
     }

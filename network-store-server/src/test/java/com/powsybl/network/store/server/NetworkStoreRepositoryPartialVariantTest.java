@@ -917,7 +917,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void testUpdateIdentifiablesSvNotExistingInPartialVariant() {
+    void updateIdentifiablesSvNotExistingInPartialVariant() {
         String networkId = "network1";
         String loadId = "load";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
@@ -1016,7 +1016,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void testUpdateIdentifiablesSvAlreadyExistingInPartialVariant() {
+    void updateIdentifiablesSvAlreadyExistingInPartialVariant() {
         String networkId = "network1";
         String loadId = "load";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
@@ -1141,7 +1141,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void testUpdateIdentifiablesSvNotExistingAndExistingInPartialVariant() {
+    void updateIdentifiablesSvNotExistingAndExistingInPartialVariant() {
         String networkId = "network1";
         String loadId1 = "load1";
         String loadId2 = "load2";
@@ -1205,6 +1205,199 @@ class NetworkStoreRepositoryPartialVariantTest {
                 .build();
         assertEquals(Optional.of(expLoad1), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId1));
         assertEquals(Optional.of(expLoad2), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId2));
+    }
+
+    @Test
+    void getTapChangerStepsWithoutNetwork() {
+        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+    }
+
+    @Test
+    void getTapChangerStepsFromPartialCloneWithNoIdentifiableInPartialVariant() {
+        String networkId = "network1";
+        String lineId = "line1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 0);
+        TapChangerStepAttributes ratioStepA1 = TapChangerStepAttributes.builder()
+                .rho(1.)
+                .r(1.)
+                .g(1.)
+                .b(1.)
+                .x(1.)
+                .side(0)
+                .index(0)
+                .type(TapChangerType.RATIO)
+                .build();
+        TapChangerStepAttributes ratioStepB1 = TapChangerStepAttributes.builder()
+                .rho(2.)
+                .r(2.)
+                .g(2.)
+                .b(2.)
+                .x(2.)
+                .side(0)
+                .index(1)
+                .type(TapChangerType.RATIO)
+                .build();
+        networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        OwnerInfo expOwnerInfo1 = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo1));
+    }
+    @Test
+    void getTapChangerStepsFromPartialClone() {
+        String networkId = "network1";
+        String lineId = "line1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
+        TapChangerStepAttributes ratioStepA1 = TapChangerStepAttributes.builder()
+                .rho(1.)
+                .r(1.)
+                .g(1.)
+                .b(1.)
+                .x(1.)
+                .side(0)
+                .index(0)
+                .type(TapChangerType.RATIO)
+                .build();
+        TapChangerStepAttributes ratioStepB1 = TapChangerStepAttributes.builder()
+                .rho(2.)
+                .r(2.)
+                .g(2.)
+                .b(2.)
+                .x(2.)
+                .side(0)
+                .index(1)
+                .type(TapChangerType.RATIO)
+                .build();
+        networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
+
+        OwnerInfo expOwnerInfo1 = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo1));
+    }
+
+    @Test
+    void getTapChangerStepsFromPartialCloneWithUpdatedTapChangerSteps() {
+        String networkId = "network1";
+        String lineId = "line";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 0);
+        TapChangerStepAttributes ratioStepA1 = TapChangerStepAttributes.builder()
+                .rho(1.)
+                .r(1.)
+                .g(1.)
+                .b(1.)
+                .x(1.)
+                .side(0)
+                .index(0)
+                .type(TapChangerType.RATIO)
+                .build();
+        TapChangerStepAttributes ratioStepB1 = TapChangerStepAttributes.builder()
+                .rho(2.)
+                .r(2.)
+                .g(2.)
+                .b(2.)
+                .x(2.)
+                .side(0)
+                .index(1)
+                .type(TapChangerType.RATIO)
+                .build();
+        networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
+        ratioStepA1 = TapChangerStepAttributes.builder()
+                .rho(3.)
+                .r(3.)
+                .g(3.)
+                .b(3.)
+                .x(3.)
+                .side(0)
+                .index(0)
+                .type(TapChangerType.RATIO)
+                .build();
+        ratioStepB1 = TapChangerStepAttributes.builder()
+                .rho(4.)
+                .r(4.)
+                .g(4.)
+                .b(4.)
+                .x(4.)
+                .side(0)
+                .index(1)
+                .type(TapChangerType.RATIO)
+                .build();
+        networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
+
+        OwnerInfo expOwnerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo));
+    }
+
+    @Test
+    void getTapChangerStepsFromFullClone() {
+        String networkId = "network1";
+        String lineId = "line1";
+        createSourceNetwork(networkId, 2, "variant2", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 2);
+        TapChangerStepAttributes ratioStepA1 = TapChangerStepAttributes.builder()
+                .rho(1.)
+                .r(1.)
+                .g(1.)
+                .b(1.)
+                .x(1.)
+                .side(0)
+                .index(0)
+                .type(TapChangerType.RATIO)
+                .build();
+        TapChangerStepAttributes ratioStepB1 = TapChangerStepAttributes.builder()
+                .rho(2.)
+                .r(2.)
+                .g(2.)
+                .b(2.)
+                .x(2.)
+                .side(0)
+                .index(1)
+                .type(TapChangerType.RATIO)
+                .build();
+        networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
+
+        OwnerInfo expOwnerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 2);
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 2, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo));
+    }
+
+    @Test
+    void getTapChangerStepsFromPartialCloneWithTombstoned() {
+        String networkId = "network1";
+        String lineId = "line1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 0);
+        TapChangerStepAttributes ratioStepA1 = TapChangerStepAttributes.builder()
+                .rho(1.)
+                .r(1.)
+                .g(1.)
+                .b(1.)
+                .x(1.)
+                .side(0)
+                .index(0)
+                .type(TapChangerType.RATIO)
+                .build();
+        TapChangerStepAttributes ratioStepB1 = TapChangerStepAttributes.builder()
+                .rho(2.)
+                .r(2.)
+                .g(2.)
+                .b(2.)
+                .x(2.)
+                .side(0)
+                .index(1)
+                .type(TapChangerType.RATIO)
+                .build();
+        networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        OwnerInfo expOwnerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo));
+        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, lineId, LINE_TABLE);
+        assertTrue(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).isEmpty());
     }
 
     //TODO: add tests for cloneNetwork without network? actually juste create a method to reuse everywhere
