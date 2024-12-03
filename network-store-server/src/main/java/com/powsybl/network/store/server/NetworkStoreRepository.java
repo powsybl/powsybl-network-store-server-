@@ -945,22 +945,36 @@ public class NetworkStoreRepository {
     }
 
     public void updateInjectionsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources, String tableName, TableMapping tableMapping) {
-        try (var connection = dataSource.getConnection()) {
+        updateStateVariables(
+                networkUuid,
+                resources,
+                tableMapping,
+                buildUpdateInjectionSvQuery(tableName),
+                InjectionSvAttributes::updateAttributes,
+                InjectionSvAttributes::bindAttributes
+        );
+    }
 
-            // Update existing resources in variant num
-            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
-            try (var preparedStmt = connection.prepareStatement(buildUpdateInjectionSvQuery(tableName))) {
-                List<Object> values = new ArrayList<>(5);
-                for (List<Resource<InjectionSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                    for (Resource<InjectionSvAttributes> resource : subResources) {
+    private <T extends IdentifiableAttributes, U extends Attributes> void updateStateVariables(
+            UUID networkUuid,
+            List<Resource<U>> updatedSvResources,
+            TableMapping tableMapping,
+            String updateQuery,
+            BiConsumer<T, U> attributeUpdater,
+            BiConsumer<U, List<Object>> attributeBinder
+    ) {
+        try (var connection = dataSource.getConnection()) {
+            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, updatedSvResources, tableMapping.getTable(), connection);
+            try (var preparedStmt = connection.prepareStatement(updateQuery)) {
+                List<Object> values = new ArrayList<>();
+                for (List<Resource<U>> subResources : Lists.partition(updatedSvResources, BATCH_SIZE)) {
+                    for (Resource<U> resource : subResources) {
                         int variantNum = resource.getVariantNum();
                         String resourceId = resource.getId();
-                        //TODO: do I need a getOrDefault here?
                         if (existingIds.get(variantNum).contains(resourceId)) {
-                            InjectionSvAttributes attributes = resource.getAttributes();
+                            U attributes = resource.getAttributes();
                             values.clear();
-                            values.add(attributes.getP());
-                            values.add(attributes.getQ());
+                            attributeBinder.accept(attributes, values);
                             values.add(networkUuid);
                             values.add(variantNum);
                             values.add(resourceId);
@@ -971,12 +985,7 @@ public class NetworkStoreRepository {
                     preparedStmt.executeBatch();
                 }
             }
-            // Clone and update resources from srcVariantNum
-            cloneAndUpdateMissingVariantResources(networkUuid, tableMapping, resources, connection,
-                    (existingAttributes, newAttributes) -> {
-                        ((InjectionAttributes) existingAttributes).setP(newAttributes.getP());
-                        ((InjectionAttributes) existingAttributes).setQ(newAttributes.getQ());
-                    });
+            cloneAndUpdateMissingVariantResources(networkUuid, tableMapping, updatedSvResources, connection, attributeUpdater);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -985,40 +994,42 @@ public class NetworkStoreRepository {
     private <T extends IdentifiableAttributes, U extends Attributes> void cloneAndUpdateMissingVariantResources(
             UUID networkUuid,
             TableMapping tableMapping,
-            List<Resource<U>> updatedResources,
+            List<Resource<U>> updatedSvResources,
             Connection connection,
             BiConsumer<T, U> attributesUpdater
     ) throws SQLException {
-        Map<Integer, Map<String, Resource<U>>> updatedResourcesByVariant = updatedResources.stream()
+        Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant = updatedSvResources.stream()
                 .collect(Collectors.groupingBy(
                         Resource::getVariantNum,
                         Collectors.toMap(Resource::getId, Function.identity())
                 ));
 
-        List<Resource<T>> missingVariantResources = retrieveResourcesMissingFromVariants(networkUuid, tableMapping, updatedResourcesByVariant, connection);
+        List<Resource<T>> missingVariantResources = retrieveResourcesMissingFromVariants(networkUuid, tableMapping, updatedSvResourcesByVariant, connection);
 
-        // Update identifiables with values from updatedResources, using the provided update function
-        updateAttributesFromMissingVariantResources(attributesUpdater, missingVariantResources, updatedResourcesByVariant);
+        // Update identifiables with values from updatedSvResources, using the provided update function
+        if (!missingVariantResources.isEmpty()) {
+            updateAttributesFromMissingVariantResources(attributesUpdater, missingVariantResources, updatedSvResourcesByVariant);
 
-        // Batch insert the modified identifiables from srcVariant updated with values from updatedResources
-        batchInsertIdentifiables(networkUuid, missingVariantResources, tableMapping, connection);
-        LOGGER.info("Inserted {} missing identifiables in variants (updated with new SV values)", missingVariantResources.size());
+            // Batch insert the modified identifiables from srcVariant updated with values from updatedSvResources
+            batchInsertIdentifiables(networkUuid, missingVariantResources, tableMapping, connection);
+            LOGGER.info("Inserted {} missing identifiables in variants (updated with new SV values)", missingVariantResources.size());
+        }
     }
 
-    private static <T extends IdentifiableAttributes, U extends Attributes> void updateAttributesFromMissingVariantResources(BiConsumer<T, U> attributesUpdater, List<Resource<T>> missingVariantResources, Map<Integer, Map<String, Resource<U>>> updatedResourcesByVariant) {
+    private static <T extends IdentifiableAttributes, U extends Attributes> void updateAttributesFromMissingVariantResources(BiConsumer<T, U> svAttributesUpdater, List<Resource<T>> missingVariantResources, Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant) {
         for (Resource<T> resource : missingVariantResources) {
-            Resource<U> updatedResource = updatedResourcesByVariant.getOrDefault(resource.getVariantNum(), Map.of()).get(resource.getId());
-            if (updatedResource != null) {
-                attributesUpdater.accept(resource.getAttributes(), updatedResource.getAttributes());
+            Resource<U> updatedSvResource = updatedSvResourcesByVariant.getOrDefault(resource.getVariantNum(), Map.of()).get(resource.getId());
+            if (updatedSvResource != null) {
+                svAttributesUpdater.accept(resource.getAttributes(), updatedSvResource.getAttributes());
             }
         }
     }
 
     private <T extends IdentifiableAttributes, U extends Attributes> List<Resource<T>> retrieveResourcesMissingFromVariants(UUID networkUuid, TableMapping tableMapping,
-                                                                                                      Map<Integer, Map<String, Resource<U>>> updatedResourcesByVariant,
+                                                                                                      Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant,
                                                                                                       Connection connection) throws SQLException {
         List<Resource<T>> missingVariantResources = new ArrayList<>();
-        for (var entry : updatedResourcesByVariant.entrySet()) {
+        for (var entry : updatedSvResourcesByVariant.entrySet()) {
             int variantNum = entry.getKey();
             Set<String> equipmentIds = entry.getValue().keySet();
             int srcVariantNum = getNetwork(networkUuid, variantNum).orElseThrow().getAttributes().getSrcVariantNum();
@@ -1045,44 +1056,16 @@ public class NetworkStoreRepository {
     }
 
     public void updateBranchesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources, String tableName, TableMapping tableMapping) {
-        try (var connection = dataSource.getConnection()) {
-            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
-            try (var preparedStmt = connection.prepareStatement(buildUpdateBranchSvQuery(tableName))) {
-                List<Object> values = new ArrayList<>(7);
-                for (List<Resource<BranchSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                    for (Resource<BranchSvAttributes> resource : subResources) {
-                        int variantNum = resource.getVariantNum();
-                        String resourceId = resource.getId();
-                        if (existingIds.get(variantNum).contains(resourceId)) {
-                            BranchSvAttributes attributes = resource.getAttributes();
-                            values.clear();
-                            values.add(attributes.getP1());
-                            values.add(attributes.getQ1());
-                            values.add(attributes.getP2());
-                            values.add(attributes.getQ2());
-                            values.add(networkUuid);
-                            values.add(variantNum);
-                            values.add(resourceId);
-                            bindValues(preparedStmt, values, mapper);
-                            preparedStmt.addBatch();
-                        }
-                    }
-                    preparedStmt.executeBatch();
-                }
-            }
-            cloneAndUpdateMissingVariantResources(networkUuid, tableMapping, resources, connection,
-                    (existingAttributes, newAttributes) -> {
-                        ((BranchAttributes) existingAttributes).setP1(newAttributes.getP1());
-                        ((BranchAttributes) existingAttributes).setQ1(newAttributes.getQ1());
-                        ((BranchAttributes) existingAttributes).setP2(newAttributes.getP2());
-                        ((BranchAttributes) existingAttributes).setQ2(newAttributes.getQ2());
-                    });
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
+        updateStateVariables(
+                networkUuid,
+                resources,
+                tableMapping,
+                buildUpdateBranchSvQuery(tableName),
+                BranchSvAttributes::updateAttributes,
+                BranchSvAttributes::bindAttributes
+        );
     }
 
-    // HERE
     public <T extends IdentifiableAttributes> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
                                                                        TableMapping tableMapping) {
         executeWithoutAutoCommit(connection -> {
@@ -1186,37 +1169,14 @@ public class NetworkStoreRepository {
     }
 
     public void updateVoltageLevelsSv(UUID networkUuid, List<Resource<VoltageLevelSvAttributes>> resources) {
-        try (var connection = dataSource.getConnection()) {
-            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, mappings.getVoltageLevelMappings().getTable(), connection);
-            try (var preparedStmt = connection.prepareStatement(buildUpdateVoltageLevelSvQuery())) {
-                List<Object> values = new ArrayList<>(5);
-                for (List<Resource<VoltageLevelSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                    for (Resource<VoltageLevelSvAttributes> resource : subResources) {
-                        int variantNum = resource.getVariantNum();
-                        String resourceId = resource.getId();
-                        if (existingIds.get(variantNum).contains(resourceId)) {
-                            VoltageLevelSvAttributes attributes = resource.getAttributes();
-                            values.clear();
-                            values.add(attributes.getCalculatedBusesForBusView());
-                            values.add(attributes.getCalculatedBusesForBusBreakerView());
-                            values.add(networkUuid);
-                            values.add(variantNum);
-                            values.add(resourceId);
-                            bindValues(preparedStmt, values, mapper);
-                            preparedStmt.addBatch();
-                        }
-                    }
-                    preparedStmt.executeBatch();
-                }
-            }
-            cloneAndUpdateMissingVariantResources(networkUuid, mappings.getVoltageLevelMappings(), resources, connection,
-                    (existingAttributes, newAttributes) -> {
-                        ((VoltageLevelAttributes) existingAttributes).setCalculatedBusesForBusView(newAttributes.getCalculatedBusesForBusView());
-                        ((VoltageLevelAttributes) existingAttributes).setCalculatedBusesForBusBreakerView(newAttributes.getCalculatedBusesForBusBreakerView());
-                    });
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
+        updateStateVariables(
+                networkUuid,
+                resources,
+                mappings.getVoltageLevelMappings(),
+                buildUpdateVoltageLevelSvQuery(),
+                VoltageLevelSvAttributes::updateAttributes,
+                VoltageLevelSvAttributes::bindAttributes
+        );
     }
 
     public List<Resource<VoltageLevelAttributes>> getVoltageLevels(UUID networkUuid, int variantNum, String substationId) {
@@ -1812,33 +1772,15 @@ public class NetworkStoreRepository {
         insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
     }
 
-    //TODO!
     public void updateThreeWindingsTransformersSv(UUID networkUuid, List<Resource<ThreeWindingsTransformerSvAttributes>> resources) {
-        try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(buildUpdateThreeWindingsTransformerSvQuery())) {
-                List<Object> values = new ArrayList<>(9);
-                for (List<Resource<ThreeWindingsTransformerSvAttributes>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                    for (Resource<ThreeWindingsTransformerSvAttributes> resource : subResources) {
-                        ThreeWindingsTransformerSvAttributes attributes = resource.getAttributes();
-                        values.clear();
-                        values.add(attributes.getP1());
-                        values.add(attributes.getQ1());
-                        values.add(attributes.getP2());
-                        values.add(attributes.getQ2());
-                        values.add(attributes.getP3());
-                        values.add(attributes.getQ3());
-                        values.add(networkUuid);
-                        values.add(resource.getVariantNum());
-                        values.add(resource.getId());
-                        bindValues(preparedStmt, values, mapper);
-                        preparedStmt.addBatch();
-                    }
-                    preparedStmt.executeBatch();
-                }
-            }
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
+        updateStateVariables(
+                networkUuid,
+                resources,
+                mappings.getThreeWindingsTransformerMappings(),
+                buildUpdateThreeWindingsTransformerSvQuery(),
+                ThreeWindingsTransformerSvAttributes::updateAttributes,
+                ThreeWindingsTransformerSvAttributes::bindAttributes
+        );
     }
 
     public void deleteThreeWindingsTransformer(UUID networkUuid, int variantNum, String threeWindingsTransformerId) {

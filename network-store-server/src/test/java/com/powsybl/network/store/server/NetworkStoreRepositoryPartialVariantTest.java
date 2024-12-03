@@ -896,6 +896,8 @@ class NetworkStoreRepositoryPartialVariantTest {
                 .variantNum(0)
                 .attributes(LoadAttributes.builder()
                         .voltageLevelId("vl1")
+                        .p(5.1)
+                        .q(6.1)
                         .build())
                 .build();
         networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad));
@@ -907,11 +909,48 @@ class NetworkStoreRepositoryPartialVariantTest {
                 .attributes(LoadAttributes.builder()
                         .voltageLevelId("vl1")
                         .p(5.6)
+                        .q(6.6)
                         .build())
                 .build();
         updateMethod.accept(NETWORK_UUID, List.of(updatedLoad));
 
         assertEquals(Optional.of(updatedLoad), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId));
+    }
+
+    @Test
+    void testUpdateIdentifiablesSvNotExistingInPartialVariant() {
+        String networkId = "network1";
+        String loadId = "load";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        Resource<LoadAttributes> initialLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(0)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.1)
+                        .q(6.1)
+                        .build())
+                .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        InjectionSvAttributes injectionSvAttributes = InjectionSvAttributes.builder()
+                .p(5.6)
+                .q(6.6)
+                .build();
+        Resource<InjectionSvAttributes> updatedSvLoad = new Resource<>(ResourceType.LOAD, loadId, 1, AttributeFilter.SV, injectionSvAttributes);
+        networkStoreRepository.updateLoadsSv(NETWORK_UUID, List.of(updatedSvLoad));
+
+        Resource<LoadAttributes> expUpdatedLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.6)
+                        .q(6.6)
+                        .build())
+                .build();
+        assertEquals(Optional.of(expUpdatedLoad), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId));
     }
 
     @Test
@@ -946,6 +985,8 @@ class NetworkStoreRepositoryPartialVariantTest {
                 .variantNum(0)
                 .attributes(LoadAttributes.builder()
                         .voltageLevelId("vl1")
+                        .p(5.1)
+                        .q(6.1)
                         .build())
                 .build();
         networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad));
@@ -956,6 +997,7 @@ class NetworkStoreRepositoryPartialVariantTest {
                 .attributes(LoadAttributes.builder()
                         .voltageLevelId("vl1")
                         .p(5.6)
+                        .q(6.6)
                         .build())
                 .build();
         updateMethod.accept(NETWORK_UUID, List.of(updatedLoad));
@@ -966,11 +1008,54 @@ class NetworkStoreRepositoryPartialVariantTest {
                 .attributes(LoadAttributes.builder()
                         .voltageLevelId("vl1")
                         .p(8.1)
+                        .q(5.9)
                         .build())
                 .build();
         updateMethod.accept(NETWORK_UUID, List.of(updatedLoad));
 
         assertEquals(Optional.of(updatedLoad), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId));
+    }
+
+    @Test
+    void testUpdateIdentifiablesSvAlreadyExistingInPartialVariant() {
+        String networkId = "network1";
+        String loadId = "load";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        Resource<LoadAttributes> initialLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(0)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.1)
+                        .q(6.1)
+                        .build())
+                .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        InjectionSvAttributes injectionSvAttributes = InjectionSvAttributes.builder()
+                .p(5.6)
+                .q(6.6)
+                .build();
+        Resource<InjectionSvAttributes> updatedSvLoad = new Resource<>(ResourceType.LOAD, loadId, 1, AttributeFilter.SV, injectionSvAttributes);
+        networkStoreRepository.updateLoadsSv(NETWORK_UUID, List.of(updatedSvLoad));
+
+        injectionSvAttributes = InjectionSvAttributes.builder()
+                .p(8.1)
+                .q(5.9)
+                .build();
+        updatedSvLoad = new Resource<>(ResourceType.LOAD, loadId, 1, AttributeFilter.SV, injectionSvAttributes);
+        networkStoreRepository.updateLoadsSv(NETWORK_UUID, List.of(updatedSvLoad));
+
+        Resource<LoadAttributes> expUpdatedSvLoad = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(8.1)
+                        .q(5.9)
+                        .build())
+                .build();
+        assertEquals(Optional.of(expUpdatedSvLoad), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId));
     }
 
     @Test
@@ -997,58 +1082,130 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     private void testUpdateIdentifiablesNotExistingAndExistingInPartialVariant(BiConsumer<UUID, List<Resource<LoadAttributes>>> updateMethod) {
-            String networkId = "network1";
-            String loadId1 = "load1";
-            String loadId2 = "load2";
+        String networkId = "network1";
+        String loadId1 = "load1";
+        String loadId2 = "load2";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-            Resource<LoadAttributes> initialLoad1 = Resource.loadBuilder()
-                    .id(loadId1)
-                    .variantNum(0)
-                    .attributes(LoadAttributes.builder()
-                            .voltageLevelId("vl1")
-                            .p(5.6)
-                            .build())
-                    .build();
-            Resource<LoadAttributes> initialLoad2 = Resource.loadBuilder()
-                    .id(loadId2)
-                    .variantNum(0)
-                    .attributes(LoadAttributes.builder()
-                            .voltageLevelId("vl1")
-                            .p(7.6)
-                            .build())
-                    .build();
-            networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad1, initialLoad2));
-            networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
-            Resource<LoadAttributes> updatedLoad2 = Resource.loadBuilder()
-                    .id(loadId2)
-                    .variantNum(1)
-                    .attributes(LoadAttributes.builder()
-                            .voltageLevelId("vl1")
-                            .p(5.4)
-                            .build())
-                    .build();
-            updateMethod.accept(NETWORK_UUID, List.of(updatedLoad2));
+        Resource<LoadAttributes> initialLoad1 = Resource.loadBuilder()
+                .id(loadId1)
+                .variantNum(0)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.1)
+                        .q(6.1)
+                        .build())
+                .build();
+        Resource<LoadAttributes> initialLoad2 = Resource.loadBuilder()
+                .id(loadId2)
+                .variantNum(0)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(7.1)
+                        .q(3.1)
+                        .build())
+                .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad1, initialLoad2));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        Resource<LoadAttributes> updatedLoad2 = Resource.loadBuilder()
+                .id(loadId2)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.4)
+                        .q(6.6)
+                        .build())
+                .build();
+        updateMethod.accept(NETWORK_UUID, List.of(updatedLoad2));
 
-            updatedLoad2 = Resource.loadBuilder()
-                    .id(loadId2)
-                    .variantNum(1)
-                    .attributes(LoadAttributes.builder()
-                            .voltageLevelId("vl1")
-                            .p(8.1)
-                            .build())
-                    .build();
-            updateMethod.accept(NETWORK_UUID, List.of(updatedLoad2));
+        Resource<LoadAttributes> updatedLoad1 = Resource.loadBuilder()
+                .id(loadId1)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.9)
+                        .q(6.4)
+                        .build())
+                .build();
+        updatedLoad2 = Resource.loadBuilder()
+                .id(loadId2)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(8.1)
+                        .q(6.6)
+                        .build())
+                .build();
+        updateMethod.accept(NETWORK_UUID, List.of(updatedLoad1, updatedLoad2));
+
+        assertEquals(Optional.of(updatedLoad1), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId1));
+        assertEquals(Optional.of(updatedLoad2), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId2));
+    }
+
+    @Test
+    void testUpdateIdentifiablesSvNotExistingAndExistingInPartialVariant() {
+        String networkId = "network1";
+        String loadId1 = "load1";
+        String loadId2 = "load2";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        Resource<LoadAttributes> initialLoad1 = Resource.loadBuilder()
+                .id(loadId1)
+                .variantNum(0)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(5.1)
+                        .q(6.1)
+                        .build())
+                .build();
+        Resource<LoadAttributes> initialLoad2 = Resource.loadBuilder()
+                .id(loadId2)
+                .variantNum(0)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(7.1)
+                        .q(3.1)
+                        .build())
+                .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(initialLoad1, initialLoad2));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        InjectionSvAttributes injectionSvAttributes = InjectionSvAttributes.builder()
+                .p(5.6)
+                .q(6.6)
+                .build();
+        Resource<InjectionSvAttributes> updatedSvLoad2 = new Resource<>(ResourceType.LOAD, loadId2, 1, AttributeFilter.SV, injectionSvAttributes);
+        networkStoreRepository.updateLoadsSv(NETWORK_UUID, List.of(updatedSvLoad2));
+
+        injectionSvAttributes = InjectionSvAttributes.builder()
+                .p(2.1)
+                .q(3.3)
+                .build();
+        Resource<InjectionSvAttributes> updatedSvLoad1 = new Resource<>(ResourceType.LOAD, loadId1, 1, AttributeFilter.SV, injectionSvAttributes);
+        injectionSvAttributes = InjectionSvAttributes.builder()
+                .p(8.1)
+                .q(6.6)
+                .build();
+        updatedSvLoad2 = new Resource<>(ResourceType.LOAD, loadId2, 1, AttributeFilter.SV, injectionSvAttributes);
+        networkStoreRepository.updateLoadsSv(NETWORK_UUID, List.of(updatedSvLoad1, updatedSvLoad2));
 
         Resource<LoadAttributes> expLoad1 = Resource.loadBuilder()
                 .id(loadId1)
                 .variantNum(1)
                 .attributes(LoadAttributes.builder()
                         .voltageLevelId("vl1")
-                        .p(5.6)
+                        .p(2.1)
+                        .q(3.3)
+                        .build())
+                .build();
+        Resource<LoadAttributes> expLoad2 = Resource.loadBuilder()
+                .id(loadId2)
+                .variantNum(1)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .p(8.1)
+                        .q(6.6)
                         .build())
                 .build();
         assertEquals(Optional.of(expLoad1), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId1));
-        assertEquals(Optional.of(updatedLoad2), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId2));
+        assertEquals(Optional.of(expLoad2), networkStoreRepository.getIdentifiable(NETWORK_UUID, 1, loadId2));
     }
 
     //TODO: add tests for cloneNetwork without network? actually juste create a method to reuse everywhere
