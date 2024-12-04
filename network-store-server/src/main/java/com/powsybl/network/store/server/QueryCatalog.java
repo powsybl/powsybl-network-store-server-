@@ -46,6 +46,7 @@ public final class QueryCatalog {
     static final String REGULATION_MODE = "regulationMode";
     static final String SIDE_COLUMN = "side";
     static final String LIMIT_TYPE_COLUMN = "limitType";
+    static final String REGULATING = "regulating";
 
     private QueryCatalog() {
     }
@@ -496,8 +497,9 @@ public final class QueryCatalog {
     public static String buildInsertRegulatingPointsQuery() {
         return "insert into " + REGULATING_POINT_TABLE + " (" +
             NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN + ", " + REGULATING_EQUIPMENT_ID + ", " + REGULATING_EQUIPMENT_TYPE_COLUMN + ", " +
-            REGULATION_MODE + ", localTerminalConnectableId, localTerminalSide, regulatingterminalconnectableid, regulatingterminalside, " + REGULATED_EQUIPMENT_TYPE_COLUMN + ")" +
-            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            REGULATION_MODE + ", localTerminalConnectableId, localTerminalSide, regulatingterminalconnectableid, regulatingterminalside, " +
+            REGULATED_EQUIPMENT_TYPE_COLUMN + ", " + REGULATING + ")" +
+            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
     public static String buildUpdateRegulatingPointsQuery() {
@@ -505,7 +507,8 @@ public final class QueryCatalog {
             " set " + REGULATION_MODE + " = ?, " +
             "regulatingterminalconnectableid = ?, " +
             "regulatingterminalside = ?, " +
-            REGULATED_EQUIPMENT_TYPE_COLUMN + " = ? " +
+            REGULATED_EQUIPMENT_TYPE_COLUMN + " = ?, " +
+            REGULATING + " = ? " +
             "where " +
             NETWORK_UUID_COLUMN + " = ? AND " +
             VARIANT_NUM_COLUMN + " = ? AND " +
@@ -517,10 +520,10 @@ public final class QueryCatalog {
         return "insert into " + REGULATING_POINT_TABLE + " (" + NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN + ", " +
              REGULATING_EQUIPMENT_ID + ", " + REGULATING_EQUIPMENT_TYPE_COLUMN + ", " + REGULATION_MODE +
             ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide, " +
-            REGULATED_EQUIPMENT_TYPE_COLUMN + ") select ?, ?" + ", " + REGULATING_EQUIPMENT_ID + ", " +
+            REGULATED_EQUIPMENT_TYPE_COLUMN + ", " + REGULATING + ") select ?, ?" + ", " + REGULATING_EQUIPMENT_ID + ", " +
             REGULATING_EQUIPMENT_TYPE_COLUMN + ", " + REGULATION_MODE +
             ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide, "
-            + REGULATED_EQUIPMENT_TYPE_COLUMN + " from " + REGULATING_POINT_TABLE + " where " + NETWORK_UUID_COLUMN +
+            + REGULATED_EQUIPMENT_TYPE_COLUMN + ", " + REGULATING + " from " + REGULATING_POINT_TABLE + " where " + NETWORK_UUID_COLUMN +
             " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
@@ -529,7 +532,7 @@ public final class QueryCatalog {
             NETWORK_UUID_COLUMN + ", " +
             VARIANT_NUM_COLUMN + ", " +
             REGULATING_EQUIPMENT_ID + ", " + REGULATION_MODE + ", localterminalconnectableid, localterminalside, " +
-            "regulatingterminalconnectableid, regulatingterminalside, " + REGULATED_EQUIPMENT_TYPE_COLUMN +
+            "regulatingterminalconnectableid, regulatingterminalside, " + REGULATING +
             " from " + REGULATING_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
@@ -543,7 +546,7 @@ public final class QueryCatalog {
         return "select " + NETWORK_UUID_COLUMN + ", " +
             VARIANT_NUM_COLUMN + ", " +
             REGULATING_EQUIPMENT_ID + ", " + REGULATION_MODE + ", localterminalconnectableid, localterminalside, " +
-            "regulatingterminalconnectableid, regulatingterminalside, " + REGULATED_EQUIPMENT_TYPE_COLUMN
+            "regulatingterminalconnectableid, regulatingterminalside, " + REGULATING
             + " from " + REGULATING_POINT_TABLE + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
