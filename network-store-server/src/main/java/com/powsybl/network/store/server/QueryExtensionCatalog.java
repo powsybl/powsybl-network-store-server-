@@ -6,6 +6,8 @@
  */
 package com.powsybl.network.store.server;
 
+import java.util.Collections;
+
 import static com.powsybl.network.store.server.QueryCatalog.*;
 
 /**
@@ -131,8 +133,15 @@ public final class QueryExtensionCatalog {
         return "select " + EQUIPMENT_ID_COLUMN + ", " + EXTENSION_NAME_COLUMN + " FROM " + TOMBSTONED_EXTENSION_TABLE + " WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildDeleteTombstonedExtensionsQuery() {
-        return "delete from " + TOMBSTONED_EXTENSION_TABLE + " WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ? AND " + EQUIPMENT_ID_COLUMN + " = ? AND " + EXTENSION_NAME_COLUMN + " = ?";
+    public static String buildDeleteTombstonedExtensionsQuery(int extensionCount) {
+        if (extensionCount < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+        return "DELETE FROM " + TOMBSTONED_EXTENSION_TABLE
+                + " WHERE (" + NETWORK_UUID_COLUMN + ", "
+                + VARIANT_NUM_COLUMN + ", "
+                + EQUIPMENT_ID_COLUMN + ", "
+                + EXTENSION_NAME_COLUMN + ") IN (" + String.join(",", Collections.nCopies(extensionCount, "(?, ?, ?, ?)")) + ")";
     }
 
     public static String buildCloneTombstonedExtensionsQuery() {

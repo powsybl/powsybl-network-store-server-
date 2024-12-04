@@ -19,10 +19,12 @@ import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.io.UncheckedIOException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.NetworkStoreRepository.BATCH_SIZE;
 import static com.powsybl.network.store.server.QueryCatalog.*;
@@ -42,54 +44,68 @@ public class ExtensionHandler {
         this.mapper = mapper;
     }
 
-    public void insertExtensions(Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions, boolean isUpdate) {
+    public void createExtensions(Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
+        Map<OwnerInfo, Map<String, ExtensionAttributes>> filteredExtensions = extensions.entrySet().stream()
+                .filter(entry -> !entry.getValue().isEmpty())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if (filteredExtensions.isEmpty()) {
+            return;
+        }
+
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildInsertExtensionsQuery())) {
-                List<Object> values = new ArrayList<>(6);
-                List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(extensions.entrySet());
-                for (List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> subExtensions : Lists.partition(list, BATCH_SIZE)) {
-                    for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
-                        for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
-                            if (extension.getValue().isPersistent()) {
-                                values.clear();
-                                values.add(entry.getKey().getEquipmentId());
-                                values.add(entry.getKey().getEquipmentType().toString());
-                                values.add(entry.getKey().getNetworkUuid());
-                                values.add(entry.getKey().getVariantNum());
-                                values.add(extension.getKey());
-                                values.add(extension.getValue());
-                                bindValues(preparedStmt, values, mapper);
-                                preparedStmt.addBatch();
-                            }
-                        }
-                    }
-                    preparedStmt.executeBatch();
+            insertExtensions(filteredExtensions, connection);
+            //TODO: maybe only if it's a partial variant...
+            // Remove tombstoned from db only if it's an insert, not an update!
+            List<Object> values = new ArrayList<>(filteredExtensions.size() * 4);
+            List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(filteredExtensions.entrySet());
+            for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : list) {
+                for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
+                    values.add(entry.getKey().getNetworkUuid());
+                    values.add(entry.getKey().getVariantNum());
+                    values.add(entry.getKey().getEquipmentId());
+                    values.add(extension.getKey());
                 }
             }
-            //TODO: maybe only if it's a partial variant...
-            if (!isUpdate) {
-                // Remove tombstoned from db only if it's an insert, not an update!
-                try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteTombstonedExtensionsQuery())) {
-                    List<Object> values = new ArrayList<>(4);
-                    List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(extensions.entrySet());
-                    for (List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> subExtensions : Lists.partition(list, BATCH_SIZE)) {
-                        for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
-                            for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
-                                values.clear();
-                                values.add(entry.getKey().getNetworkUuid());
-                                values.add(entry.getKey().getVariantNum());
-                                values.add(entry.getKey().getEquipmentId());
-                                values.add(extension.getKey());
-                                bindValues(preparedStmt, values, mapper);
-                                preparedStmt.addBatch();
-                            }
-                        }
-                        preparedStmt.executeBatch();
-                    }
-                }
+
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteTombstonedExtensionsQuery(values.size() / 4))) {
+                bindValues(preparedStmt, values, mapper);
+                preparedStmt.executeUpdate();
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
+        }
+    }
+
+    public void recreateExtensionsForUpdate(Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
+        try (var connection = dataSource.getConnection()) {
+            insertExtensions(extensions, connection);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    public void insertExtensions(Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions, Connection connection) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildInsertExtensionsQuery())) {
+            List<Object> values = new ArrayList<>(6);
+            List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(extensions.entrySet());
+            for (List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> subExtensions : Lists.partition(list, BATCH_SIZE)) {
+                for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
+                    for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
+                        if (extension.getValue().isPersistent()) {
+                            values.clear();
+                            values.add(entry.getKey().getEquipmentId());
+                            values.add(entry.getKey().getEquipmentType().toString());
+                            values.add(entry.getKey().getNetworkUuid());
+                            values.add(entry.getKey().getVariantNum());
+                            values.add(extension.getKey());
+                            values.add(extension.getValue());
+                            bindValues(preparedStmt, values, mapper);
+                            preparedStmt.addBatch();
+                        }
+                    }
+                }
+                preparedStmt.executeBatch();
+            }
         }
     }
 
@@ -274,7 +290,7 @@ public class ExtensionHandler {
      */
     public <T extends IdentifiableAttributes> void updateExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
         deleteExtensionsFromEquipments(networkUuid, resources);
-        insertExtensions(getExtensionsFromEquipments(networkUuid, resources), true);
+        recreateExtensionsForUpdate(getExtensionsFromEquipments(networkUuid, resources));
     }
 
     public <T extends IdentifiableAttributes> Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
@@ -314,7 +330,7 @@ public class ExtensionHandler {
      */
     public void updateExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
         deleteExtensionsFromNetworks(resources);
-        insertExtensions(getExtensionsFromNetworks(resources), true);
+        recreateExtensionsForUpdate(getExtensionsFromNetworks(resources));
     }
 
     public Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {

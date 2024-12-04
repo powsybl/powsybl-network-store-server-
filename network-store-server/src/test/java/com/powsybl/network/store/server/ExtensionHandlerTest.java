@@ -39,7 +39,7 @@ class ExtensionHandlerTest {
     private static final UUID NETWORK_UUID = UUID.fromString("7928181c-7977-4592-ba19-88027e4254e4");
 
     @Test
-    void insertExtensionsTest() {
+    void createExtensionsTest() {
         String equipmentId1 = "idBatteryA";
 
         OwnerInfo infoBatteryA = new OwnerInfo(
@@ -54,7 +54,7 @@ class ExtensionHandlerTest {
         Map<OwnerInfo, Map<String, ExtensionAttributes>> map1 = new HashMap<>();
         map1.put(infoBatteryA, extensionAttributesMap1);
 
-        extensionHandler.insertExtensions(map1, false);
+        extensionHandler.createExtensions(map1);
 
         Map<String, ExtensionAttributes> extensionAttributesResults = extensionHandler.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 0, "idBatteryA");
         assertEquals(2, extensionAttributesResults.size());
@@ -82,7 +82,7 @@ class ExtensionHandlerTest {
         );
         Map<String, ExtensionAttributes> extensionAttributesBattery1 = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test12").build());
-        extensionHandler.insertExtensions(Map.of(infoBattery1, extensionAttributesBattery1), false);
+        extensionHandler.createExtensions(Map.of(infoBattery1, extensionAttributesBattery1));
 
         OwnerInfo infoBattery2 = new OwnerInfo(
                 batteryId2,
@@ -92,7 +92,7 @@ class ExtensionHandlerTest {
         );
         Map<String, ExtensionAttributes> extensionAttributesBattery2 = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(5.0).participate(false).participationFactor(0.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test23").build());
-        extensionHandler.insertExtensions(Map.of(infoBattery2, extensionAttributesBattery2), false);
+        extensionHandler.createExtensions(Map.of(infoBattery2, extensionAttributesBattery2));
 
         OwnerInfo infoGenerator1 = new OwnerInfo(
                 generatorId1,
@@ -102,7 +102,7 @@ class ExtensionHandlerTest {
         );
         Map<String, ExtensionAttributes> extensionAttributesGenerator1 = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(7.0).participate(true).participationFactor(0.2).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test45").build());
-        extensionHandler.insertExtensions(Map.of(infoGenerator1, extensionAttributesGenerator1), false);
+        extensionHandler.createExtensions(Map.of(infoGenerator1, extensionAttributesGenerator1));
 
         // Get one extension attributes
         Optional<ExtensionAttributes> apcAttributesOpt = extensionHandler.getExtensionAttributes(NETWORK_UUID, 0, batteryId1, "activePowerControl");
@@ -157,7 +157,7 @@ class ExtensionHandlerTest {
         );
         Map<String, ExtensionAttributes> extensionAttributesBattery1 = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test12").build());
-        extensionHandler.insertExtensions(Map.of(infoBattery1, extensionAttributesBattery1), false);
+        extensionHandler.createExtensions(Map.of(infoBattery1, extensionAttributesBattery1));
 
         OwnerInfo infoBattery2 = new OwnerInfo(
                 batteryId2,
@@ -167,7 +167,7 @@ class ExtensionHandlerTest {
         );
         Map<String, ExtensionAttributes> extensionAttributesBattery2 = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(5.0).participate(false).participationFactor(0.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test23").build());
-        extensionHandler.insertExtensions(Map.of(infoBattery2, extensionAttributesBattery2), false);
+        extensionHandler.createExtensions(Map.of(infoBattery2, extensionAttributesBattery2));
 
         Map<String, ExtensionAttributes> extensions = extensionHandler.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 0, batteryId1);
         assertEquals(2, extensions.size());
@@ -198,7 +198,7 @@ class ExtensionHandlerTest {
         );
         Map<String, ExtensionAttributes> extensionAttributesBattery1 = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test12").build());
-        extensionHandler.insertExtensions(Map.of(infoBattery1, extensionAttributesBattery1), false);
+        extensionHandler.createExtensions(Map.of(infoBattery1, extensionAttributesBattery1));
 
         Map<String, ExtensionAttributes> extensionAttributes = extensionHandler.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 0, batteryId1);
         assertEquals(2, extensionAttributes.size());
@@ -238,7 +238,7 @@ class ExtensionHandlerTest {
         );
         Map<String, ExtensionAttributes> extensionAttributesNetwork1 = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test12").build());
-        extensionHandler.insertExtensions(Map.of(infoNetwork1, extensionAttributesNetwork1), false);
+        extensionHandler.createExtensions(Map.of(infoNetwork1, extensionAttributesNetwork1));
 
         Map<String, ExtensionAttributes> extensionAttributes = extensionHandler.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 0, networkId1);
         assertEquals(2, extensionAttributes.size());
@@ -281,7 +281,7 @@ class ExtensionHandlerTest {
                 "notPersistent", new NonPersistentExtensionAttributes(),
                 "activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build()
         );
-        extensionHandler.insertExtensions(Map.of(infoBattery, extensionAttributes), false);
+        extensionHandler.createExtensions(Map.of(infoBattery, extensionAttributes));
 
         extensionAttributes = extensionHandler.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 0, equipmentId);
         assertEquals(1, extensionAttributes.size());

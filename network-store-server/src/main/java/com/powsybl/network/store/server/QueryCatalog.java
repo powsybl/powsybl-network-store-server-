@@ -9,6 +9,7 @@ package com.powsybl.network.store.server;
 import com.powsybl.network.store.model.Resource;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -776,8 +777,13 @@ public final class QueryCatalog {
         return "select " + EQUIPMENT_ID_COLUMN + " FROM tombstoned WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildDeleteTombstonedEquipmentsQuery() {
-        return "delete from tombstoned WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ? AND " + EQUIPMENT_ID_COLUMN + " = ?";
+    public static String buildDeleteTombstonedEquipmentsQuery(int resourceCount) {
+        if (resourceCount < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+        return "delete from tombstoned where " + NETWORK_UUID_COLUMN + " = ? AND ("
+                + VARIANT_NUM_COLUMN + ", "
+                + EQUIPMENT_ID_COLUMN + ") in (" + String.join(",", Collections.nCopies(resourceCount, "(?, ?)")) + ")";
     }
 
     public static String buildCloneTombstonedQuery() {

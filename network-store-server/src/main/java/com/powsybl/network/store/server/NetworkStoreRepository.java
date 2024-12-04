@@ -273,7 +273,7 @@ public class NetworkStoreRepository {
                 preparedStmt.executeBatch();
             }
         }
-        extensionHandler.insertExtensions(extensionHandler.getExtensionsFromNetworks(resources), false);
+        extensionHandler.createExtensions(extensionHandler.getExtensionsFromNetworks(resources));
     }
 
     public void updateNetworks(List<Resource<NetworkAttributes>> resources) {
@@ -601,27 +601,24 @@ public class NetworkStoreRepository {
                                                                        TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
             batchInsertIdentifiables(networkUuid, resources, tableMapping, connection);
-            // Remove tombstoned from db
-            try (var preparedStmt = connection.prepareStatement(buildDeleteTombstonedEquipmentsQuery())) {
-                List<Object> values = new ArrayList<>(3);
-                for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                    for (Resource<T> resource : subResources) {
-                        values.clear();
-                        values.add(networkUuid);
+            if (!resources.isEmpty()) {
+                // Remove tombstoned from db
+                try (var preparedStmt = connection.prepareStatement(buildDeleteTombstonedEquipmentsQuery(resources.size()))) {
+                    List<Object> values = new ArrayList<>(resources.size() * 2 + 1);
+                    values.add(networkUuid);
+                    for (Resource<T> resource : resources) {
                         values.add(resource.getVariantNum());
                         values.add(resource.getId());
-                        bindValues(preparedStmt, values, mapper);
-                        preparedStmt.addBatch();
                     }
-                    //TODO: why not batched? maybe delete can't be batched, instead get all ids and delete all from tombstoned in one request?
-                    preparedStmt.executeBatch();
+                    bindValues(preparedStmt, values, mapper);
+                    preparedStmt.executeUpdate();
                 }
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
 
-        extensionHandler.insertExtensions(extensionHandler.getExtensionsFromEquipments(networkUuid, resources), false);
+        extensionHandler.createExtensions(extensionHandler.getExtensionsFromEquipments(networkUuid, resources));
     }
 
     private <T extends IdentifiableAttributes> void batchInsertIdentifiables(UUID networkUuid, List<Resource<T>> resources, TableMapping tableMapping, Connection connection) throws SQLException {
