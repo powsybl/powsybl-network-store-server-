@@ -21,5 +21,24 @@
             <column name="equipmenttype"/>
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstoned_pkey" tableName="tombstoned"/>
+        <createTable tableName="tombstonedextension">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="tombstonedextension_networkuuid_variantnum_idx" tableName="tombstonedextension">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+        </createIndex>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, name" constraintName="tombstonedextension_pkey" tableName="tombstonedextension"/>
     </changeSet>
 </databaseChangeLog>

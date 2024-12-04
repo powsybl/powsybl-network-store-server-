@@ -16,6 +16,7 @@ public final class QueryExtensionCatalog {
     static final String EXTENSION_NAME_COLUMN = "name";
     static final String EXTENSION_VALUE_COLUMN = "value_";
     static final String EXTENSION_RESOURCE_TYPE_COLUMN = "equipmenttype";
+    static final String TOMBSTONED_EXTENSION_TABLE = "tombstonedextension";
 
     private QueryExtensionCatalog() {
     }
@@ -118,5 +119,36 @@ public final class QueryExtensionCatalog {
         sql.append(")");
 
         return sql.toString();
+    }
+
+    // Tombstoned extensions
+    public static String buildAddTombstonedExtensionQuery() {
+        return "insert into " + TOMBSTONED_EXTENSION_TABLE + " (" + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EQUIPMENT_ID_COLUMN + ", " + EXTENSION_NAME_COLUMN + ") " +
+                "values (?, ?, ?, ?)";
+    }
+
+    public static String buildGetTombstonedExtensionsQuery() {
+        return "select " + EQUIPMENT_ID_COLUMN + ", " + EXTENSION_NAME_COLUMN + " FROM " + TOMBSTONED_EXTENSION_TABLE + " WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
+    }
+
+    public static String buildDeleteTombstonedExtensionsQuery() {
+        return "delete from " + TOMBSTONED_EXTENSION_TABLE + " WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ? AND " + EQUIPMENT_ID_COLUMN + " = ? AND " + EXTENSION_NAME_COLUMN + " = ?";
+    }
+
+    public static String buildCloneTombstonedExtensionsQuery() {
+        return "insert into " + TOMBSTONED_EXTENSION_TABLE + " (" +
+                NETWORK_UUID_COLUMN + ", " +
+                VARIANT_NUM_COLUMN + ", " +
+                EQUIPMENT_ID_COLUMN + ", " +
+                EXTENSION_NAME_COLUMN + ") " +
+                "select " +
+                "?" + "," +
+                "?" + "," +
+                EQUIPMENT_ID_COLUMN + "," +
+                EXTENSION_NAME_COLUMN +
+                " from " + TOMBSTONED_EXTENSION_TABLE + " " +
+                "where " +
+                NETWORK_UUID_COLUMN + " = ?" + " and " +
+                VARIANT_NUM_COLUMN + " = ? ";
     }
 }

@@ -766,6 +766,7 @@ public final class QueryCatalog {
                 VARIANT_NUM_COLUMN + " = ?";
     }
 
+    // Tombstoned identifiables
     public static String buildAddTombstonedIdentifiableQuery() {
         return "insert into tombstoned (" + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EQUIPMENT_ID_COLUMN + ") " +
                 "values (?, ?, ?)";
@@ -779,7 +780,6 @@ public final class QueryCatalog {
         return "delete from tombstoned WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ? AND " + EQUIPMENT_ID_COLUMN + " = ?";
     }
 
-    // Tap Changer Steps
     public static String buildCloneTombstonedQuery() {
         return "insert into tombstoned (" +
                 NETWORK_UUID_COLUMN + ", " +

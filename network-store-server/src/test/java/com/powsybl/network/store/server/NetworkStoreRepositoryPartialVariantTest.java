@@ -145,7 +145,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals("variant0", networkAttributesVariant0.getAttributes().getVariantId());
         assertEquals(VariantMode.PARTIAL, networkAttributesVariant0.getAttributes().getVariantMode());
         assertEquals(-1, networkAttributesVariant0.getAttributes().getSrcVariantNum());
-        assertEquals(List.of(loadId1, lineId1), getStoredIdentifiablesInVariant(NETWORK_UUID, 0));
+        assertEquals(List.of(loadId1, lineId1), getStoredIdentifiablesInVariant(targetNetworkUuid, 0));
 
         // Check variant 1
         Optional<Resource<NetworkAttributes>> networkAttributesOptVariant1 = networkStoreRepository.getNetwork(targetNetworkUuid, 1);
@@ -157,7 +157,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals("variant1", networkAttributesVariant1.getAttributes().getVariantId());
         assertEquals(VariantMode.PARTIAL, networkAttributesVariant1.getAttributes().getVariantMode());
         assertEquals(0, networkAttributesVariant1.getAttributes().getSrcVariantNum());
-        assertEquals(List.of(loadId2, lineId2), getStoredIdentifiablesInVariant(NETWORK_UUID, 1));
+        assertEquals(List.of(loadId2, lineId2), getStoredIdentifiablesInVariant(targetNetworkUuid, 1));
     }
 
     @Test
@@ -174,12 +174,12 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.cloneNetwork(targetNetworkUuid, NETWORK_UUID, List.of("variant0", "variant1"));
 
         // Check variant 0
-        assertEquals(List.of(lineId1), getStoredIdentifiablesInVariant(NETWORK_UUID, 0));
-        verifyExternalAttributes(lineId1, 0, NETWORK_UUID);
+        assertEquals(List.of(lineId1), getStoredIdentifiablesInVariant(targetNetworkUuid, 0));
+        verifyExternalAttributes(lineId1, 0, targetNetworkUuid);
 
         // Check variant 1
-        assertEquals(List.of(lineId2), getStoredIdentifiablesInVariant(NETWORK_UUID, 1));
-        verifyExternalAttributes(lineId2, 1, NETWORK_UUID);
+        assertEquals(List.of(lineId2), getStoredIdentifiablesInVariant(targetNetworkUuid, 1));
+        verifyExternalAttributes(lineId2, 1, targetNetworkUuid);
     }
 
     private void verifyExternalAttributes(String lineId, int variantNum, UUID networkUuid) {
@@ -316,11 +316,11 @@ class NetworkStoreRepositoryPartialVariantTest {
         // Extensions
         Map<String, ExtensionAttributes> extensionAttributes = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test12").build());
-        extensionHandler.insertExtensions(Map.of(ownerInfo, extensionAttributes));
+        extensionHandler.insertExtensions(Map.of(ownerInfo, extensionAttributes), false);
     }
 
     @Test
-    void cloneAllVariantsOfNetworkWithTombstoned() {
+    void cloneAllVariantsOfNetworkWithTombstonedIdentifiable() {
         String networkId = "network1";
         String loadId1 = "load1";
         String lineId1 = "line1";
@@ -337,9 +337,32 @@ class NetworkStoreRepositoryPartialVariantTest {
 
         networkStoreRepository.cloneNetwork(targetNetworkUuid, NETWORK_UUID, List.of("variant0", "variant1"));
 
-        assertEquals(List.of(loadId1), getStoredIdentifiablesInVariant(NETWORK_UUID, 0));
-        assertEquals(List.of(lineId2), getStoredIdentifiablesInVariant(NETWORK_UUID, 1));
-        assertEquals(List.of(loadId1, loadId2), networkStoreRepository.getTombstonedIdentifiables(NETWORK_UUID, 1));
+        assertEquals(List.of(loadId1), getStoredIdentifiablesInVariant(targetNetworkUuid, 0));
+        assertEquals(List.of(lineId2), getStoredIdentifiablesInVariant(targetNetworkUuid, 1));
+        assertEquals(List.of(loadId1, loadId2), networkStoreRepository.getTombstonedIdentifiables(targetNetworkUuid, 1));
+    }
+
+    @Test
+    void cloneAllVariantsOfNetworkWithTombstonedExtension() {
+        String networkId = "network1";
+        String lineId1 = "line1";
+        String lineId2 = "line2";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo1 = new OwnerInfo(lineId1, ResourceType.LINE, NETWORK_UUID, 0);
+        Map<String, ExtensionAttributes> extensionAttributesMap1 = buildExtensionAttributesMap(5.6, "status1");
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1), false);
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo2 = new OwnerInfo(lineId2, ResourceType.LINE, NETWORK_UUID, 1);
+        Map<String, ExtensionAttributes> extensionAttributesMap2 = buildExtensionAttributesMap(8.9, "status2");
+        extensionHandler.insertExtensions(Map.of(ownerInfo2, extensionAttributesMap2), false);
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 0, lineId1, ActivePowerControl.NAME);
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId1, OperatingStatus.NAME);
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId2, ActivePowerControl.NAME);
+        UUID targetNetworkUuid = UUID.fromString("0dd45074-009d-49b8-877f-8ae648a8e8b4");
+
+        networkStoreRepository.cloneNetwork(targetNetworkUuid, NETWORK_UUID, List.of("variant0", "variant1"));
+
+        assertEquals(Map.of(lineId1, Set.of(OperatingStatus.NAME), lineId2, Set.of(ActivePowerControl.NAME)), extensionHandler.getTombstonedExtensions(targetNetworkUuid, 1));
     }
 
     @Test
@@ -613,7 +636,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void getIdentifiableFromPartialCloneWithTombstoned() {
+    void getIdentifiableFromPartialCloneWithTombstonedIdentifiable() {
         String networkId = "network1";
         String loadId1 = "load1";
         String lineId1 = "line1";
@@ -810,7 +833,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void createIdentifiablesWithRecreatedTombstoned() {
+    void createIdentifiablesWithRecreatedTombstonedIdentifiable() {
         String networkId = "network1";
         // Variant 0
         createPartialNetwork(networkId, 1, "variant1", VariantMode.PARTIAL, 0);
@@ -1211,6 +1234,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         OwnerInfo expOwnerInfo1 = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
         assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo1));
     }
+
     @Test
     void getTapChangerStepsFromPartialClone() {
         String networkId = "network1";
@@ -1273,7 +1297,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void getTapChangerStepsFromPartialCloneWithTombstoned() {
+    void getTapChangerStepsFromPartialCloneWithTombstonedIdentifiable() {
         String networkId = "network1";
         String lineId = "line1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
@@ -1312,7 +1336,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         Map<String, ExtensionAttributes> extensionAttributesMap1 = buildExtensionAttributesMap(5.6, "status1");
         OwnerInfo ownerInfo2 = new OwnerInfo(lineId2, ResourceType.LINE, NETWORK_UUID, 0);
         Map<String, ExtensionAttributes> extensionAttributesMap2 = buildExtensionAttributesMap(8.9, "status2");
-        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2));
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2), false);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         assertEquals(Optional.of(extensionAttributesMap1.get(ActivePowerControl.NAME)), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
@@ -1353,7 +1377,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         Map<String, ExtensionAttributes> extensionAttributesMap1 = buildExtensionAttributesMap(5.6, "status1");
         OwnerInfo ownerInfo2 = new OwnerInfo(lineId2, ResourceType.LINE, NETWORK_UUID, 1);
         Map<String, ExtensionAttributes> extensionAttributesMap2 = buildExtensionAttributesMap(8.9, "status2");
-        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2));
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2), false);
 
         assertEquals(Optional.of(extensionAttributesMap1.get(ActivePowerControl.NAME)), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
         assertEquals(extensionAttributesMap1, networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId1));
@@ -1373,12 +1397,12 @@ class NetworkStoreRepositoryPartialVariantTest {
         Map<String, ExtensionAttributes> extensionAttributesMap1 = buildExtensionAttributesMap(5.6, "status1");
         OwnerInfo ownerInfo2 = new OwnerInfo(lineId2, ResourceType.LINE, NETWORK_UUID, 0);
         Map<String, ExtensionAttributes> extensionAttributesMap2 = buildExtensionAttributesMap(8.9, "status2");
-        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2));
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2), false);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         ownerInfo1 = new OwnerInfo(lineId1, ResourceType.LINE, NETWORK_UUID, 1);
         extensionAttributesMap1 = buildExtensionAttributesMap(5.2, "statusUpdated1");
-        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1));
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1), false);
 
         assertEquals(Optional.of(extensionAttributesMap1.get(ActivePowerControl.NAME)), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
         assertEquals(extensionAttributesMap1, networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId1));
@@ -1398,7 +1422,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         Map<String, ExtensionAttributes> extensionAttributesMap1 = buildExtensionAttributesMap(5.6, "status1");
         OwnerInfo ownerInfo2 = new OwnerInfo(lineId2, ResourceType.LINE, NETWORK_UUID, 2);
         Map<String, ExtensionAttributes> extensionAttributesMap2 = buildExtensionAttributesMap(8.9, "status2");
-        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2));
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2), false);
 
         assertEquals(Optional.of(extensionAttributesMap1.get(ActivePowerControl.NAME)), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 2, lineId1, ActivePowerControl.NAME));
         assertEquals(extensionAttributesMap1, networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 2, lineId1));
@@ -1409,7 +1433,7 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    void getExtensionFromPartialCloneWithTombstoned() {
+    void getExtensionFromPartialCloneWithTombstonedIdentifiable() {
         String networkId = "network1";
         String lineId1 = "line1";
         String lineId2 = "line2";
@@ -1418,7 +1442,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         Map<String, ExtensionAttributes> extensionAttributesMap1 = buildExtensionAttributesMap(5.6, "status1");
         OwnerInfo ownerInfo2 = new OwnerInfo(lineId2, ResourceType.LINE, NETWORK_UUID, 0);
         Map<String, ExtensionAttributes> extensionAttributesMap2 = buildExtensionAttributesMap(8.9, "status2");
-        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2));
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2), false);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         assertEquals(Optional.of(extensionAttributesMap1.get(ActivePowerControl.NAME)), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
@@ -1438,7 +1462,120 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(expExtensionAttributesLine, networkStoreRepository.getAllExtensionsAttributesByResourceType(NETWORK_UUID, 1, ResourceType.LINE));
     }
 
-    //TODO: add tests for cloneNetwork without network? actually juste create a method to reuse everywhere
+    @Test
+    void getExtensionFromPartialCloneWithTombstonedExtension() {
+        String networkId = "network1";
+        String lineId1 = "line1";
+        String lineId2 = "line2";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo1 = new OwnerInfo(lineId1, ResourceType.LINE, NETWORK_UUID, 0);
+        Map<String, ExtensionAttributes> extensionAttributesMap1 = buildExtensionAttributesMap(5.6, "status1");
+        OwnerInfo ownerInfo2 = new OwnerInfo(lineId2, ResourceType.LINE, NETWORK_UUID, 0);
+        Map<String, ExtensionAttributes> extensionAttributesMap2 = buildExtensionAttributesMap(8.9, "status2");
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap1, ownerInfo2, extensionAttributesMap2), false);
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        assertEquals(Optional.of(extensionAttributesMap1.get(ActivePowerControl.NAME)), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
+        assertEquals(extensionAttributesMap1, networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId1));
+        Map<String, ExtensionAttributes> expExtensionAttributesApcLine = Map.of(lineId1, buildActivePowerControlAttributes(5.6), lineId2, buildActivePowerControlAttributes(8.9));
+        assertEquals(expExtensionAttributesApcLine, networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 1, ResourceType.LINE, ActivePowerControl.NAME));
+        Map<String, Map<String, ExtensionAttributes>> expExtensionAttributesLine = Map.of(lineId1, extensionAttributesMap1, lineId2, extensionAttributesMap2);
+        assertEquals(expExtensionAttributesLine, networkStoreRepository.getAllExtensionsAttributesByResourceType(NETWORK_UUID, 1, ResourceType.LINE));
+
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME);
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId1, OperatingStatus.NAME);
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId2, ActivePowerControl.NAME);
+
+        assertEquals(Optional.empty(), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
+        assertEquals(Map.of(), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId1));
+        assertEquals(Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status2")), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId2));
+        Map<String, ExtensionAttributes> expExtensionAttributesOsLine = Map.of(lineId2, buildOperatingStatusAttributes("status2"));
+        assertEquals(Map.of(), networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 1, ResourceType.LINE, ActivePowerControl.NAME));
+        assertEquals(expExtensionAttributesOsLine, networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 1, ResourceType.LINE, OperatingStatus.NAME));
+        expExtensionAttributesLine = Map.of(lineId2, Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status2")));
+        assertEquals(expExtensionAttributesLine, networkStoreRepository.getAllExtensionsAttributesByResourceType(NETWORK_UUID, 1, ResourceType.LINE));
+    }
+
+    @Test
+    void removeExtensionWithoutNetwork() {
+        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 0, "unknownId", "unknownExtension"));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+    }
+
+    @Test
+    void removeExtensionOnFullVariant() {
+        String networkId = "network1";
+        String lineId = "line1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 0);
+        Map<String, ExtensionAttributes> extensionAttributesMap = buildExtensionAttributesMap(5.6, "status1");
+        extensionHandler.insertExtensions(Map.of(ownerInfo, extensionAttributesMap), false);
+
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 0, lineId, ActivePowerControl.NAME);
+
+        assertEquals(Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status1")), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 0, lineId));
+        assertTrue(extensionHandler.getTombstonedExtensions(NETWORK_UUID, 0).isEmpty());
+    }
+
+    @Test
+    @Disabled("Not implemented")
+    void removeExtensionNotExistingOnFullVariant() {
+        String networkId = "network1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        assertThrows(PowsyblException.class, () -> networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 0, "notExistingId", "notExistingExtension"));
+        assertTrue(extensionHandler.getTombstonedExtensions(NETWORK_UUID, 0).isEmpty());
+    }
+
+    @Test
+    void removeExtensionOnPartialVariant() {
+        String networkId = "network1";
+        String lineId = "line1";
+        createPartialNetwork(networkId, 1, "variant1", VariantMode.PARTIAL, 0);
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
+        Map<String, ExtensionAttributes> extensionAttributesMap = buildExtensionAttributesMap(5.6, "status1");
+        extensionHandler.insertExtensions(Map.of(ownerInfo, extensionAttributesMap), false);
+
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId, ActivePowerControl.NAME);
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId, OperatingStatus.NAME);
+
+        assertEquals(Map.of(), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId));
+        assertEquals(Map.of(lineId, Set.of(ActivePowerControl.NAME, OperatingStatus.NAME)), extensionHandler.getTombstonedExtensions(NETWORK_UUID, 1));
+    }
+
+    @Test
+    @Disabled("Not implemented")
+    void removeExtensionNotExistingOnPartialVariant() {
+        String networkId = "network1";
+        createPartialNetwork(networkId, 1, "variant1", VariantMode.PARTIAL, 0);
+
+        assertThrows(PowsyblException.class, () -> networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, "notExistingId", "notExistingExtension"));
+        assertTrue(extensionHandler.getTombstonedExtensions(NETWORK_UUID, 1).isEmpty());
+    }
+
+    @Test
+    void createExtensionWithRecreatedTombstonedExtension() {
+        String networkId = "network1";
+        String lineId = "line1";
+        // Variant 0
+        createPartialNetwork(networkId, 1, "variant1", VariantMode.PARTIAL, 0);
+        OwnerInfo ownerInfo1 = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
+        Map<String, ExtensionAttributes> extensionAttributesMap = buildExtensionAttributesMap(5.6, "status1");
+        extensionHandler.insertExtensions(Map.of(ownerInfo1, extensionAttributesMap), false);
+        networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId, ActivePowerControl.NAME);
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant1", VariantMode.PARTIAL);
+        // Variant 2
+        OwnerInfo ownerInfo2 = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 2);
+        extensionAttributesMap = Map.of(ActivePowerControl.NAME, buildActivePowerControlAttributes(8.4));
+        extensionHandler.insertExtensions(Map.of(ownerInfo2, extensionAttributesMap), false);
+
+        // Variant 1 (removed line1)
+        assertEquals(Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status1")), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId));
+        assertEquals(Map.of(lineId, Set.of(ActivePowerControl.NAME)), extensionHandler.getTombstonedExtensions(NETWORK_UUID, 1));
+        // Variant 2 (recreated line1 with different attributes)
+        assertEquals(Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status1"), ActivePowerControl.NAME, buildActivePowerControlAttributes(8.4)), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 2, lineId));
+        assertEquals(Map.of(), extensionHandler.getTombstonedExtensions(NETWORK_UUID, 2));
+    }
+
     private List<String> getStoredIdentifiablesInVariant(UUID networkUuid, int variantNum) {
         try (var connection = dataSource.getConnection()) {
             return NetworkStoreRepository.getIdentifiablesIdsForVariant(networkUuid, variantNum, connection);
