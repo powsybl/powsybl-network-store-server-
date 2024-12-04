@@ -1236,6 +1236,7 @@ public class NetworkStoreRepository {
         return generators;
     }
 
+    //TODO: Use one connection for the entire get()
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiables(UUID networkUuid, int variantNum, TableMapping tableMapping) {
         Resource<NetworkAttributes> network = getNetworkAttributes(networkUuid, variantNum);
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
@@ -3415,6 +3416,7 @@ public class NetworkStoreRepository {
             if (extensionAttributes.isPresent()) {
                 return extensionAttributes;
             }
+            return extensionHandler.getExtensionAttributes(networkId, srcVariantNum, identifiableId, extensionName);
         }
         return extensionHandler.getExtensionAttributes(networkId, variantNum, identifiableId, extensionName);
     }
@@ -3468,7 +3470,7 @@ public class NetworkStoreRepository {
             }
 
             // Retrieve extensionsAttributesByIdentifiableId from the (full) variant first
-            extensionsAttributesByIdentifiableId = extensionHandler.getAllExtensionsAttributesByIdentifiableId(networkId, variantNum, identifiableId);
+            extensionsAttributesByIdentifiableId = extensionHandler.getAllExtensionsAttributesByIdentifiableId(networkId, srcVariantNum, identifiableId);
 
             // Retrieve updated extensionsAttributesByIdentifiableId in partial
             Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByIdentifiableId(networkId, variantNum, identifiableId);
@@ -3493,14 +3495,14 @@ public class NetworkStoreRepository {
 
         if (srcVariantNum != -1) {
             // Retrieve extensionsAttributesByResourceType from the (full) variant first
-            extensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(networkId, variantNum, type.toString());
+            extensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(networkId, srcVariantNum, type.toString());
 
             // Retrieve updated extensionsAttributesByResourceType in partial
             // Remove tombstoned resources in the current variant
             List<String> tombstonedIds = getTombstonedIdentifiables(networkId, variantNum);
             extensionsAttributesByResourceType.keySet().removeIf(tombstonedIds::contains);
             // Combine base and updated extensionsAttributesByResourceType
-            Map<String, Map<String, ExtensionAttributes>> updatedExtensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(networkId, srcVariantNum, type.toString());
+            Map<String, Map<String, ExtensionAttributes>> updatedExtensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(networkId, variantNum, type.toString());
             // Merge maps and nested maps of updatedExtensionsAttributesByResourceType in extensionsAttributesByResourceType
             for (Map.Entry<String, Map<String, ExtensionAttributes>> entry : updatedExtensionsAttributesByResourceType.entrySet()) {
                 String resourceId = entry.getKey();
