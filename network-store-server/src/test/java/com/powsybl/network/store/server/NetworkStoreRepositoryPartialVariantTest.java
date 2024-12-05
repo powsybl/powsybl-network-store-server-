@@ -1620,13 +1620,13 @@ class NetworkStoreRepositoryPartialVariantTest {
 
     @Test
     void emptyCreateExtensionsDoesNotThrow() {
-        extensionHandler.createExtensions(Map.of());
-        extensionHandler.createExtensions(Map.of(new OwnerInfo("id", ResourceType.LINE, NETWORK_UUID, 0), Map.of()));
+        assertDoesNotThrow(() -> extensionHandler.createExtensions(Map.of()));
+        assertDoesNotThrow(() -> extensionHandler.createExtensions(Map.of(new OwnerInfo("id", ResourceType.LINE, NETWORK_UUID, 0), Map.of())));
     }
 
     @Test
     void emptyCreateIdentifiablesDoesNotThrow() {
-        networkStoreRepository.createIdentifiables(NETWORK_UUID, List.of(), mappings.getLoadMappings());
+        assertDoesNotThrow(() -> networkStoreRepository.createIdentifiables(NETWORK_UUID, List.of(), mappings.getLoadMappings()));
     }
 
     private List<String> getStoredIdentifiablesInVariant(UUID networkUuid, int variantNum) {

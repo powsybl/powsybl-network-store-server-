@@ -808,7 +808,6 @@ class NetworkStoreRepositoryTest {
 
     @Test
     void testRegulatingPointForGenerator() {
-        //FIXME ? : we need a network to run these tests...
         NetworkAttributes networkAttributes = new NetworkAttributes();
         networkAttributes.setUuid(NETWORK_UUID);
         networkStoreRepository.createNetworks(List.of(Resource.networkBuilder().attributes(networkAttributes).id("testId1").build()));
@@ -1052,7 +1051,6 @@ class NetworkStoreRepositoryTest {
                 .voltageLevelId("vl1")
                 .name(staticVarCompensatorId)
                 .regulatingPoint(RegulatingPointAttributes.builder()
-                        // send back the full resource not only the attributes to update
                         .localTerminal(TerminalRefAttributes.builder().connectableId(staticVarCompensatorId).build())
                         .regulatingEquipmentId(staticVarCompensatorId)
                         .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())

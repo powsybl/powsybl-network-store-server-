@@ -50,9 +50,9 @@ public final class QueryCatalog {
     static final String REGULATION_MODE = "regulationMode";
     static final String SIDE_COLUMN = "side";
     static final String LIMIT_TYPE_COLUMN = "limitType";
-
     static final Predicate<String> CLONE_PREDICATE = column -> !column.equals(UUID_COLUMN) && !column.equals(VARIANT_ID_COLUMN)
             && !column.equals(NAME_COLUMN) && !column.equals(VARIANT_MODE_COLUMN) && !column.equals(SRC_VARIANT_NUM_COLUMN);
+    public static final String TOMBSTONED_TABLE = "tombstoned";
 
     private QueryCatalog() {
     }
@@ -93,7 +93,7 @@ public final class QueryCatalog {
                 " from " + tableName +
                 " where " + NETWORK_UUID_COLUMN + " = ?" +
                 " and " + VARIANT_NUM_COLUMN + " = ?)" +
-                " and " + ID_COLUMN + " = ANY (?)"; //TODO: do we need this or do we retrieve all the equipments from full variant once for all? works only in postgres
+                " and " + ID_COLUMN + " = ANY (?)";
     }
 
     public static String buildGetIdentifiablesInContainerQuery(String tableName, Collection<String> columns, Set<String> containerColumns) {
@@ -525,20 +525,6 @@ public final class QueryCatalog {
             " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
-    //TODO: delete + insert for now
-//    public static String buildUpdateRegulatingPointsQuery() {
-//        return "Update " + REGULATING_POINT_TABLE +
-//            " set " + REGULATION_MODE + " = ?, " +
-//            "regulatingterminalconnectableid = ?, " +
-//            "regulatingterminalside = ?, " +
-//            REGULATED_EQUIPMENT_TYPE_COLUMN + " = ? " +
-//            "where " +
-//            NETWORK_UUID_COLUMN + " = ? AND " +
-//            VARIANT_NUM_COLUMN + " = ? AND " +
-//            REGULATING_EQUIPMENT_ID + " = ? AND " +
-//            REGULATING_EQUIPMENT_TYPE_COLUMN + " = ?";
-//    }
-
     public static String buildCloneRegulatingPointsQuery() {
         return "insert into " + REGULATING_POINT_TABLE + " (" + NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN + ", " +
              REGULATING_EQUIPMENT_ID + ", " + REGULATING_EQUIPMENT_TYPE_COLUMN + ", " + REGULATION_MODE +
@@ -768,26 +754,26 @@ public final class QueryCatalog {
     }
 
     // Tombstoned identifiables
-    public static String buildAddTombstonedIdentifiableQuery() {
-        return "insert into tombstoned (" + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EQUIPMENT_ID_COLUMN + ") " +
+    public static String buildInsertTombstonedIdentifiablesQuery() {
+        return "insert into " + TOMBSTONED_TABLE + " (" + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EQUIPMENT_ID_COLUMN + ") " +
                 "values (?, ?, ?)";
     }
 
-    public static String buildGetTombstonedEquipmentsQuery() {
-        return "select " + EQUIPMENT_ID_COLUMN + " FROM tombstoned WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
+    public static String buildGetTombstonedIdentifiablesQuery() {
+        return "select " + EQUIPMENT_ID_COLUMN + " FROM " + TOMBSTONED_TABLE + " WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildDeleteTombstonedEquipmentsQuery(int resourceCount) {
+    public static String buildDeleteTombstonedIdentifiablesQuery(int resourceCount) {
         if (resourceCount < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
-        return "delete from tombstoned where " + NETWORK_UUID_COLUMN + " = ? AND ("
+        return "delete from " + TOMBSTONED_TABLE + " where " + NETWORK_UUID_COLUMN + " = ? AND ("
                 + VARIANT_NUM_COLUMN + ", "
                 + EQUIPMENT_ID_COLUMN + ") in (" + String.join(",", Collections.nCopies(resourceCount, "(?, ?)")) + ")";
     }
 
-    public static String buildCloneTombstonedQuery() {
-        return "insert into tombstoned (" +
+    public static String buildCloneTombstonedIdentifiablesQuery() {
+        return "insert into " + TOMBSTONED_TABLE + " (" +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", " +
                 EQUIPMENT_ID_COLUMN + ") " +
@@ -795,7 +781,7 @@ public final class QueryCatalog {
                 "?" + "," +
                 "?" + "," +
                 EQUIPMENT_ID_COLUMN +
-                " from tombstoned " +
+                " from " + TOMBSTONED_TABLE + " " +
                 "where " +
                 NETWORK_UUID_COLUMN + " = ?" + " and " +
                 VARIANT_NUM_COLUMN + " = ? ";

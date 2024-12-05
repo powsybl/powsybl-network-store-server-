@@ -14,7 +14,7 @@ import org.apache.commons.lang3.function.TriFunction;
 import java.util.*;
 
 /**
- * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public final class PartialVariantUtils {
     private PartialVariantUtils() throws IllegalAccessException {

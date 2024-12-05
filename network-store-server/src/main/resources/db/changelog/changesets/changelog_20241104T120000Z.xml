@@ -3,6 +3,12 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
     <changeSet author="bouhoursant" id="2986331049290-1">
+        <addColumn tableName="network">
+            <column name="variantmode" type="VARCHAR(255)"/>
+            <column name="srcvariantnum" type="INTEGER"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="bouhoursant" id="2986331049290-2">
         <createTable tableName="tombstoned">
             <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>

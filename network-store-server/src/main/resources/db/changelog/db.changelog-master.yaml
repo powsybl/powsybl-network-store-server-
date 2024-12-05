@@ -88,10 +88,5 @@ databaseChangeLog:
       file: changesets/changelog_20241031T110000Z.xml
       relativeToChangelogFile: true
   - include:
-      file: changesets/changelog_2023-03-04T11:12:00Z.xml
-      relativeToChangelogFile: true
-# Is it better to keep track of this in a separate column in each equipment in order to simply override the value if recreating the equipment... ?
-# can be too complicated to manage a separate table and keep it up to date in the correct cases...
-  - include:
       file: changesets/changelog_20241104T120000Z.xml
       relativeToChangelogFile: true

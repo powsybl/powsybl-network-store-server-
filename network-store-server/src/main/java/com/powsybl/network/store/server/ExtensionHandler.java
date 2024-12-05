@@ -54,8 +54,6 @@ public class ExtensionHandler {
 
         try (var connection = dataSource.getConnection()) {
             insertExtensions(filteredExtensions, connection);
-            //TODO: maybe only if it's a partial variant...
-            // Remove tombstoned from db only if it's an insert, not an update!
             List<Object> values = new ArrayList<>(filteredExtensions.size() * 4);
             List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(filteredExtensions.entrySet());
             for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : list) {

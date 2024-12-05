@@ -8,10 +8,6 @@ powsybl-ws:
     name: iidm_${testDbSuffix}
     customQuery: ~
 
-spring:
-  h2:
-    console:
-      enabled: true
 
 logging:
   level:
