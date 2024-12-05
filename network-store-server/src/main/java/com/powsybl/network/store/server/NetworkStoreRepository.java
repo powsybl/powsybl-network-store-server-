@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
+import java.io.UncheckedIOException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -1859,7 +1860,7 @@ public class NetworkStoreRepository {
             }
             return map;
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -1881,7 +1882,7 @@ public class NetworkStoreRepository {
             }
             return map;
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 

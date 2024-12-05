@@ -29,7 +29,9 @@ public class TemporaryLimitSqlData {
     private Integer acceptableDuration;
     private boolean fictitious;
 
-    public TemporaryLimitSqlData() { }
+    public TemporaryLimitSqlData() {
+        // empty constructor for Jackson
+    }
 
     public static TemporaryLimitSqlData of(TemporaryLimitAttributes temporaryLimit) {
         return TemporaryLimitSqlData.builder()

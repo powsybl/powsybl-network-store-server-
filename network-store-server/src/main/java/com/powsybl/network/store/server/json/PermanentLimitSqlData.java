@@ -27,7 +27,9 @@ public class PermanentLimitSqlData {
     private Integer side;
     private LimitType limitType;
 
-    public PermanentLimitSqlData() { }
+    public PermanentLimitSqlData() {
+        // empty constructor for Jackson
+    }
 
     public static PermanentLimitSqlData of(PermanentLimitAttributes permanentLimitAttributes) {
         return PermanentLimitSqlData.builder()
