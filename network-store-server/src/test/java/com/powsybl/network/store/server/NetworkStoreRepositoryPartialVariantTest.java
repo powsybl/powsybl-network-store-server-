@@ -121,6 +121,48 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
+    void updateNetworkUpdatesVariantModeSrcVariantNum() {
+        String networkId = "network1";
+        int variantNum = 3;
+        String variantId = VariantManagerConstants.INITIAL_VARIANT_ID;
+        Resource<NetworkAttributes> network1 = Resource.networkBuilder()
+                .id(networkId)
+                .variantNum(variantNum)
+                .attributes(NetworkAttributes.builder()
+                        .uuid(NETWORK_UUID)
+                        .variantId(variantId)
+                        .variantMode(VariantMode.PARTIAL)
+                        .srcVariantNum(-1)
+                        .build())
+                .build();
+        networkStoreRepository.createNetworks(List.of(network1));
+
+        VariantMode variantMode = VariantMode.FULL;
+        int srcVariantNum = 2;
+        network1 = Resource.networkBuilder()
+                .id(networkId)
+                .variantNum(variantNum)
+                .attributes(NetworkAttributes.builder()
+                        .uuid(NETWORK_UUID)
+                        .variantId(variantId)
+                        .variantMode(variantMode)
+                        .srcVariantNum(srcVariantNum)
+                        .build())
+                .build();
+        networkStoreRepository.updateNetworks(List.of(network1));
+
+        Optional<Resource<NetworkAttributes>> networkAttributesOpt = networkStoreRepository.getNetwork(NETWORK_UUID, variantNum);
+        assertTrue(networkAttributesOpt.isPresent());
+        Resource<NetworkAttributes> networkAttributes = networkAttributesOpt.get();
+        assertEquals(networkId, networkAttributes.getId());
+        assertEquals(variantNum, networkAttributes.getVariantNum());
+        assertEquals(NETWORK_UUID, networkAttributes.getAttributes().getUuid());
+        assertEquals(variantId, networkAttributes.getAttributes().getVariantId());
+        assertEquals(variantMode, networkAttributes.getAttributes().getVariantMode());
+        assertEquals(srcVariantNum, networkAttributes.getAttributes().getSrcVariantNum());
+    }
+
+    @Test
     void cloneAllVariantsOfNetwork() {
         String networkId = "network1";
         String loadId1 = "load1";
