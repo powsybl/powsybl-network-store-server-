@@ -124,7 +124,7 @@ public final class QueryExtensionCatalog {
     }
 
     // Tombstoned extensions
-    public static String buildAddTombstonedExtensionQuery() {
+    public static String buildInsertTombstonedExtensionsQuery() {
         return "insert into " + TOMBSTONED_EXTENSION_TABLE + " (" + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EQUIPMENT_ID_COLUMN + ", " + EXTENSION_NAME_COLUMN + ") " +
                 "values (?, ?, ?, ?)";
     }
