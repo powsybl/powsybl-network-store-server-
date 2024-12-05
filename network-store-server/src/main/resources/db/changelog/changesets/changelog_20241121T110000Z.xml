@@ -46,7 +46,7 @@
             <column name="variantnum"/>
             <column name="equipmenttype"/>
         </createIndex>
-        <createIndex indexName="permanentlimits_networkuuid_variantnum_equipmenttype_idx" tableName="temporarylimits">
+        <createIndex indexName="temporarylimits_networkuuid_variantnum_equipmenttype_idx" tableName="temporarylimits">
             <column name="networkuuid"/>
             <column name="variantnum"/>
             <column name="equipmenttype"/>
