@@ -39,15 +39,12 @@ public final class QueryCatalog {
     static final String INDEX_COLUMN = "index";
     static final String TAPCHANGER_TYPE_COLUMN = "tapChangerType";
     static final String ALPHA_COLUMN = "alpha";
-    static final String OPERATIONAL_LIMITS_GROUP_ID_COLUMN = "operationalLimitsGroupId";
-    static final String SELECTED_OPERATIONAL_LIMITS_GROUP_ID_COLUMN = "selectedOperationalLimitsGroupId";
     static final String TEMPORARY_LIMITS = "temporarylimits";
     static final String PERMANENT_LIMITS = "permanentlimits";
     static final String TAP_CHANGER_STEP_TABLE = "tapChangerStep";
     static final String REGULATING_POINT_TABLE = "regulatingPoint";
     static final String REGULATION_MODE = "regulationMode";
     static final String SIDE_COLUMN = "side";
-    static final String LIMIT_TYPE_COLUMN = "limitType";
 
     private QueryCatalog() {
     }

@@ -16,7 +16,6 @@
                 <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
             </column>
             <column name="equipmenttype" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
             </column>
                 <column name="temporarylimits" type="TEXT"/>
         </createTable>
@@ -31,7 +30,6 @@
                 <constraints nullable="false" primaryKey="true" primaryKeyName="newpermanentlimits_pkey"/>
             </column>
             <column name="equipmenttype" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="newpermanentlimits_pkey"/>
             </column>
             <column name="permanentlimits" type="TEXT"/>
         </createTable>
@@ -43,6 +41,16 @@
                      newTableName="permanentlimits"/>
         <renameTable oldTableName="newtemporarylimits"
                      newTableName="temporarylimits"/>
+        <createIndex indexName="permanentlimits_networkuuid_variantnum_equipmenttype_idx" tableName="permanentlimits">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="equipmenttype"/>
+        </createIndex>
+        <createIndex indexName="permanentlimits_networkuuid_variantnum_equipmenttype_idx" tableName="temporarylimits">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+            <column name="equipmenttype"/>
+        </createIndex>
     </changeSet>
 
 </databaseChangeLog>
