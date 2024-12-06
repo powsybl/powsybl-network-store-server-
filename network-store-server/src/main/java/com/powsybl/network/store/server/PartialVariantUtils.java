@@ -6,12 +6,15 @@
  */
 package com.powsybl.network.store.server;
 
+import com.powsybl.network.store.model.Attributes;
 import com.powsybl.network.store.model.NetworkAttributes;
 import com.powsybl.network.store.model.Resource;
-import com.powsybl.network.store.server.dto.OwnerInfo;
-import org.apache.commons.lang3.function.TriFunction;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -21,31 +24,99 @@ public final class PartialVariantUtils {
         throw new IllegalAccessException("Utility class can not be initialize.");
     }
 
-    public static <T> Map<OwnerInfo, T> getExternalAttributes(
-            UUID networkUuid,
+    public static <T, U> Map<T, U> getExternalAttributes(
             int variantNum,
             Resource<NetworkAttributes> network,
-            List<String> tombstonedIds,
-            TriFunction<UUID, Integer, Integer, Map<OwnerInfo, T>> fetchFunction
-    ) {
+            Supplier<Set<String>> fetchTombstonedIds,
+            IntFunction<Map<T, U>> fetchExternalAttributesForVariant,
+            Function<T, String> idExtractor) {
         int srcVariantNum = network.getAttributes().getSrcVariantNum();
 
         if (srcVariantNum == -1) {
             // If the variant is full, retrieve external attributes directly
-            return fetchFunction.apply(networkUuid, variantNum, variantNum);
+            return fetchExternalAttributesForVariant.apply(variantNum);
         }
 
         // Retrieve external attributes from the full variant first
-        Map<OwnerInfo, T> externalAttributes = fetchFunction.apply(networkUuid, srcVariantNum, variantNum);
+        Map<T, U> externalAttributes = fetchExternalAttributesForVariant.apply(srcVariantNum);
 
         // Retrieve updated external attributes in partial variant
-        Map<OwnerInfo, T> externalAttributesUpdatedInPartialVariant = fetchFunction.apply(networkUuid, variantNum, variantNum);
+        Map<T, U> externalAttributesUpdatedInPartialVariant = fetchExternalAttributesForVariant.apply(variantNum);
 
         // Combine external attributes from full and partial variant
         externalAttributes.putAll(externalAttributesUpdatedInPartialVariant);
 
         // Remove external attributes associated to tombstoned resources
-        externalAttributes.keySet().removeIf(ownerInfo -> tombstonedIds.contains(ownerInfo.getEquipmentId()));
+        Set<String> tombstonedIds = fetchTombstonedIds.get();
+        externalAttributes.keySet().removeIf(ownerInfo -> tombstonedIds.contains(idExtractor.apply(ownerInfo)));
         return externalAttributes;
+    }
+
+    public static <T> List<T> getIdentifiables(
+            int variantNum,
+            Resource<NetworkAttributes> network,
+            Supplier<Set<String>> fetchTombstonedIds,
+            IntFunction<List<T>> fetchFunction,
+            Function<T, String> idExtractor,
+            Supplier<List<String>> fetchIdsFunction) {
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        if (srcVariantNum == -1) {
+            // If the variant is full, retrieve identifiables directly
+            return fetchFunction.apply(variantNum);
+        }
+
+        // Retrieve identifiables from the full variant first
+        List<T> identifiables = fetchFunction.apply(srcVariantNum);
+
+        // Retrieve updated identifiables in partial variant
+        List<T> updatedIdentifiables = fetchFunction.apply(variantNum);
+
+        // Retrieve updated ids in partial variant
+        Set<String> updatedIds = fetchIdsFunction != null
+                ? new HashSet<>(fetchIdsFunction.get())
+                : updatedIdentifiables.stream()
+                .map(idExtractor)
+                .collect(Collectors.toSet());
+
+        // Remove any resources that have been updated in the current variant or tombstoned
+        Set<String> tombstonedIds = fetchTombstonedIds.get();
+        identifiables.removeIf(resource ->
+                updatedIds.contains(idExtractor.apply(resource)) || tombstonedIds.contains(idExtractor.apply(resource))
+        );
+
+        // Combine identifiables from full and partial variant
+        identifiables.addAll(updatedIdentifiables);
+
+        return identifiables;
+    }
+
+    public static <T extends Attributes> Optional<Resource<T>> getOptionalIdentifiable(
+            String identifiableId,
+            int variantNum,
+            Resource<NetworkAttributes> network,
+            Supplier<Set<String>> fetchTombstonedIds,
+            IntFunction<Optional<Resource<T>>> fetchFunction) {
+        int srcVariantNum = network.getAttributes().getSrcVariantNum();
+
+        if (srcVariantNum == -1) {
+            // If the variant is full, retrieve identifiables directly
+            return fetchFunction.apply(variantNum);
+        }
+
+        // If the identifiable is tombstoned, return directly
+        Set<String> tombstonedIds = fetchTombstonedIds.get();
+        if (tombstonedIds.contains(identifiableId)) {
+            return Optional.empty();
+        }
+
+        // Retrieve updated identifiable in partial variant
+        Optional<Resource<T>> updatedIdentifiable = fetchFunction.apply(variantNum);
+        if (updatedIdentifiable.isPresent()) {
+            return updatedIdentifiable;
+        }
+
+        // Retrieve identifiable from the full variant
+        return fetchFunction.apply(srcVariantNum);
     }
 }

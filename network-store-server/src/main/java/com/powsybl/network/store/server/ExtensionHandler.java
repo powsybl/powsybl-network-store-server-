@@ -253,6 +253,16 @@ public class ExtensionHandler {
         }
     }
 
+    public void insertTombstonedExtensions(UUID networkId, int variantNum, String identifiableId, String extensionName, Connection connection) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildInsertTombstonedExtensionsQuery())) {
+            preparedStmt.setObject(1, networkId);
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setString(3, identifiableId);
+            preparedStmt.setString(4, extensionName);
+            preparedStmt.executeUpdate();
+        }
+    }
+
     /**
      * Delete extension attributes loaded in the resource and insert the updated extension afterward.
      * We can't delete all the extensions attributes associated with this resource here as we are not sure that all

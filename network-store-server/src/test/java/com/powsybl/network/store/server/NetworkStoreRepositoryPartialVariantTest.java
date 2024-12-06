@@ -386,7 +386,7 @@ class NetworkStoreRepositoryPartialVariantTest {
 
         assertEquals(List.of(loadId1), getStoredIdentifiableIdsInVariant(targetNetworkUuid, 0));
         assertEquals(List.of(lineId2), getStoredIdentifiableIdsInVariant(targetNetworkUuid, 1));
-        assertEquals(List.of(loadId1, loadId2), getTombstonedIdentifiablesInVariant(targetNetworkUuid, 1));
+        assertEquals(Set.of(loadId1, loadId2), getTombstonedIdentifiableIdsInVariant(targetNetworkUuid, 1));
     }
 
     @Test
@@ -424,7 +424,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant2", VariantMode.PARTIAL);
 
         assertEquals(List.of(lineId2), getStoredIdentifiableIdsInVariant(NETWORK_UUID, 2));
-        assertEquals(List.of(loadId2), getTombstonedIdentifiablesInVariant(NETWORK_UUID, 2));
+        assertEquals(Set.of(loadId2), getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 2));
     }
 
     @Test
@@ -451,7 +451,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         assertTrue(getStoredIdentifiableIdsInVariant(NETWORK_UUID, 1).isEmpty());
-        assertTrue(getTombstonedIdentifiablesInVariant(NETWORK_UUID, 1).isEmpty());
+        assertTrue(getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 1).isEmpty());
     }
 
     @Test
@@ -509,7 +509,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant2", VariantMode.FULL);
 
         assertEquals(List.of(loadId2, lineId2), getStoredIdentifiableIdsInVariant(NETWORK_UUID, 2));
-        assertTrue(getTombstonedIdentifiablesInVariant(NETWORK_UUID, 2).isEmpty());
+        assertTrue(getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 2).isEmpty());
     }
 
     @Test
@@ -799,7 +799,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 0, loadId1, LOAD_TABLE);
 
         assertEquals(List.of(lineId1), getStoredIdentifiableIdsInVariant(NETWORK_UUID, 0));
-        assertTrue(getTombstonedIdentifiablesInVariant(NETWORK_UUID, 0).isEmpty());
+        assertTrue(getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 0).isEmpty());
     }
 
     @Test
@@ -808,7 +808,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         String networkId = "network1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
         assertThrows(PowsyblException.class, () -> networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 0, "notExistingId", LOAD_TABLE));
-        assertTrue(getTombstonedIdentifiablesInVariant(NETWORK_UUID, 0).isEmpty());
+        assertTrue(getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 0).isEmpty());
     }
 
     @Test
@@ -821,7 +821,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId1, LOAD_TABLE);
 
         assertEquals(List.of(lineId1), getStoredIdentifiableIdsInVariant(NETWORK_UUID, 1));
-        assertEquals(List.of(loadId1), getTombstonedIdentifiablesInVariant(NETWORK_UUID, 1));
+        assertEquals(Set.of(loadId1), getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 1));
     }
 
     @Test
@@ -831,7 +831,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         createPartialNetwork(networkId, 1, "variant1", VariantMode.PARTIAL, 0);
 
         assertThrows(PowsyblException.class, () -> networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, "notExistingId", LOAD_TABLE));
-        assertTrue(getTombstonedIdentifiablesInVariant(NETWORK_UUID, 1).isEmpty());
+        assertTrue(getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 1).isEmpty());
     }
 
     @Test
@@ -910,11 +910,11 @@ class NetworkStoreRepositoryPartialVariantTest {
         // Variant 1 (removed line1)
         assertTrue(getIdentifiablesForVariant(NETWORK_UUID, 1, mappings.getLineMappings()).isEmpty());
         assertTrue(getStoredIdentifiableIdsInVariant(NETWORK_UUID, 1).isEmpty());
-        assertEquals(List.of(lineId1), getTombstonedIdentifiablesInVariant(NETWORK_UUID, 1));
+        assertEquals(Set.of(lineId1), getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 1));
         // Variant 2 (recreated line1 with different attributes)
         assertEquals(List.of(lineVariant2), getIdentifiablesForVariant(NETWORK_UUID, 2, mappings.getLineMappings()));
         assertEquals(List.of(lineId1), getStoredIdentifiableIdsInVariant(NETWORK_UUID, 2));
-        assertTrue(getTombstonedIdentifiablesInVariant(NETWORK_UUID, 2).isEmpty());
+        assertTrue(getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 2).isEmpty());
     }
 
     @Test
@@ -1634,6 +1634,8 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertDoesNotThrow(() -> networkStoreRepository.createIdentifiables(NETWORK_UUID, List.of(), mappings.getLoadMappings()));
     }
 
+    //TODO: getRegulatingEquipmentsForIdentifiable()
+
     //TODO: needed?
     private List<String> getStoredIdentifiableIdsInVariant(UUID networkUuid, int variantNum) {
         try (var connection = dataSource.getConnection()) {
@@ -1646,16 +1648,16 @@ class NetworkStoreRepositoryPartialVariantTest {
     //TODO: needed?
     private List<Resource<IdentifiableAttributes>> getIdentifiablesForVariant(UUID networkUuid, int variantNum, TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
-            return networkStoreRepository.getIdentifiablesForVariant(connection, networkUuid, variantNum, tableMapping);
+            return networkStoreRepository.getIdentifiablesForVariant(connection, networkUuid, variantNum, tableMapping, variantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
     //TODO: needed?
-    private List<String> getTombstonedIdentifiablesInVariant(UUID networkUuid, int variantNum) {
+    private Set<String> getTombstonedIdentifiableIdsInVariant(UUID networkUuid, int variantNum) {
         try (var connection = dataSource.getConnection()) {
-            return networkStoreRepository.getTombstonedIdentifiables(connection, networkUuid, variantNum);
+            return networkStoreRepository.getTombstonedIdentifiableIds(connection, networkUuid, variantNum);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
