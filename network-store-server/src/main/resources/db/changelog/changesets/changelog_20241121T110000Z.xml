@@ -33,8 +33,17 @@
             </column>
             <column name="permanentlimits" type="TEXT"/>
         </createTable>
-        <customChange class="com.powsybl.network.store.server.migrations.PermanentLimitsMigration"/>
-        <customChange class="com.powsybl.network.store.server.migrations.TemporaryLimitsMigration"/>
+    </changeSet>
+    <!-- The data migration is skipped if the database is not postgres because we use jsonb methods that are specific to postgres -->
+    <changeSet id="2986331049275-6" author="lesoteti">
+        <sqlFile
+                dbms="postgresql"
+                path="refactor_limits_20241121T110000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+    </changeSet>
+    <changeSet id="2986331049275-7" author="lesoteti">
         <dropTable tableName="permanentlimit"/>
         <dropTable tableName="temporarylimit"/>
         <renameTable oldTableName="newpermanentlimits"
