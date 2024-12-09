@@ -2125,8 +2125,7 @@ public class NetworkStoreRepository {
                                 ? attributes.getValue().getRegulatedResourceType().toString()
                                 : null);
                             values.add(attributes.getValue().getRegulating() != null
-                                ? attributes.getValue().getRegulating().toString()
-                                : null);
+                                ? attributes.getValue().getRegulating() : null);
                         } else {
                             values.add(null);
                             values.add(attributes.getKey().getEquipmentId());
