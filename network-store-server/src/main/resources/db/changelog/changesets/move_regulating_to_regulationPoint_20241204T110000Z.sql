@@ -1,8 +1,8 @@
 -- generator
 update regulatingpoint
 set regulating = (select generator.voltageregulatoron from generator
-            where regulatingequipmenttype = 'GENERATOR'
-              and regulatingequipmentid = generator.id
+            where regulatingpoint.regulatingequipmenttype = 'GENERATOR'
+              and regulatingpoint.regulatingequipmentid = generator.id
               and regulatingpoint.networkuuid = generator.networkuuid
               and regulatingpoint.variantnum = generator.variantnum)
 where regulatingequipmenttype = 'GENERATOR';
