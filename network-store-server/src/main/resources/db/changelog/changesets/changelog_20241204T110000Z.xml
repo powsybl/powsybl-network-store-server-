@@ -9,7 +9,6 @@
             <column name="regulating" type="boolean"/>
         </addColumn>
         <sqlFile
-                dbms="postgresql"
                 path="move_regulating_to_regulationPoint_20241204T110000Z.sql"
                 relativeToChangelogFile="true"
                 splitStatements="true"
