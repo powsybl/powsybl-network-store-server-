@@ -1,36 +1,41 @@
 -- two windings transformer
-insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingresourcesubtype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
+insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingtapchangertype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
 select networkuuid, variantnum, id, 'TWO_WINDINGS_TRANSFORMER','PHASE_TAP_CHANGER', phasetapchangerregulationmode, id, 'TWO', phasetapchangerterminalrefconnectableid, phasetapchangerterminalrefside, phasetapchangerregulating
 from twowindingstransformer;
-insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingresourcesubtype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
+insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingtapchangertype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
 select networkuuid, variantnum, id, 'TWO_WINDINGS_TRANSFORMER', 'RATIO_TAP_CHANGER', ratiotapchangerregulationmode, id, 'TWO', ratiotapchangerterminalrefconnectableid, ratiotapchangerterminalrefside, ratiotapchangerregulating
 from twowindingstransformer;
 
 -- three windings transformer
 -- side 1
-insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingresourcesubtype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
+insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingtapchangertype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
 select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER','PHASE_TAP_CHANGER_SIDE_ONE', phasetapchangerregulationmode1, id, 'ONE', phasetapchangerterminalrefconnectableid1, phasetapchangerterminalrefside1, phasetapchangerregulating1
 from threewindingstransformer;
 
-insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingresourcesubtype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
-select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'RATIO_TAP_CHANGER_SIDE_ONE', ratiotapchangerregulationmode1, id, 'THREE', ratiotapchangerterminalrefconnectableid1, ratiotapchangerterminalrefside1, ratiotapchangerregulating1
+insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingtapchangertype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
+select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'RATIO_TAP_CHANGER_SIDE_ONE', ratiotapchangerregulationmode1, id, 'ONE', ratiotapchangerterminalrefconnectableid1, ratiotapchangerterminalrefside1, ratiotapchangerregulating1
 from threewindingstransformer;
 -- side 2
-insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingresourcesubtype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
-select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'PHASE_TAP_CHANGER_SIDE_TWO', phasetapchangerregulationmode2, id, 'THREE', phasetapchangerterminalrefconnectableid2, phasetapchangerterminalrefside2, phasetapchangerregulating2
+insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingtapchangertype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
+select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'PHASE_TAP_CHANGER_SIDE_TWO', phasetapchangerregulationmode2, id, 'TWO', phasetapchangerterminalrefconnectableid2, phasetapchangerterminalrefside2, phasetapchangerregulating2
 from threewindingstransformer;
 
-insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingresourcesubtype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
-select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'RATIO_TAP_CHANGER_SIDE_TWO', ratiotapchangerregulationmode2, id, 'TWO', ratiotapchangerterminalrefconnectableid2, ratiotapchangerterminalrefside2, ratiotapchangerregulating1
+insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingtapchangertype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
+select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'RATIO_TAP_CHANGER_SIDE_TWO', ratiotapchangerregulationmode2, id, 'TWO', ratiotapchangerterminalrefconnectableid2, ratiotapchangerterminalrefside2, ratiotapchangerregulating2
 from threewindingstransformer;
 -- side 3
-insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingresourcesubtype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
+insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingtapchangertype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
 select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'PHASE_TAP_CHANGER_SIDE_THREE', phasetapchangerregulationmode3, id, 'THREE', phasetapchangerterminalrefconnectableid3, phasetapchangerterminalrefside3, phasetapchangerregulating3
 from threewindingstransformer;
 
-insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingresourcesubtype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
-select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'RATIO_TAP_CHANGER_SIDE_THREE', ratiotapchangerregulationmode3, id, 'THREE', ratiotapchangerterminalrefconnectableid3, ratiotapchangerterminalrefside3, ratiotapchangerregulating1
+insert into regulatingpoint (networkuuid, variantnum, regulatingequipmentid, regulatingequipmenttype, regulatingtapchangertype, regulationmode, localterminalconnectableid, localterminalside, regulatingterminalconnectableid, regulatingterminalside, regulating)
+select networkuuid, variantnum, id, 'THREE_WINDINGS_TRANSFORMER', 'RATIO_TAP_CHANGER_SIDE_THREE', ratiotapchangerregulationmode3, id, 'THREE', ratiotapchangerterminalrefconnectableid3, ratiotapchangerterminalrefside3, ratiotapchangerregulating3
 from threewindingstransformer;
+
+UPDATE regulatingpoint r1
+SET regulatedequipmenttype = regulatingequipmenttype
+WHERE regulatedequipmenttype is null AND r1.regulatingequipmentid = r1.regulatingterminalconnectableid;
+
 UPDATE regulatingpoint r1
 SET regulatedequipmenttype = (select CASE
                                                     WHEN bat.id IS NOT NULL THEN 'BATTERY'
@@ -61,6 +66,7 @@ SET regulatedequipmenttype = (select CASE
                                                                   LEFT JOIN hvdcline hvdc ON r.regulatingterminalconnectableid = hvdc.id and r.networkuuid = hvdc.networkuuid and r.variantnum = hvdc.variantnum
                                                                   LEFT JOIN danglingline dl ON r.regulatingterminalconnectableid = dl.id and r.networkuuid = dl.networkuuid and r.variantnum = dl.variantnum
                                          WHERE r1.networkuuid = r.networkuuid and  r1.variantnum = r.variantnum
-                                           and r1.regulatingequipmentid = r.regulatingequipmentid and r1.regulatingequipmenttype = r.regulatingequipmenttype)
-WHERE regulatedequipmenttype is null AND r1.regulatingequipmentid <> r1.regulatingterminalconnectableid;
+                                           and r1.regulatingequipmentid = r.regulatingequipmentid and r1.regulatingequipmenttype = r.regulatingequipmenttype and r1.regulatingtapchangertype = r.regulatingtapchangertype)
+WHERE regulatingterminalconnectableid is not null AND regulatedequipmenttype is null AND r1.regulatingequipmentid <> r1.regulatingterminalconnectableid;
+
 UPDATE regulatingpoint SET regulationmode = REPLACE(regulationmode, '"', '') WHERE regulatingequipmenttype = 'THREE_WINDINGS_TRANSFORMER' or regulatingequipmenttype = 'TWO_WINDINGS_TRANSFORMER';

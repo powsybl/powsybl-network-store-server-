@@ -21,11 +21,16 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegulatingOwnerInfo {
+
+    public RegulatingOwnerInfo(String equipmentId, ResourceType equipmentType, UUID networkUuid, int variantNum) {
+        this(equipmentId, equipmentType, RegulatingTapChangerType.NO_TAP_CHANGER, networkUuid, variantNum);
+    }
+
     private String equipmentId;
 
     private ResourceType equipmentType;
 
-    private RegulatingTapChangerType equipmentSubType;
+    private RegulatingTapChangerType regulatingTapChangerType;
 
     private UUID networkUuid;
 

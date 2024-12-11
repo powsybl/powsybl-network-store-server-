@@ -14,18 +14,28 @@ import com.powsybl.network.store.server.dto.OwnerInfo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class NetworkStoreRepositoryTest {
 
     private static final UUID NETWORK_UUID = UUID.fromString("7928181c-7977-4592-ba19-88027e4254e4");
 
     @Autowired
     private NetworkStoreRepository networkStoreRepository;
+
+    @DynamicPropertySource
+    private static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
+        UUID uuid = UUID.randomUUID();
+        registry.add("testDbSuffix", () -> uuid);
+    }
 
     @Test
     void insertTemporaryLimitsInLinesTest() {
@@ -808,7 +818,7 @@ class NetworkStoreRepositoryTest {
                     .build())
             .build();
         networkStoreRepository.createGenerators(NETWORK_UUID, List.of(gen));
-        String loadId = "loadGen1";
+        String loadId = "load1";
         Resource<LoadAttributes> load1 = Resource.loadBuilder()
             .id(loadId)
             .attributes(LoadAttributes.builder()
@@ -891,7 +901,7 @@ class NetworkStoreRepositoryTest {
                 .build())
             .build();
         networkStoreRepository.createShuntCompensators(NETWORK_UUID, List.of(shunt));
-        String loadId = "loadShunt1";
+        String loadId = "load1";
         Resource<LoadAttributes> load1 = Resource.loadBuilder()
             .id(loadId)
             .attributes(LoadAttributes.builder()
@@ -975,7 +985,7 @@ class NetworkStoreRepositoryTest {
                 .build())
             .build();
         networkStoreRepository.createStaticVarCompensators(NETWORK_UUID, List.of(staticVarCompensator));
-        String loadId = "loadSVC1";
+        String loadId = "load1";
         Resource<LoadAttributes> load1 = Resource.loadBuilder()
             .id(loadId)
             .attributes(LoadAttributes.builder()
@@ -1059,7 +1069,7 @@ class NetworkStoreRepositoryTest {
                 .build())
             .build();
         networkStoreRepository.createVscConverterStations(NETWORK_UUID, List.of(staticVarCompensator));
-        String loadId = "loadVsc1";
+        String loadId = "load1";
         Resource<LoadAttributes> load1 = Resource.loadBuilder()
             .id(loadId)
             .attributes(LoadAttributes.builder()
@@ -1138,7 +1148,7 @@ class NetworkStoreRepositoryTest {
                     .regulatingPoint(RegulatingPointAttributes.builder()
                         .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                         .regulatingResourceType(ResourceType.TWO_WINDINGS_TRANSFORMER)
-                        .regulatingResourceSubType(RegulatingTapChangerType.RATIO_TAP_CHANGER)
+                        .regulatingTapChangerType(RegulatingTapChangerType.RATIO_TAP_CHANGER)
                         .regulatedResourceType(ResourceType.TWO_WINDINGS_TRANSFORMER)
                         .regulatingEquipmentId(twtId)
                         .regulatingTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
@@ -1148,7 +1158,7 @@ class NetworkStoreRepositoryTest {
                     .regulatingPoint(RegulatingPointAttributes.builder()
                         .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                         .regulatingResourceType(ResourceType.TWO_WINDINGS_TRANSFORMER)
-                        .regulatingResourceSubType(RegulatingTapChangerType.PHASE_TAP_CHANGER)
+                        .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER)
                         .regulatedResourceType(ResourceType.TWO_WINDINGS_TRANSFORMER)
                         .regulatingEquipmentId(twtId)
                         .regulatingTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
@@ -1157,7 +1167,7 @@ class NetworkStoreRepositoryTest {
                 .build())
             .build();
         networkStoreRepository.createTwoWindingsTransformers(NETWORK_UUID, List.of(twt));
-        String loadId = "loadTwt1";
+        String loadId = "load1";
         Resource<LoadAttributes> load1 = Resource.loadBuilder()
             .id(loadId)
             .attributes(LoadAttributes.builder()
@@ -1269,7 +1279,7 @@ class NetworkStoreRepositoryTest {
                         .regulatingPoint(RegulatingPointAttributes.builder()
                             .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
-                            .regulatingResourceSubType(RegulatingTapChangerType.RATIO_TAP_CHANGER_SIDE_ONE)
+                            .regulatingTapChangerType(RegulatingTapChangerType.RATIO_TAP_CHANGER_SIDE_ONE)
                             .regulatedResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingEquipmentId(twtId)
                             .regulatingTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
@@ -1279,7 +1289,7 @@ class NetworkStoreRepositoryTest {
                         .regulatingPoint(RegulatingPointAttributes.builder()
                             .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
-                            .regulatingResourceSubType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_ONE)
+                            .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_ONE)
                             .regulatedResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingEquipmentId(twtId)
                             .regulatingTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
@@ -1291,7 +1301,7 @@ class NetworkStoreRepositoryTest {
                         .regulatingPoint(RegulatingPointAttributes.builder()
                             .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
-                            .regulatingResourceSubType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_TWO)
+                            .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_TWO)
                             .regulatedResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingEquipmentId(twtId)
                             .regulatingTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
@@ -1303,7 +1313,7 @@ class NetworkStoreRepositoryTest {
                 .build())
             .build();
         networkStoreRepository.createThreeWindingsTransformers(NETWORK_UUID, List.of(twt));
-        String loadId = "load3wt1";
+        String loadId = "load1";
         Resource<LoadAttributes> load1 = Resource.loadBuilder()
             .id(loadId)
             .attributes(LoadAttributes.builder()
@@ -1373,7 +1383,7 @@ class NetworkStoreRepositoryTest {
                         .regulatingPoint(RegulatingPointAttributes.builder()
                             .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
-                            .regulatingResourceSubType(RegulatingTapChangerType.RATIO_TAP_CHANGER_SIDE_ONE)
+                            .regulatingTapChangerType(RegulatingTapChangerType.RATIO_TAP_CHANGER_SIDE_ONE)
                             .regulatedResourceType(ResourceType.LOAD)
                             .regulatingEquipmentId(twtId)
                             .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())
@@ -1383,7 +1393,7 @@ class NetworkStoreRepositoryTest {
                         .regulatingPoint(RegulatingPointAttributes.builder()
                             .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
-                            .regulatingResourceSubType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_ONE)
+                            .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_ONE)
                             .regulatingEquipmentId(twtId)
                             .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())
                             .build())
@@ -1394,7 +1404,7 @@ class NetworkStoreRepositoryTest {
                         .regulatingPoint(RegulatingPointAttributes.builder()
                             .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
-                            .regulatingResourceSubType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_TWO)
+                            .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_TWO)
                             .regulatedResourceType(ResourceType.LOAD)
                             .regulatingEquipmentId(twtId)
                             .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())

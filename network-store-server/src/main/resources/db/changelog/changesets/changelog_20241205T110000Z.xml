@@ -4,16 +4,18 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet id="2986331049275-7" author="admin">
+    <changeSet id="2986331049275-7" author="lesoteti">
         <addColumn tableName="regulatingpoint">
-            <column name="regulatingresourcesubtype" type="VARCHAR" defaultValue="''">
-                <constraints nullable="false"/>
-            </column>
+            <column name="regulatingtapchangertype" type="VARCHAR"/>
         </addColumn>
+        <update tableName="regulatingpoint">
+            <column name="regulatingtapchangertype" value="NO_TAP_CHANGER"/>
+        </update>
+        <addNotNullConstraint tableName="regulatingpoint" columnName="regulatingtapchangertype"/>
     </changeSet>
-    <changeSet id="2986331049275-8" author="admin">
+    <changeSet id="2986331049275-8" author="lesoteti">
         <dropPrimaryKey tableName="regulatingpoint"/>
-        <addPrimaryKey columnNames="networkuuid, variantnum, regulatingequipmenttype, regulatingresourcesubtype, regulatingequipmentid"
+        <addPrimaryKey columnNames="networkuuid, variantnum, regulatingequipmenttype, regulatingtapchangertype, regulatingequipmentid"
                        constraintName="regulatingpoint_pkey" tableName="regulatingpoint"/>
         <sqlFile
                 path="twt_regulationPoint_20241205T110000Z.sql"
