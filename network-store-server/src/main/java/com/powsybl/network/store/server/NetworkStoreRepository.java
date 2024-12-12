@@ -1816,6 +1816,22 @@ public class NetworkStoreRepository {
 
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (var connection = dataSource.getConnection()) {
+            // because the migration between old and new database for temporary limit is long we transfer data when we get
+            // transfer data to new table
+            var preparedStmtToTransfer = connection.prepareStatement(QueryCatalog.buildTransferTemporaryLimitsToNewDatabase(columnNameForWhereClause));
+            preparedStmtToTransfer.setString(1, networkUuid.toString());
+            preparedStmtToTransfer.setInt(2, variantNum);
+            preparedStmtToTransfer.setString(3, valueForWhereClause);
+            preparedStmtToTransfer.executeUpdate();
+
+            // delete from old table
+            var preparedStmtToDelete = connection.prepareStatement(QueryCatalog.buildDeleteOldTemporaryLimitsVariantEquipmentClauseQuery(columnNameForWhereClause));
+            preparedStmtToDelete.setString(1, networkUuid.toString());
+            preparedStmtToDelete.setInt(2, variantNum);
+            preparedStmtToDelete.setString(3, valueForWhereClause);
+            preparedStmtToDelete.executeUpdate();
+
+            // get from new table
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildTemporaryLimitQuery(columnNameForWhereClause));
             preparedStmt.setString(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
@@ -1829,6 +1845,21 @@ public class NetworkStoreRepository {
 
     public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (var connection = dataSource.getConnection()) {
+            // because the migration between old and new database for temporary limit is long we transfer data when we get
+            // transfer data to new table
+            var preparedStmtToTransfer = connection.prepareStatement(QueryCatalog.buildTransferPermanentLimitsToNewDatabase(columnNameForWhereClause));
+            preparedStmtToTransfer.setString(1, networkUuid.toString());
+            preparedStmtToTransfer.setInt(2, variantNum);
+            preparedStmtToTransfer.setString(3, valueForWhereClause);
+            preparedStmtToTransfer.executeUpdate();
+
+            // delete from old table
+            var preparedStmtToDelete = connection.prepareStatement(QueryCatalog.buildDeleteOldPermanentLimitsVariantEquipmentClauseQuery(columnNameForWhereClause));
+            preparedStmtToDelete.setString(1, networkUuid.toString());
+            preparedStmtToDelete.setInt(2, variantNum);
+            preparedStmtToDelete.setString(3, valueForWhereClause);
+            preparedStmtToDelete.executeUpdate();
+
             var preparedStmt = connection.prepareStatement(QueryCatalog.buildPermanentLimitQuery(columnNameForWhereClause));
             preparedStmt.setString(1, networkUuid.toString());
             preparedStmt.setInt(2, variantNum);
@@ -2017,6 +2048,14 @@ public class NetworkStoreRepository {
 
     private void deleteTemporaryLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteOldTemporaryLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
+                preparedStmt.setString(1, networkUuid.toString());
+                preparedStmt.setInt(2, variantNum);
+                for (int i = 0; i < equipmentIds.size(); i++) {
+                    preparedStmt.setString(3 + i, equipmentIds.get(i));
+                }
+                preparedStmt.executeUpdate();
+            }
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setString(1, networkUuid.toString());
                 preparedStmt.setInt(2, variantNum);
@@ -2032,6 +2071,14 @@ public class NetworkStoreRepository {
 
     private void deletePermanentLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteOldPermanentLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
+                preparedStmt.setString(1, networkUuid.toString());
+                preparedStmt.setInt(2, variantNum);
+                for (int i = 0; i < equipmentIds.size(); i++) {
+                    preparedStmt.setString(3 + i, equipmentIds.get(i));
+                }
+                preparedStmt.executeUpdate();
+            }
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setString(1, networkUuid.toString());
                 preparedStmt.setInt(2, variantNum);

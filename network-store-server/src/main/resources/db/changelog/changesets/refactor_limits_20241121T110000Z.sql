@@ -1,3 +1,4 @@
+-- will be used in next deployment
 INSERT INTO newtemporarylimits (equipmentid, equipmenttype, networkuuid, variantnum, temporarylimits)
 SELECT equipmentid, equipmenttype, networkuuid, variantnum,
        json_agg(json_build_object(
