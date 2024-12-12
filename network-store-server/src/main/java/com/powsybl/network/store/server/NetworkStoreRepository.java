@@ -1337,7 +1337,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerSteps = getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.TWO_WINDINGS_TRANSFORMER.toString());
         insertTapChangerStepsInEquipments(networkUuid, twoWindingsTransformers, tapChangerSteps);
         // regulating points
-        setTapChangerRegulatingPointAndRegulatingEquipments(twoWindingsTransformers, networkUuid, variantNum);
+        setRegulatingPointAndRegulatingEquipmentsForTwoWindingsTransformers(twoWindingsTransformers, networkUuid, variantNum);
 
         return twoWindingsTransformers;
     }
@@ -1354,7 +1354,7 @@ public class NetworkStoreRepository {
         insertTapChangerStepsInEquipments(networkUuid, twoWindingsTransformers, tapChangerSteps);
 
         // regulating points
-        setTapChangerRegulatingPointAndRegulatingEquipmentsWithIds(twoWindingsTransformers, networkUuid, variantNum);
+        setRegulatingPointAndRegulatingEquipmentsWithIdsForTwoWindingsTransformers(twoWindingsTransformers, networkUuid, variantNum);
 
         return twoWindingsTransformers;
     }
@@ -2127,7 +2127,7 @@ public class NetworkStoreRepository {
                         values.add(attributes.getKey().getVariantNum());
                         values.add(attributes.getKey().getEquipmentId());
                         values.add(attributes.getKey().getEquipmentType().toString());
-                        values.add(attributes.getKey().getRegulatingTapChangerType() != null ? attributes.getKey().getRegulatingTapChangerType().toString() : "");
+                        values.add(attributes.getKey().getRegulatingTapChangerType().toString());
                         if (attributes.getValue() != null) {
                             values.add(attributes.getValue().getRegulationMode());
                             values.add(attributes.getValue().getLocalTerminal() != null
@@ -2342,7 +2342,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<RegulatingEquipmentIdentifier>> regulatingEquipments = getRegulatingEquipmentsWithInClause(networkUuid, variantNum, "regulatingterminalconnectableid", elementIds, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
-            RegulatingOwnerInfo regulatingOwnerInfo = new RegulatingOwnerInfo(element.getId(), type, null, networkUuid, variantNum);
+            RegulatingOwnerInfo regulatingOwnerInfo = new RegulatingOwnerInfo(element.getId(), type, RegulatingTapChangerType.NO_TAP_CHANGER, networkUuid, variantNum);
             element.getAttributes().setRegulatingPoint(
                 regulatingPointAttributes.get(regulatingOwnerInfo));
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
@@ -2356,7 +2356,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<RegulatingEquipmentIdentifier>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
-            RegulatingOwnerInfo regulatingOwnerInfo = new RegulatingOwnerInfo(element.getId(), type, null, networkUuid, variantNum);
+            RegulatingOwnerInfo regulatingOwnerInfo = new RegulatingOwnerInfo(element.getId(), type, RegulatingTapChangerType.NO_TAP_CHANGER, networkUuid, variantNum);
             element.getAttributes().setRegulatingPoint(
                 regulatingPointAttributes.get(regulatingOwnerInfo));
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
@@ -2365,7 +2365,7 @@ public class NetworkStoreRepository {
 
     // for two winding transformers
     // using the request on a small number of ids and not on all elements
-    private void setTapChangerRegulatingPointAndRegulatingEquipmentsWithIds(List<Resource<TwoWindingsTransformerAttributes>> elements, UUID networkUuid, int variantNum) {
+    private void setRegulatingPointAndRegulatingEquipmentsWithIdsForTwoWindingsTransformers(List<Resource<TwoWindingsTransformerAttributes>> elements, UUID networkUuid, int variantNum) {
         // regulating points
         List<String> elementIds = elements.stream().map(Resource::getId).toList();
         Map<RegulatingOwnerInfo, RegulatingPointAttributes> twtTapChangerRegulatingPointAttributes = getRegulatingPointsWithInClause(networkUuid, variantNum,
@@ -2374,40 +2374,26 @@ public class NetworkStoreRepository {
             "regulatingterminalconnectableid", elementIds, ResourceType.TWO_WINDINGS_TRANSFORMER);
         elements.forEach(element -> {
             PhaseTapChangerAttributes phaseTapChangerAttributes = element.getAttributes().getPhaseTapChangerAttributes();
-            if (phaseTapChangerAttributes != null) {
-                phaseTapChangerAttributes.setRegulatingPoint(
-                    twtTapChangerRegulatingPointAttributes.get(new RegulatingOwnerInfo(element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER,
-                        RegulatingTapChangerType.PHASE_TAP_CHANGER, networkUuid, variantNum)));
-            }
             RatioTapChangerAttributes ratioTapChangerAttributes = element.getAttributes().getRatioTapChangerAttributes();
-            if (ratioTapChangerAttributes != null) {
-                ratioTapChangerAttributes.setRegulatingPoint(
-                    twtTapChangerRegulatingPointAttributes.get(new RegulatingOwnerInfo(element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER,
-                        RegulatingTapChangerType.RATIO_TAP_CHANGER, networkUuid, variantNum)));
-            }
+            setRegulatingPointforTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
+                RegulatingTapChangerType.RATIO_TAP_CHANGER, RegulatingTapChangerType.PHASE_TAP_CHANGER,
+                twtTapChangerRegulatingPointAttributes, element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, variantNum);
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(
                 new OwnerInfo(element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, variantNum)));
         });
     }
 
     // on all elements of the network
-    private void setTapChangerRegulatingPointAndRegulatingEquipments(List<Resource<TwoWindingsTransformerAttributes>> twoWindingTransformers, UUID networkUuid, int variantNum) {
+    private void setRegulatingPointAndRegulatingEquipmentsForTwoWindingsTransformers(List<Resource<TwoWindingsTransformerAttributes>> twoWindingTransformers, UUID networkUuid, int variantNum) {
         // regulating points
         Map<RegulatingOwnerInfo, RegulatingPointAttributes> twtRegulatingPointAttributes = getRegulatingPoints(networkUuid, variantNum, ResourceType.TWO_WINDINGS_TRANSFORMER);
         Map<OwnerInfo, List<RegulatingEquipmentIdentifier>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, ResourceType.TWO_WINDINGS_TRANSFORMER);
         twoWindingTransformers.forEach(element -> {
             PhaseTapChangerAttributes phaseTapChangerAttributes = element.getAttributes().getPhaseTapChangerAttributes();
-            if (phaseTapChangerAttributes != null) {
-                phaseTapChangerAttributes.setRegulatingPoint(
-                    twtRegulatingPointAttributes.get(new RegulatingOwnerInfo(element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER,
-                        RegulatingTapChangerType.PHASE_TAP_CHANGER, networkUuid, variantNum)));
-            }
             RatioTapChangerAttributes ratioTapChangerAttributes = element.getAttributes().getRatioTapChangerAttributes();
-            if (ratioTapChangerAttributes != null) {
-                ratioTapChangerAttributes.setRegulatingPoint(
-                    twtRegulatingPointAttributes.get(new RegulatingOwnerInfo(element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER,
-                        RegulatingTapChangerType.RATIO_TAP_CHANGER, networkUuid, variantNum)));
-            }
+            setRegulatingPointforTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
+                RegulatingTapChangerType.RATIO_TAP_CHANGER, RegulatingTapChangerType.PHASE_TAP_CHANGER,
+                twtRegulatingPointAttributes, element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, variantNum);
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(
                 new OwnerInfo(element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, variantNum)));
         });
@@ -2419,18 +2405,11 @@ public class NetworkStoreRepository {
         threeWindingTransformers.forEach(element -> {
             for (ThreeSides side : ThreeSides.values()) {
                 PhaseTapChangerAttributes phaseTapChangerAttributes = element.getAttributes().getLeg(side.getNum()).getPhaseTapChangerAttributes();
-                if (phaseTapChangerAttributes != null) {
-                    phaseTapChangerAttributes.setRegulatingPoint(
-                        twtRegulatingPointAttributes.get(new RegulatingOwnerInfo(element.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER,
-                            RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.PHASE_TAP_CHANGER), networkUuid, variantNum)));
-                }
                 RatioTapChangerAttributes ratioTapChangerAttributes = element.getAttributes().getLeg(side.getNum()).getRatioTapChangerAttributes();
-                if (ratioTapChangerAttributes != null) {
-                    ratioTapChangerAttributes.setRegulatingPoint(
-                        twtRegulatingPointAttributes.get(new RegulatingOwnerInfo(element.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER,
-                            RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.RATIO_TAP_CHANGER), networkUuid, variantNum))
-                    );
-                }
+                setRegulatingPointforTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
+                    RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.RATIO_TAP_CHANGER),
+                    RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.PHASE_TAP_CHANGER),
+                    twtRegulatingPointAttributes, element.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER, networkUuid, variantNum);
             }
         });
     }
@@ -2442,20 +2421,31 @@ public class NetworkStoreRepository {
         threeWindingTransformers.forEach(element -> {
             for (ThreeSides side : ThreeSides.values()) {
                 PhaseTapChangerAttributes phaseTapChangerAttributes = element.getAttributes().getLeg(side.getNum()).getPhaseTapChangerAttributes();
-                if (phaseTapChangerAttributes != null) {
-                    phaseTapChangerAttributes.setRegulatingPoint(
-                        twtRegulatingPointAttributes.get(new RegulatingOwnerInfo(element.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER,
-                            RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.PHASE_TAP_CHANGER), networkUuid, variantNum)));
-                }
                 RatioTapChangerAttributes ratioTapChangerAttributes = element.getAttributes().getLeg(side.getNum()).getRatioTapChangerAttributes();
-                if (ratioTapChangerAttributes != null) {
-                    ratioTapChangerAttributes.setRegulatingPoint(
-                        twtRegulatingPointAttributes.get(new RegulatingOwnerInfo(element.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER,
-                            RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.RATIO_TAP_CHANGER), networkUuid, variantNum))
-                    );
-                }
+                setRegulatingPointforTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
+                    RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.RATIO_TAP_CHANGER),
+                    RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.PHASE_TAP_CHANGER),
+                    twtRegulatingPointAttributes, element.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER, networkUuid, variantNum);
             }
         });
+    }
+
+    private void setRegulatingPointforTapChanger(RatioTapChangerAttributes ratioTapChangerAttributes, PhaseTapChangerAttributes phaseTapChangerAttributes,
+                                              RegulatingTapChangerType ratioRegulatingTapChangerType, RegulatingTapChangerType phaseRegulatingTapChangerType,
+                                              Map<RegulatingOwnerInfo, RegulatingPointAttributes> map, String twtId, ResourceType resourceType,
+                                              UUID networkUuid, int variantNum) {
+        if (ratioTapChangerAttributes != null) {
+            RegulatingOwnerInfo ratioTapChangerRegulatingOwnerInfo = new RegulatingOwnerInfo(
+                twtId, resourceType,
+                ratioRegulatingTapChangerType, networkUuid, variantNum);
+            ratioTapChangerAttributes.setRegulatingPoint(map.get(ratioTapChangerRegulatingOwnerInfo));
+        }
+        if (phaseTapChangerAttributes != null) {
+            RegulatingOwnerInfo phaseTapChangerRegulatingOwnerInfo = new RegulatingOwnerInfo(
+                twtId, resourceType,
+                phaseRegulatingTapChangerType, networkUuid, variantNum);
+            phaseTapChangerAttributes.setRegulatingPoint(map.get(phaseTapChangerRegulatingOwnerInfo));
+        }
     }
 
     private <T extends RegulatedEquipmentAttributes> void setRegulatingEquipmentsWithIds(List<Resource<T>> elements, UUID networkUuid, int variantNum, ResourceType type) {
@@ -2490,7 +2480,7 @@ public class NetworkStoreRepository {
                 RegulatingOwnerInfo info = new RegulatingOwnerInfo(
                     resource.getId(),
                     resource.getType(),
-                    null,
+                    RegulatingTapChangerType.NO_TAP_CHANGER,
                     networkUuid,
                     resource.getVariantNum()
                 );
@@ -2505,11 +2495,10 @@ public class NetworkStoreRepository {
         if (!twoWindingTransformers.isEmpty()) {
             for (Resource<TwoWindingsTransformerAttributes> twt : twoWindingTransformers) {
                 RatioTapChangerAttributes ratioTapChangerAttributes = twt.getAttributes().getRatioTapChangerAttributes();
-                addTapChangerRegulatingPoint(ratioTapChangerAttributes, new RegulatingOwnerInfo(twt.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER,
-                    RegulatingTapChangerType.RATIO_TAP_CHANGER, networkUuid, twt.getVariantNum()), map);
                 PhaseTapChangerAttributes phaseTapChangerAttributes = twt.getAttributes().getPhaseTapChangerAttributes();
-                addTapChangerRegulatingPoint(phaseTapChangerAttributes, new RegulatingOwnerInfo(twt.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER,
-                    RegulatingTapChangerType.PHASE_TAP_CHANGER, networkUuid, twt.getVariantNum()), map);
+                addTapChangerRegulatingPoint(ratioTapChangerAttributes, phaseTapChangerAttributes, RegulatingTapChangerType.RATIO_TAP_CHANGER,
+                    RegulatingTapChangerType.PHASE_TAP_CHANGER, map, twt.getId(),
+                    ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, twt.getVariantNum());
             }
         }
         return map;
@@ -2523,15 +2512,11 @@ public class NetworkStoreRepository {
                     LegAttributes legAttributes = twt.getAttributes().getLeg(side.getNum());
                     if (legAttributes != null) {
                         RatioTapChangerAttributes ratioTapChangerAttributes = legAttributes.getRatioTapChangerAttributes();
-                        addTapChangerRegulatingPoint(ratioTapChangerAttributes, new RegulatingOwnerInfo(
-                            twt.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER,
-                            RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.RATIO_TAP_CHANGER),
-                            networkUuid, twt.getVariantNum()), map);
                         PhaseTapChangerAttributes phaseTapChangerAttributes = legAttributes.getPhaseTapChangerAttributes();
-                        addTapChangerRegulatingPoint(phaseTapChangerAttributes, new RegulatingOwnerInfo(
-                            twt.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER,
+                        addTapChangerRegulatingPoint(ratioTapChangerAttributes, phaseTapChangerAttributes,
+                            RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.RATIO_TAP_CHANGER),
                             RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.PHASE_TAP_CHANGER),
-                            networkUuid, twt.getVariantNum()), map);
+                            map, twt.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER, networkUuid, twt.getVariantNum());
                     }
                 }
             }
@@ -2539,9 +2524,21 @@ public class NetworkStoreRepository {
         return map;
     }
 
-    private void addTapChangerRegulatingPoint(TapChangerAttributes tapChangerAttributes, RegulatingOwnerInfo info, Map<RegulatingOwnerInfo, RegulatingPointAttributes> map) {
-        if (tapChangerAttributes != null) {
-            map.put(info, tapChangerAttributes.getRegulatingPoint());
+    private void addTapChangerRegulatingPoint(RatioTapChangerAttributes ratioTapChangerAttributes, PhaseTapChangerAttributes phaseTapChangerAttributes,
+                                              RegulatingTapChangerType ratioRegulatingTapChangerType, RegulatingTapChangerType phaseRegulatingTapChangerType,
+                                              Map<RegulatingOwnerInfo, RegulatingPointAttributes> map, String twtId, ResourceType resourceType,
+                                              UUID networkUuid, int variantNum) {
+        if (ratioTapChangerAttributes != null) {
+            RegulatingOwnerInfo ratioTapChangerRegulatingOwnerInfo = new RegulatingOwnerInfo(
+                twtId, resourceType,
+                ratioRegulatingTapChangerType, networkUuid, variantNum);
+            map.put(ratioTapChangerRegulatingOwnerInfo, ratioTapChangerAttributes.getRegulatingPoint());
+        }
+        if (phaseTapChangerAttributes != null) {
+            RegulatingOwnerInfo phaseTapChangerRegulatingOwnerInfo = new RegulatingOwnerInfo(
+                twtId, resourceType,
+                phaseRegulatingTapChangerType, networkUuid, variantNum);
+            map.put(phaseTapChangerRegulatingOwnerInfo, phaseTapChangerAttributes.getRegulatingPoint());
         }
     }
 
