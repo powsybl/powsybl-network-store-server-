@@ -339,6 +339,22 @@ public final class QueryCatalog {
             "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
+    public static String buildOldTemporaryLimitWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
+        if (numberOfValues < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+        return "select " + EQUIPMENT_ID_COLUMN + ", " +
+            EQUIPMENT_TYPE_COLUMN + ", " +
+            NETWORK_UUID_COLUMN + ", " +
+            VARIANT_NUM_COLUMN + ", " +
+            "operationallimitsgroupid, side, limittype, name, value_, acceptableduration, fictitious" +
+            " from " + TEMPORARY_LIMITS_TABLE + " where " +
+            NETWORK_UUID_COLUMN + " = ? and " +
+            VARIANT_NUM_COLUMN + " = ? and " +
+            columnNameForInClause + " in (" +
+            "?, ".repeat(numberOfValues - 1) + "?)";
+    }
+
     public static String buildCloneTemporaryLimitsQuery() {
         return "insert into " + TEMPORARY_LIMITS_TABLE + "(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + TEMPORARY_LIMITS + ") " + "select " + EQUIPMENT_ID_COLUMN + ", " +
@@ -358,21 +374,15 @@ public final class QueryCatalog {
             columnNameForWhereClause + " = ?";
     }
 
-    public static String buildTransferTemporaryLimitsToNewDatabase(String columnNameForWhereClause) {
-        return "INSERT INTO " + TEMPORARY_LIMITS_TABLE + " (" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-            NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + TEMPORARY_LIMITS + ") " +
-            "    SELECT " + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + "," +
-            "       json_agg(json_build_object(" +
-            "'operationalLimitsGroupId', operationalLimitsGroupId, " +
-            "'side', side, " +
-            "'limitType', limitType, " +
-            "'name', name, " +
-            "'value', value_, " +
-            "'acceptableDuration', acceptableduration, " +
-            "'fictitious', fictitious )) as " + TEMPORARY_LIMITS + " FROM " + OLD_TEMPORARY_LIMITS +
-            " WHERE " + NETWORK_UUID_COLUMN + " = ? and " + VARIANT_NUM_COLUMN + " = ? and " + columnNameForWhereClause + " = ? " +
-            "GROUP BY " + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-            NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN;
+    public static String buildOldTemporaryLimitQuery(String columnNameForWhereClause) {
+        return "select " + EQUIPMENT_ID_COLUMN + ", " +
+            EQUIPMENT_TYPE_COLUMN + ", " +
+            NETWORK_UUID_COLUMN + ", " +
+            VARIANT_NUM_COLUMN + ", operationallimitsgroupid, side, limittype, name, value_, acceptableduration, fictitious" +
+            " from " + OLD_TEMPORARY_LIMITS + " where " +
+            NETWORK_UUID_COLUMN + " = ? and " +
+            VARIANT_NUM_COLUMN + " = ? and " +
+            columnNameForWhereClause + " = ?";
     }
 
     public static String buildDeleteOldTemporaryLimitsVariantEquipmentClauseQuery(String columnNameForWhereClause) {
@@ -440,6 +450,21 @@ public final class QueryCatalog {
             "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
+    public static String buildOldPermanentLimitWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
+        if (numberOfValues < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+        return "select " + EQUIPMENT_ID_COLUMN + ", " +
+            EQUIPMENT_TYPE_COLUMN + ", " +
+            NETWORK_UUID_COLUMN + ", " +
+            VARIANT_NUM_COLUMN + ", operationallimitsgroupid, side, limittype, value_ " +
+            " from " + PERMANENT_LIMITS_TABLE + " where " +
+            NETWORK_UUID_COLUMN + " = ? and " +
+            VARIANT_NUM_COLUMN + " = ? and " +
+            columnNameForInClause + " in (" +
+            "?, ".repeat(numberOfValues - 1) + "?)";
+    }
+
     public static String buildClonePermanentLimitsQuery() {
         return "insert into " + PERMANENT_LIMITS_TABLE + "(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + PERMANENT_LIMITS + ") " + "select " + EQUIPMENT_ID_COLUMN + ", " +
@@ -459,19 +484,15 @@ public final class QueryCatalog {
             columnNameForWhereClause + " = ?";
     }
 
-    public static String buildTransferPermanentLimitsToNewDatabase(String columnNameForWhereClause) {
-        return "INSERT INTO " + PERMANENT_LIMITS_TABLE + " (" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-            NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", permanentlimits) " +
-            "SELECT " + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " +
-            "json_agg(json_build_object(" +
-            "'operationalLimitsGroupId', operationalLimitsGroupId, " +
-            "'side', side, " +
-            "'value', value_, " +
-            "'limitType', limitType" +
-            ")) as permanentlimits FROM " + OLD_PERMANENT_LIMITS +
-            " WHERE " + NETWORK_UUID_COLUMN + " = ? and " + VARIANT_NUM_COLUMN + " = ? and " + columnNameForWhereClause + " = ? " +
-            "GROUP BY " + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-            NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN;
+    public static String buildOldPermanentLimitQuery(String columnNameForWhereClause) {
+        return "select " + EQUIPMENT_ID_COLUMN + ", " +
+            EQUIPMENT_TYPE_COLUMN + ", " +
+            NETWORK_UUID_COLUMN + ", " +
+            VARIANT_NUM_COLUMN + ", operationallimitsgroupid, side, limittype, value_" +
+            " from " + OLD_TEMPORARY_LIMITS + " where " +
+            NETWORK_UUID_COLUMN + " = ? and " +
+            VARIANT_NUM_COLUMN + " = ? and " +
+            columnNameForWhereClause + " = ?";
     }
 
     public static String buildDeleteOldPermanentLimitsVariantEquipmentClauseQuery(String columnNameForWhereClause) {
