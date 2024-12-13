@@ -348,7 +348,7 @@ public final class QueryCatalog {
             NETWORK_UUID_COLUMN + ", " +
             VARIANT_NUM_COLUMN + ", " +
             "operationallimitsgroupid, side, limittype, name, value_, acceptableduration, fictitious" +
-            " from " + TEMPORARY_LIMITS_TABLE + " where " +
+            " from " + OLD_TEMPORARY_LIMITS + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
             columnNameForInClause + " in (" +
@@ -458,7 +458,7 @@ public final class QueryCatalog {
             EQUIPMENT_TYPE_COLUMN + ", " +
             NETWORK_UUID_COLUMN + ", " +
             VARIANT_NUM_COLUMN + ", operationallimitsgroupid, side, limittype, value_ " +
-            " from " + PERMANENT_LIMITS_TABLE + " where " +
+            " from " + OLD_PERMANENT_LIMITS + " where " +
             NETWORK_UUID_COLUMN + " = ? and " +
             VARIANT_NUM_COLUMN + " = ? and " +
             columnNameForInClause + " in (" +
