@@ -313,16 +313,6 @@ public final class QueryCatalog {
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildCloneTemporaryLimitsWithInClauseQuery(int numberOfValues) {
-        return "insert into temporarylimit(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " + NAME_COLUMN +
-                ", value_, acceptableDuration, fictitious) " + "select " + EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", ?, ?, " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", " + NAME_COLUMN +
-                ", value_, acceptableDuration, fictitious from temporarylimit where " + NETWORK_UUID_COLUMN +
-                " = ? and " + VARIANT_NUM_COLUMN + " = ? and " + EQUIPMENT_TYPE_COLUMN + " = ? and " + EQUIPMENT_ID_COLUMN + " in (" +
-                "?, ".repeat(numberOfValues - 1) + "?)";
-    }
-
     public static String buildTemporaryLimitQuery(String columnNameForWhereClause) {
         return "select " + EQUIPMENT_ID_COLUMN + ", " +
                 EQUIPMENT_TYPE_COLUMN + ", " +
@@ -397,14 +387,6 @@ public final class QueryCatalog {
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildClonePermanentLimitsQueryWithInClause(int numberOfValues) {
-        return "insert into permanentlimit(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", value_) " + "select " + EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", ?, ?, " + OPERATIONAL_LIMITS_GROUP_ID_COLUMN + ", " + SIDE_COLUMN + ", " + LIMIT_TYPE_COLUMN + ", value_ from permanentlimit where " + NETWORK_UUID_COLUMN +
-                " = ? and " + VARIANT_NUM_COLUMN + " = ? and " + EQUIPMENT_TYPE_COLUMN + " = ? and " + EQUIPMENT_ID_COLUMN + " in (" +
-                "?, ".repeat(numberOfValues - 1) + "?)";
-    }
-
     public static String buildPermanentLimitQuery(String columnNameForWhereClause) {
         return "select " + EQUIPMENT_ID_COLUMN + ", " +
                 EQUIPMENT_TYPE_COLUMN + ", " +
@@ -475,15 +457,6 @@ public final class QueryCatalog {
                 EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN +
                 ", ?, ?, minQ, maxQ, p from ReactiveCapabilityCurvePoint where " + NETWORK_UUID_COLUMN +
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
-    }
-
-    public static String buildCloneReactiveCapabilityCurvePointsWithInClauseQuery(int numberOfValues) {
-        return "insert into ReactiveCapabilityCurvePoint(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN +
-                ", " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", minQ, maxQ, p) select " +
-                EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN +
-                ", ?, ?, minQ, maxQ, p from ReactiveCapabilityCurvePoint where " + NETWORK_UUID_COLUMN +
-                " = ? and " + VARIANT_NUM_COLUMN + " = ? and " + EQUIPMENT_TYPE_COLUMN + " = ? and " + EQUIPMENT_ID_COLUMN + " in (" +
-                "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
     public static String buildReactiveCapabilityCurvePointQuery(String columnNameForWhereClause) {
@@ -561,18 +534,6 @@ public final class QueryCatalog {
             ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide, "
             + REGULATED_EQUIPMENT_TYPE_COLUMN + " from " + REGULATING_POINT_TABLE + " where " + NETWORK_UUID_COLUMN +
             " = ? and " + VARIANT_NUM_COLUMN + " = ?";
-    }
-
-    public static String buildCloneRegulatingPointsWithInClauseQuery(int numberOfValues) {
-        return "insert into " + REGULATING_POINT_TABLE + " (" + NETWORK_UUID_COLUMN + " ," + VARIANT_NUM_COLUMN + ", " +
-                REGULATING_EQUIPMENT_ID + ", " + REGULATING_EQUIPMENT_TYPE_COLUMN + ", " + REGULATION_MODE +
-                ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide, " +
-                REGULATED_EQUIPMENT_TYPE_COLUMN + ") select ?, ?" + ", " + REGULATING_EQUIPMENT_ID + ", " +
-                REGULATING_EQUIPMENT_TYPE_COLUMN + ", " + REGULATION_MODE +
-                ", localTerminalConnectableId, localTerminalSide, regulatingTerminalConnectableId, regulatingTerminalSide, "
-                + REGULATED_EQUIPMENT_TYPE_COLUMN + " from " + REGULATING_POINT_TABLE + " where " + NETWORK_UUID_COLUMN +
-                " = ? and " + VARIANT_NUM_COLUMN + " = ? and " + REGULATING_EQUIPMENT_TYPE_COLUMN + " = ? and " + REGULATING_EQUIPMENT_ID + " in (" +
-                "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
     public static String buildRegulatingPointsQuery() {
@@ -691,43 +652,6 @@ public final class QueryCatalog {
                 "where " +
                 NETWORK_UUID_COLUMN + " = ?" + " and " +
                 VARIANT_NUM_COLUMN + " = ? ";
-    }
-
-    public static String buildCloneTapChangerStepWithInClauseQuery(int numberOfValues) {
-        return "insert into " + TAP_CHANGER_STEP_TABLE + "(" +
-                EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", " +
-                NETWORK_UUID_COLUMN + "," +
-                VARIANT_NUM_COLUMN + "," +
-                INDEX_COLUMN + ", " +
-                SIDE_COLUMN + ", " +
-                TAPCHANGER_TYPE_COLUMN + ", " +
-                "rho" + ", " +
-                "r" + ", " +
-                "x" + ", " +
-                "g" + ", " +
-                "b" + ", " +
-                ALPHA_COLUMN + ") " +
-                "select " +
-                EQUIPMENT_ID_COLUMN + ", " +
-                EQUIPMENT_TYPE_COLUMN + ", " +
-                "?" + "," +
-                "?" + "," +
-                INDEX_COLUMN + ", " +
-                SIDE_COLUMN + ", " +
-                TAPCHANGER_TYPE_COLUMN + ", " +
-                "rho" + ", " +
-                "r" + ", " +
-                "x" + ", " +
-                "g" + ", " +
-                "b" + ", " +
-                ALPHA_COLUMN +
-                " from " + TAP_CHANGER_STEP_TABLE + " " +
-                "where " +
-                NETWORK_UUID_COLUMN + " = ?" + " and " +
-                VARIANT_NUM_COLUMN + " = ? and " +
-                EQUIPMENT_TYPE_COLUMN + " = ? and " +
-                EQUIPMENT_ID_COLUMN + " in (" + "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
     public static String buildTapChangerStepQuery(String columnNameForWhereClause) {

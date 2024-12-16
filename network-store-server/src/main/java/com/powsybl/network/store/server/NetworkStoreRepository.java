@@ -975,11 +975,8 @@ public class NetworkStoreRepository {
                         Collectors.toMap(Resource::getId, Function.identity())
                 ));
 
-        Map<Integer, List<Resource<T>>> missingVariantResourcesByVariant = retrieveResourcesMissingFromVariants(networkUuid, tableMapping, updatedSvResourcesByVariant, connection);
-        List<Resource<T>> missingVariantResources = missingVariantResourcesByVariant.values()
-                .stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+        List<Resource<T>> missingVariantResources = retrieveResourcesMissingFromVariants(networkUuid, tableMapping, updatedSvResourcesByVariant, connection);
+
         // Update identifiables with values from updatedSvResources, using the provided update function
         if (!missingVariantResources.isEmpty()) {
             updateAttributesFromMissingVariantResources(attributesUpdater, missingVariantResources, updatedSvResourcesByVariant);
@@ -987,95 +984,7 @@ public class NetworkStoreRepository {
             // Batch insert the modified identifiables from srcVariant updated with values from updatedSvResources
             insertIdentifiables(networkUuid, missingVariantResources, tableMapping, connection);
             LOGGER.info("Inserted {} missing identifiables in variants (updated with new SV values)", missingVariantResources.size());
-            for (var missingResources : missingVariantResourcesByVariant.entrySet()) {
-                int srcVariantNum = getNetworkAttributes(connection, networkUuid, missingResources.getKey()).getAttributes().getSrcVariantNum();
-                // they can be cloned from the full variant because we are sure that they have never been updated yet
-                cloneExternalAttributesFromMissingVariantResources(networkUuid, tableMapping, missingResources.getValue(), srcVariantNum, missingResources.getKey(), connection);
-            }
         }
-    }
-
-    private <U extends Attributes> void cloneExternalAttributesFromMissingVariantResources(UUID networkUuid, TableMapping tableMapping, List<Resource<U>> resources, int sourceVariantNum, int targetVariantNum, Connection connection) throws SQLException {
-        // Copy of the temporary limits (which are not Identifiables objects)
-        //TODO: i think postgres won't be happy if empty in! if ressources empty > skip!
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        try (var preparedStmt = connection.prepareStatement(buildCloneTemporaryLimitsWithInClauseQuery(resources.size()))) {
-            preparedStmt.setString(1, networkUuid.toString());
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setString(3, networkUuid.toString());
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.setString(5, tableMapping.getResourceType().toString());
-            for (int i = 0; i < resources.size(); i++) {
-                preparedStmt.setString(6 + i, resources.get(i).getId());
-            }
-            preparedStmt.execute();
-        }
-
-        // Copy of the permanent limits (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(buildClonePermanentLimitsQueryWithInClause(resources.size()))) {
-            preparedStmt.setString(1, networkUuid.toString());
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setString(3, networkUuid.toString());
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.setString(5, tableMapping.getResourceType().toString());
-            for (int i = 0; i < resources.size(); i++) {
-                preparedStmt.setString(6 + i, resources.get(i).getId());
-            }
-            preparedStmt.execute();
-        }
-
-        // Copy of the reactive capability curve points (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(buildCloneReactiveCapabilityCurvePointsWithInClauseQuery(resources.size()))) {
-            preparedStmt.setString(1, networkUuid.toString());
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setString(3, networkUuid.toString());
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.setString(5, tableMapping.getResourceType().toString());
-            for (int i = 0; i < resources.size(); i++) {
-                preparedStmt.setString(6 + i, resources.get(i).getId());
-            }
-            preparedStmt.execute();
-        }
-        // Copy of the regulating points (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(buildCloneRegulatingPointsWithInClauseQuery(resources.size()))) {
-            preparedStmt.setObject(1, networkUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, networkUuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.setString(5, tableMapping.getResourceType().toString());
-            for (int i = 0; i < resources.size(); i++) {
-                preparedStmt.setString(6 + i, resources.get(i).getId());
-            }
-            preparedStmt.execute();
-        }
-
-        // Copy of the Tap Changer steps (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(buildCloneTapChangerStepWithInClauseQuery(resources.size()))) {
-            preparedStmt.setObject(1, networkUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, networkUuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.setString(5, tableMapping.getResourceType().toString());
-            for (int i = 0; i < resources.size(); i++) {
-                preparedStmt.setString(6 + i, resources.get(i).getId());
-            }
-            preparedStmt.execute();
-        }
-
-        // Copy of the Extensions (which are not Identifiables objects)
-        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneExtensionsWithInClauseQuery(resources.size()))) {
-            preparedStmt.setObject(1, networkUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, networkUuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.setString(5, tableMapping.getResourceType().toString());
-            for (int i = 0; i < resources.size(); i++) {
-                preparedStmt.setString(6 + i, resources.get(i).getId());
-            }
-            preparedStmt.execute();
-        }
-        stopwatch.stop();
-        LOGGER.info("Cloned all external attributes in: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     private static <T extends IdentifiableAttributes, U extends Attributes> void updateAttributesFromMissingVariantResources(BiConsumer<T, U> svAttributesUpdater, List<Resource<T>> missingVariantResources, Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant) {
@@ -1087,10 +996,10 @@ public class NetworkStoreRepository {
         }
     }
 
-    private <T extends IdentifiableAttributes, U extends Attributes> Map<Integer, List<Resource<T>>> retrieveResourcesMissingFromVariants(UUID networkUuid, TableMapping tableMapping,
+    private <T extends IdentifiableAttributes, U extends Attributes> List<Resource<T>> retrieveResourcesMissingFromVariants(UUID networkUuid, TableMapping tableMapping,
                                                                                                       Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant,
                                                                                                       Connection connection) throws SQLException {
-        Map<Integer, List<Resource<T>>> missingVariantResourcesByVariant = new HashMap<>();
+        List<Resource<T>> missingVariantResources = new ArrayList<>();
         for (var entry : updatedSvResourcesByVariant.entrySet()) {
             int variantNum = entry.getKey();
             Set<String> equipmentIds = entry.getValue().keySet();
@@ -1110,10 +1019,10 @@ public class NetworkStoreRepository {
                 preparedStmt.setArray(5, connection.createArrayOf("VARCHAR", equipmentIdsArray));
 
                 List<Resource<T>> foundResourcesInSrcVariant = getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
-                missingVariantResourcesByVariant.put(variantNum, foundResourcesInSrcVariant);
+                missingVariantResources.addAll(foundResourcesInSrcVariant);
             }
         }
-        return missingVariantResourcesByVariant;
+        return missingVariantResources;
     }
 
     public void updateBranchesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources, String tableName, TableMapping tableMapping) {

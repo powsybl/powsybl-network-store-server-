@@ -31,15 +31,6 @@ public final class QueryExtensionCatalog {
                 " = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildCloneExtensionsWithInClauseQuery(int numberOfValues) {
-        return "insert into " + EXTENSION_TABLE + "(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN +
-                ", " + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EXTENSION_NAME_COLUMN + ", " + EXTENSION_VALUE_COLUMN + ") select " +
-                EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN +
-                ", ?, ?, name, " + EXTENSION_VALUE_COLUMN + " from " + EXTENSION_TABLE + " where " + NETWORK_UUID_COLUMN +
-                " = ? and " + VARIANT_NUM_COLUMN + " = ? and " + EQUIPMENT_TYPE_COLUMN + " = ? and " + EQUIPMENT_ID_COLUMN + " in (" +
-                "?, ".repeat(numberOfValues - 1) + "?)";
-    }
-
     public static String buildGetExtensionsQuery() {
         return "select " + EXTENSION_VALUE_COLUMN +
                 " from " + EXTENSION_TABLE + " where " +
