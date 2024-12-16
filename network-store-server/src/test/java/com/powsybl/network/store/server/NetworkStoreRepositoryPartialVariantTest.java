@@ -227,33 +227,34 @@ class NetworkStoreRepositoryPartialVariantTest {
 
     private void verifyExternalAttributes(String lineId, int variantNum, UUID networkUuid) {
         OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, networkUuid, variantNum);
+        TableMapping tableMapping = mappings.getLineMappings();
 
         // Tap Changer Steps
-        List<TapChangerStepAttributes> tapChangerSteps = networkStoreRepository.getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfo);
+        List<TapChangerStepAttributes> tapChangerSteps = networkStoreRepository.getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId, tableMapping).get(ownerInfo);
         assertEquals(2, tapChangerSteps.size());
         assertEquals(1.0, tapChangerSteps.get(0).getRho());
         assertEquals(2.0, tapChangerSteps.get(1).getRho());
 
         // Temporary Limits
-        List<TemporaryLimitAttributes> temporaryLimits = networkStoreRepository.getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfo);
+        List<TemporaryLimitAttributes> temporaryLimits = networkStoreRepository.getTemporaryLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId, tableMapping).get(ownerInfo);
         assertEquals(2, temporaryLimits.size());
         assertEquals(100, temporaryLimits.get(0).getAcceptableDuration());
         assertEquals(200, temporaryLimits.get(1).getAcceptableDuration());
 
         // Permanent Limits
-        List<PermanentLimitAttributes> permanentLimits = networkStoreRepository.getPermanentLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfo);
+        List<PermanentLimitAttributes> permanentLimits = networkStoreRepository.getPermanentLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId, tableMapping).get(ownerInfo);
         assertEquals(2, permanentLimits.size());
         assertEquals(2.5, permanentLimits.get(0).getValue());
         assertEquals(2.6, permanentLimits.get(1).getValue());
 
         // Reactive Capability Curve Points
-        List<ReactiveCapabilityCurvePointAttributes> curvePoints = networkStoreRepository.getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfo);
+        List<ReactiveCapabilityCurvePointAttributes> curvePoints = networkStoreRepository.getReactiveCapabilityCurvePoints(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId, tableMapping).get(ownerInfo);
         assertEquals(2, curvePoints.size());
         assertEquals(-100.0, curvePoints.get(0).getMinQ());
         assertEquals(30.0, curvePoints.get(1).getMaxQ());
 
         // Regulating Points
-        RegulatingPointAttributes regulatingPoint = networkStoreRepository.getRegulatingPoints(networkUuid, variantNum, ResourceType.LINE).get(ownerInfo);
+        RegulatingPointAttributes regulatingPoint = networkStoreRepository.getRegulatingPoints(networkUuid, variantNum, ResourceType.LINE, tableMapping).get(ownerInfo);
         assertNotNull(regulatingPoint);
         assertEquals("regulationMode", regulatingPoint.getRegulationMode());
 
@@ -1263,7 +1264,7 @@ class NetworkStoreRepositoryPartialVariantTest {
 
     @Test
     void getTapChangerStepsWithoutNetwork() {
-        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
+        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId", mappings.getLineMappings()));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
     }
 
@@ -1279,7 +1280,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         OwnerInfo expOwnerInfo1 = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
-        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo1));
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).get(expOwnerInfo1));
     }
 
     @Test
@@ -1294,7 +1295,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
 
         OwnerInfo expOwnerInfo1 = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
-        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo1));
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).get(expOwnerInfo1));
     }
 
     @Test
@@ -1313,7 +1314,48 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
 
         OwnerInfo expOwnerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
-        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo));
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).get(expOwnerInfo));
+    }
+
+    @Test
+    void getTapChangerStepsFromPartialCloneWithUpdatedIdentifiableWithoutTapChangerSteps() {
+        String networkId = "network1";
+        String lineId = "line";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 0);
+        TapChangerStepAttributes ratioStepA1 = buildTapChangerStepAttributes(1., 0);
+        TapChangerStepAttributes ratioStepB1 = buildTapChangerStepAttributes(2., 1);
+        networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        assertFalse(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).isEmpty());
+        Resource<LineAttributes> line1 = new Resource<>(ResourceType.LINE, lineId, 1, null, new LineAttributes());
+        networkStoreRepository.updateIdentifiables(NETWORK_UUID, List.of(line1), mappings.getLineMappings());
+
+        assertTrue(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).isEmpty());
+    }
+
+    @Test
+    void getTapChangerStepsFromPartialCloneWithUpdatedIdentifiableSvWithTapChangerSteps() {
+        String networkId = "network1";
+        String lineId = "line";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        createLineAndLoad(0, "load1", lineId, "vl1", "vl2");
+        OwnerInfo ownerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 0);
+        TapChangerStepAttributes ratioStepA1 = buildTapChangerStepAttributes(1., 0);
+        TapChangerStepAttributes ratioStepB1 = buildTapChangerStepAttributes(2., 1);
+        networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        assertFalse(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).isEmpty());
+        BranchSvAttributes branchSvAttributes = BranchSvAttributes.builder()
+                .p1(5.6)
+                .q1(6.6)
+                .build();
+        Resource<BranchSvAttributes> updatedSvLine = new Resource<>(ResourceType.LINE, lineId, 1, AttributeFilter.SV, branchSvAttributes);
+        networkStoreRepository.updateLinesSv(NETWORK_UUID, List.of(updatedSvLine));
+
+        assertFalse(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).isEmpty());
     }
 
     @Test
@@ -1327,7 +1369,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.insertTapChangerSteps(Map.of(ownerInfo, List.of(ratioStepA1, ratioStepB1)));
 
         OwnerInfo expOwnerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 2);
-        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 2, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo));
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 2, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).get(expOwnerInfo));
     }
 
     private static TapChangerStepAttributes buildTapChangerStepAttributes(double value, int index) {
@@ -1355,13 +1397,12 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         OwnerInfo expOwnerInfo = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, 1);
-        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(expOwnerInfo));
+        assertEquals(List.of(ratioStepA1, ratioStepB1), networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).get(expOwnerInfo));
         networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, lineId, LINE_TABLE);
-        assertTrue(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).isEmpty());
+        assertTrue(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId, mappings.getLineMappings()).isEmpty());
     }
 
     @Test
-    @Disabled("Not implemented")
     void getExtensionWithoutNetwork() {
         PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownExtension"));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
@@ -1456,6 +1497,30 @@ class NetworkStoreRepositoryPartialVariantTest {
         Map<String, ExtensionAttributes> expExtensionAttributesApcLine = Map.of(lineId1, buildActivePowerControlAttributes(5.2), lineId2, buildActivePowerControlAttributes(8.9));
         assertEquals(expExtensionAttributesApcLine, networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 1, ResourceType.LINE, ActivePowerControl.NAME));
         Map<String, Map<String, ExtensionAttributes>> expExtensionAttributesLine = Map.of(lineId1, extensionAttributesMap1, lineId2, extensionAttributesMap2);
+        assertEquals(expExtensionAttributesLine, networkStoreRepository.getAllExtensionsAttributesByResourceType(NETWORK_UUID, 1, ResourceType.LINE));
+    }
+
+    //NOTE: this does not exist with IIDM api for now...
+    @Test
+    @Disabled("To implement")
+    void getExtensionFromPartialCloneWithRemovedExtension() throws SQLException {
+        String networkId = "network1";
+        String lineId1 = "line1";
+        createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
+        OwnerInfo ownerInfo1 = new OwnerInfo(lineId1, ResourceType.LINE, NETWORK_UUID, 0);
+        Map<String, ExtensionAttributes> extensionAttributesMap1 = buildExtensionAttributesMap(5.6, "status1");
+        createExtensions(Map.of(ownerInfo1, extensionAttributesMap1));
+        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
+
+        try (var connection = dataSource.getConnection()) {
+            LineAttributes attributes = new LineAttributes();
+            attributes.setExtensionAttributes(Map.of("operatingStatus", buildOperatingStatusAttributes("tutu")));
+            extensionHandler.updateExtensionsFromEquipments(connection, NETWORK_UUID, List.of(new Resource<>(ResourceType.LINE, lineId1, 1, null, attributes)));
+        }
+        assertEquals(Optional.empty(), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
+        assertEquals(extensionAttributesMap1, networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId1));
+        assertEquals(Map.of(), networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 1, ResourceType.LINE, ActivePowerControl.NAME));
+        Map<String, Map<String, ExtensionAttributes>> expExtensionAttributesLine = Map.of(lineId1, Map.of());
         assertEquals(expExtensionAttributesLine, networkStoreRepository.getAllExtensionsAttributesByResourceType(NETWORK_UUID, 1, ResourceType.LINE));
     }
 
@@ -1636,6 +1701,9 @@ class NetworkStoreRepositoryPartialVariantTest {
 
     //TODO: getRegulatingEquipmentsForIdentifiable()
 
+    //TODO: does it work well for other something like
+    //TODO: getExtension activepowercontrol => not exist in partial but exist in source, should not retrieve it in source because partial was updated => need to check that!
+    //TODO: this is a bit similar to in voltagelevelcontainer... ! even getIdentifiable ? or is it ok?
     //TODO: needed?
     private List<String> getStoredIdentifiableIdsInVariant(UUID networkUuid, int variantNum) {
         try (var connection = dataSource.getConnection()) {
