@@ -101,6 +101,29 @@ public final class QueryCatalog {
                 " and " + ID_COLUMN + " = ?";
     }
 
+    public static String buildDeleteIdentifiableListQuery(String tableName, int idCount) {
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("delete from ")
+                .append(tableName)
+                .append(" where ")
+                .append(NETWORK_UUID_COLUMN)
+                .append(" = ? and ")
+                .append(VARIANT_NUM_COLUMN)
+                .append(" = ? and ")
+                .append(ID_COLUMN)
+                .append(" IN (");
+
+        for (int i = 0; i < idCount; i++) {
+            queryBuilder.append("?");
+            if (i < idCount - 1) {
+                queryBuilder.append(", ");
+            }
+        }
+
+        queryBuilder.append(")");
+        return queryBuilder.toString();
+    }
+
     public static String buildDeleteNetworkQuery() {
         return "delete from " + NETWORK_TABLE + " where " + UUID_COLUMN + " = ?";
     }

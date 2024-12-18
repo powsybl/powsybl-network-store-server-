@@ -225,6 +225,24 @@ public class NetworkStoreController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping(value = "/{networkId}/{variantNum}/substations", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple substations by IDs")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully deleted substations"),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload")
+    })
+    public ResponseEntity<Void> deleteSubstations(
+            @Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+            @Parameter(description = "List of substation IDs to delete", required = true) @RequestBody Set<String> substationIds) {
+        if (substationIds == null || substationIds.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        repository.deleteSubstations(networkId, variantNum, substationIds);
+        return ResponseEntity.ok().build();
+    }
+
+
     // voltage level
 
     @GetMapping(value = "/{networkId}/{variantNum}/voltage-levels", produces = APPLICATION_JSON_VALUE)

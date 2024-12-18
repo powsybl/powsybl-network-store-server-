@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -842,6 +843,31 @@ public class NetworkStoreRepository {
         extensionHandler.deleteExtensionsFromIdentifiable(networkUuid, variantNum, id);
     }
 
+    public void deleteIdentifiableList(UUID networkUuid, int variantNum, Set<String> ids, String tableName) {
+        if (CollectionUtils.isEmpty(ids)) {
+            throw new IllegalArgumentException("The list of IDs to delete cannot be null or empty");
+        }
+
+
+        try (var connection = dataSource.getConnection()) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiableListQuery(tableName, ids.size()))) {
+                preparedStmt.setObject(1, networkUuid);
+                preparedStmt.setInt(2, variantNum);
+
+                int index = 0;
+                for (String id : ids) {
+                    preparedStmt.setString(3 + index, id);
+                    index++;
+                }
+
+                preparedStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+        extensionHandler.deleteExtensionsFromIdentifiables(networkUuid, variantNum, ids.stream().toList());
+    }
+
     // substation
 
     public List<Resource<SubstationAttributes>> getSubstations(UUID networkUuid, int variantNum) {
@@ -862,6 +888,10 @@ public class NetworkStoreRepository {
 
     public void deleteSubstation(UUID networkUuid, int variantNum, String substationId) {
         deleteIdentifiable(networkUuid, variantNum, substationId, SUBSTATION_TABLE);
+    }
+
+    public void deleteSubstations(UUID networkUuid, int variantNum, Set<String> substationIds) {
+        deleteIdentifiableList(networkUuid, variantNum, substationIds, SUBSTATION_TABLE);
     }
 
     // voltage level
@@ -912,6 +942,10 @@ public class NetworkStoreRepository {
 
     public void deleteVoltageLevel(UUID networkUuid, int variantNum, String voltageLevelId) {
         deleteIdentifiable(networkUuid, variantNum, voltageLevelId, VOLTAGE_LEVEL_TABLE);
+    }
+
+    public void deleteVoltageLevels(UUID networkUuid, int variantNum, Set<String> voltageLevelIds) {
+        deleteIdentifiableList(networkUuid, variantNum, voltageLevelIds, VOLTAGE_LEVEL_TABLE);
     }
 
     // generator
