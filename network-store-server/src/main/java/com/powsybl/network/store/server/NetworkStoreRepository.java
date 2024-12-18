@@ -851,7 +851,6 @@ public class NetworkStoreRepository {
             throw new IllegalArgumentException("The list of IDs to delete cannot be null or empty");
         }
 
-
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiableListQuery(tableName, ids.size()))) {
                 preparedStmt.setObject(1, networkUuid);

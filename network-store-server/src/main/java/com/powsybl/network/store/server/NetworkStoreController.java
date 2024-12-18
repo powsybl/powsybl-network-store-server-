@@ -228,8 +228,8 @@ public class NetworkStoreController {
     @DeleteMapping(value = "/{networkId}/{variantNum}/substations", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete multiple substations by IDs")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully deleted substations"),
-            @ApiResponse(responseCode = "400", description = "Invalid request payload")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted substations"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
     public ResponseEntity<Void> deleteSubstations(
             @Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
