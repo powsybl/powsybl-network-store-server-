@@ -9,28 +9,23 @@ package com.powsybl.network.store.server;
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import lombok.NoArgsConstructor;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest
-@AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-public class ExtensionHandlerTest {
+class ExtensionHandlerTest {
 
     @DynamicPropertySource
     static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
@@ -44,7 +39,7 @@ public class ExtensionHandlerTest {
     private static final UUID NETWORK_UUID = UUID.fromString("7928181c-7977-4592-ba19-88027e4254e4");
 
     @Test
-    public void insertExtensionsTest() {
+    void insertExtensionsTest() {
         String equipmentId1 = "idBatteryA";
 
         OwnerInfo infoBatteryA = new OwnerInfo(
@@ -74,7 +69,7 @@ public class ExtensionHandlerTest {
     }
 
     @Test
-    public void getExtensionsTest() {
+    void getExtensionsTest() {
         String batteryId1 = "idBattery1";
         String batteryId2 = "idBattery2";
         String generatorId1 = "idGenerator1";
@@ -150,7 +145,7 @@ public class ExtensionHandlerTest {
     }
 
     @Test
-    public void deleteExtensionsTest() {
+    void deleteExtensionsTest() {
         String batteryId1 = "idBattery1";
         String batteryId2 = "idBattery2";
 
@@ -192,7 +187,7 @@ public class ExtensionHandlerTest {
     }
 
     @Test
-    public void updateExtensionsFromEquipmentsTest() {
+    void updateExtensionsFromEquipmentsTest() {
         String batteryId1 = "idBattery1";
 
         OwnerInfo infoBattery1 = new OwnerInfo(
@@ -232,7 +227,7 @@ public class ExtensionHandlerTest {
     }
 
     @Test
-    public void updateExtensionsFromNetworksTest() {
+    void updateExtensionsFromNetworksTest() {
         String networkId1 = "idBattery1";
 
         OwnerInfo infoNetwork1 = new OwnerInfo(
@@ -273,7 +268,7 @@ public class ExtensionHandlerTest {
     }
 
     @Test
-    public void insertNonPersistentExtensionTest() {
+    void insertNonPersistentExtensionTest() {
         String equipmentId = "idBattery";
 
         OwnerInfo infoBattery = new OwnerInfo(
@@ -295,7 +290,7 @@ public class ExtensionHandlerTest {
     }
 
     @NoArgsConstructor
-    private class NonPersistentExtensionAttributes implements ExtensionAttributes {
+    private static class NonPersistentExtensionAttributes implements ExtensionAttributes {
         @Override
         public boolean isPersistent() {
             return false;

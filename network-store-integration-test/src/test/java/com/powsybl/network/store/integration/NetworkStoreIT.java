@@ -19,7 +19,7 @@ import com.powsybl.entsoe.util.EntsoeAreaImpl;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
 import com.powsybl.ieeecdf.converter.IeeeCdfNetworkFactory;
 import com.powsybl.iidm.network.*;
-import com.powsybl.iidm.network.extensions.*;
+import com.powsybl.iidm.network.extensions.ConnectablePosition;
 import com.powsybl.iidm.network.test.*;
 import com.powsybl.math.graph.TraverseResult;
 import com.powsybl.network.store.client.NetworkStoreService;
@@ -30,8 +30,8 @@ import com.powsybl.network.store.server.NetworkStoreApplication;
 import com.powsybl.ucte.converter.UcteImporter;
 import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
@@ -40,7 +40,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,7 +48,7 @@ import java.util.stream.StreamSupport;
 
 import static com.powsybl.iidm.network.VariantManagerConstants.INITIAL_VARIANT_ID;
 import static com.powsybl.network.store.integration.TestUtils.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -57,30 +56,35 @@ import static org.mockito.Mockito.*;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  * @author Etienne Homer <etienne.homer at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})
-})
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})})
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
-public class NetworkStoreIT {
-
+class NetworkStoreIT {
     @DynamicPropertySource
-    static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
+    private static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
         UUID uuid = UUID.randomUUID();
         registry.add("testDbSuffix", () -> uuid);
     }
 
-    public static final double ESP = 0.000001;
+    private static final double ESP = 0.000001;
+
     @LocalServerPort
     private int randomServerPort;
+    private static Properties properties;
+
+    @BeforeAll
+    static void setUp() {
+        properties = new Properties();
+        properties.setProperty("ucte.import.create-areas", "false");
+    }
 
     @Test
-    public void test() {
+    void test() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             assertTrue(service.getNetworkIds().isEmpty());
-            Network network = service.importNetwork(new ResourceDataSource("test", new ResourceSet("/", "test.xiidm")));
+            Network network = service.importNetwork(new ResourceDataSource("test", new ResourceSet("/", "test.xiidm")),
+                ReportNode.NO_OP, properties, true);
             service.flush(network);
 
             assertEquals(1, service.getNetworkIds().size());
@@ -90,7 +94,7 @@ public class NetworkStoreIT {
     }
 
     private static void testNetwork(Network network) {
-        assertEquals(false, network.isFictitious());
+        assertFalse(network.isFictitious());
         assertEquals("sim1", network.getId());
         assertEquals("sim1", network.getNameOrId());
         assertEquals("test", network.getSourceFormat());
@@ -112,7 +116,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void nodeBreakerTest() {
+    void nodeBreakerTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkTest1Factory.create(service.getNetworkFactory(), "1");
             service.flush(network);
@@ -203,7 +207,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void svcTest() {
+    void svcTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -264,7 +268,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testSvcRemove() {
+    void testSvcRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -289,7 +293,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void vscConverterStationTest() {
+    void vscConverterStationTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -374,7 +378,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testVscConverterRemove() {
+    void testVscConverterRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -409,7 +413,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void lccConverterStationTest() {
+    void lccConverterStationTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -461,7 +465,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testLccConverterRemove() {
+    void testLccConverterRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -486,7 +490,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testLineRemove() {
+    void testLineRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -511,7 +515,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testLoadRemove() {
+    void testLoadRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -560,7 +564,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testBusBarSectionRemove() {
+    void testBusBarSectionRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -600,7 +604,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testSubstationRemove() {
+    void testSubstationRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -657,7 +661,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testSubstationUpdate() {
+    void testSubstationUpdate() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -698,7 +702,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void substationTest() {
+    void substationTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("test", "test");
 
@@ -741,7 +745,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void voltageLevelTest() {
+    void voltageLevelTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("test", "test");
 
@@ -788,7 +792,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void lineTest() {
+    void lineTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("test", "test");
 
@@ -871,7 +875,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void batteryTest() {
+    void batteryTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("test", "test");
 
@@ -929,7 +933,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testBatteryRemove() {
+    void testBatteryRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -954,7 +958,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void loadTest() {
+    void loadTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("test", "test");
 
@@ -1002,7 +1006,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void danglingLineTest() {
+    void danglingLineTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -1163,7 +1167,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void groundTest() {
+    void groundTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("test", "test");
 
@@ -1197,7 +1201,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void hvdcLineTest() {
+    void hvdcLineTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -1255,7 +1259,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testHvdcLineRemove() {
+    void testHvdcLineRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -1312,7 +1316,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void threeWindingsTransformerTest() {
+    void threeWindingsTransformerTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -1405,7 +1409,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testThreeWindingsTransformerRemove() {
+    void testThreeWindingsTransformerRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -1430,7 +1434,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void twoWindingsTransformerTest() {
+    void twoWindingsTransformerTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -1516,7 +1520,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testTwoWindingsTransformerRemove() {
+    void testTwoWindingsTransformerRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -1541,10 +1545,10 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void internalConnectionsFromCgmesTest() {
+    void internalConnectionsFromCgmesTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-            Network network = service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource());
+            Network network = service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource(), ReportNode.NO_OP, properties, true);
             service.flush(network);
         }
 
@@ -1577,10 +1581,10 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void aliasesTest() {
+    void aliasesTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-            service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource());
+            service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource(), ReportNode.NO_OP, properties, true);
         }
 
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -1655,7 +1659,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void connectablesTest() {
+    void connectablesTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = FourSubstationsNodeBreakerFactory.create(service.getNetworkFactory());
             assertEquals(26, network.getConnectableCount());
@@ -1681,7 +1685,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void moreComplexNodeBreakerTest() {
+    void moreComplexNodeBreakerTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = FictitiousSwitchFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -1689,7 +1693,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testPhaseTapChanger() {
+    void testPhaseTapChanger() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createTapChangerNetwork(service.getNetworkFactory()));
         }
@@ -1820,7 +1824,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testGeneratorMinMaxReactiveLimits() {
+    void testGeneratorMinMaxReactiveLimits() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createGeneratorNetwork(service.getNetworkFactory(), ReactiveLimitsKind.MIN_MAX));
         }
@@ -1900,7 +1904,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testGeneratorCurveReactiveLimits() {
+    void testGeneratorCurveReactiveLimits() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createGeneratorNetwork(service.getNetworkFactory(), ReactiveLimitsKind.CURVE));
         }
@@ -1940,7 +1944,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testGeneratorRemove() {
+    void testGeneratorRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = createGeneratorNetwork(service.getNetworkFactory(), ReactiveLimitsKind.MIN_MAX);
             service.flush(network);
@@ -1965,7 +1969,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testBusBreakerNetwork() {
+    void testBusBreakerNetwork() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(EurostagTutorialExample1Factory.create(service.getNetworkFactory()));
         }
@@ -2012,7 +2016,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testComponentCalculationNetwork() {
+    void testComponentCalculationNetwork() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("test", "test");
             Substation s1 = network.newSubstation()
@@ -2132,7 +2136,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testUcteNetwork() {
+    void testUcteNetwork() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(loadUcteNetwork(service.getNetworkFactory()));
         }
@@ -2277,7 +2281,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testDanglingLineRemove() {
+    void testDanglingLineRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createRemoveDL(service.getNetworkFactory()));
         }
@@ -2341,7 +2345,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void switchesTest() {
+    void switchesTest() {
         // create network and save it
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createSwitchesNetwork(service.getNetworkFactory()));
@@ -2383,7 +2387,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testNodeBreakerVoltageLevelRemove() {
+    void testNodeBreakerVoltageLevelRemove() {
         // create network and save it
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createSwitchesNetwork(service.getNetworkFactory()));
@@ -2431,7 +2435,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testVoltageLevel() {
+    void testVoltageLevel() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.createWithMultipleConnectedComponents(service.getNetworkFactory());
 
@@ -2544,7 +2548,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void configuredBusTest() {
+    void configuredBusTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -2599,10 +2603,10 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testConfiguredBus() {
+    void testConfiguredBus() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
-            Network network = service.importNetwork(CgmesConformity1Catalog.smallBusBranch().dataSource());
+            Network network = service.importNetwork(CgmesConformity1Catalog.smallBusBranch().dataSource(), ReportNode.NO_OP, properties, true);
 
             Set<String> visitedConnectables = new HashSet<>();
             TopologyVisitor tv = new DefaultTopologyVisitor() {
@@ -2741,7 +2745,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testBusBreakerVoltageLevelRemove() {
+    void testBusBreakerVoltageLevelRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             Network network = service.importNetwork(CgmesConformity1Catalog.smallBusBranch().dataSource());
@@ -2782,16 +2786,16 @@ public class NetworkStoreIT {
         }
     }
 
-    public Network loadUcteNetwork(NetworkFactory networkFactory) {
+    private static Network loadUcteNetwork(NetworkFactory networkFactory) {
         String filePath = "/uctNetwork.uct";
         ReadOnlyDataSource dataSource = new ResourceDataSource(
             FilenameUtils.getBaseName(filePath),
             new ResourceSet(FilenameUtils.getPath(filePath),
                 FilenameUtils.getName(filePath)));
-        return new UcteImporter().importData(dataSource, networkFactory, null);
+        return new UcteImporter().importData(dataSource, networkFactory, properties);
     }
 
-    private void assertEqualsPhaseTapChangerStep(PhaseTapChangerStep phaseTapChangerStep, double alpha, double b, double g, double r, double rho, double x) {
+    private static void assertEqualsPhaseTapChangerStep(PhaseTapChangerStep phaseTapChangerStep, double alpha, double b, double g, double r, double rho, double x) {
         assertEquals(alpha, phaseTapChangerStep.getAlpha(), .0001);
         assertEquals(b, phaseTapChangerStep.getB(), .0001);
         assertEquals(g, phaseTapChangerStep.getG(), .0001);
@@ -2800,7 +2804,7 @@ public class NetworkStoreIT {
         assertEquals(x, phaseTapChangerStep.getX(), .0001);
     }
 
-    private void assertEqualsRatioTapChangerStep(RatioTapChangerStep ratioTapChangerStep, double b, double g, double r, double rho, double x) {
+    private static void assertEqualsRatioTapChangerStep(RatioTapChangerStep ratioTapChangerStep, double b, double g, double r, double rho, double x) {
         assertEquals(b, ratioTapChangerStep.getB(), .0001);
         assertEquals(g, ratioTapChangerStep.getG(), .0001);
         assertEquals(r, ratioTapChangerStep.getR(), .0001);
@@ -2808,7 +2812,7 @@ public class NetworkStoreIT {
         assertEquals(x, ratioTapChangerStep.getX(), .0001);
     }
 
-    private Network createTapChangerNetwork(NetworkFactory networkFactory) {
+    private static Network createTapChangerNetwork(NetworkFactory networkFactory) {
         Network network = networkFactory.createNetwork("Phase tap changer", "test");
         Substation s1 = network.newSubstation()
             .setId("S1")
@@ -2904,7 +2908,7 @@ public class NetworkStoreIT {
         return network;
     }
 
-    private Network createGeneratorNetwork(NetworkFactory networkFactory, ReactiveLimitsKind kind) {
+    private static Network createGeneratorNetwork(NetworkFactory networkFactory, ReactiveLimitsKind kind) {
         Network network = networkFactory.createNetwork("Generator network", "test");
         Substation s1 = network.newSubstation()
             .setId("S1")
@@ -2947,7 +2951,7 @@ public class NetworkStoreIT {
         return network;
     }
 
-    private Network createRemoveDL(NetworkFactory networkFactory) {
+    private static Network createRemoveDL(NetworkFactory networkFactory) {
         Network network = networkFactory.createNetwork("DL network", "test");
         Substation s1 = network.newSubstation()
             .setId("S1")
@@ -2995,7 +2999,7 @@ public class NetworkStoreIT {
         return network;
     }
 
-    private Network createSwitchesNetwork(NetworkFactory networkFactory) {
+    private static Network createSwitchesNetwork(NetworkFactory networkFactory) {
         Network network = networkFactory.createNetwork("Switches network", "test");
 
         Substation s1 = createSubstation(network, "s1", "s1", Country.FR);
@@ -3019,7 +3023,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testGetIdentifiable() {
+    void testGetIdentifiable() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(EurostagTutorialExample1Factory.create(service.getNetworkFactory()));
         }
@@ -3028,11 +3032,11 @@ public class NetworkStoreIT {
             Network network = service.getNetwork(service.getNetworkIds().keySet().iterator().next());
             Identifiable gen = network.getIdentifiable("GEN");
             assertNotNull(gen);
-            assertTrue(gen instanceof Generator);
+            assertInstanceOf(Generator.class, gen);
 
             Identifiable bus = network.getIdentifiable("NLOAD");
             assertNotNull(bus);
-            assertTrue(bus instanceof Bus);
+            assertInstanceOf(Bus.class, bus);
 
             assertEquals(16, network.getIdentifiables().size());
             assertEquals(Arrays.asList("P1", "P2", "VLHV2", "VLHV1", "VLGEN", "VLLOAD", "GEN", "LOAD", "NGEN_NHV1",
@@ -3042,7 +3046,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void shuntCompensatorTest() {
+    void shuntCompensatorTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -3141,7 +3145,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testShuntCompensatorRemove() {
+    void testShuntCompensatorRemove() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -3166,7 +3170,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void getIdentifiableNetworkTest() {
+    void getIdentifiableNetworkTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             service.flush(network);
@@ -3181,7 +3185,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void regulatingShuntTest() {
+    void regulatingShuntTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = ShuntTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -3218,7 +3222,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void propertiesTest() {
+    void propertiesTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
@@ -3246,7 +3250,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void ratedSTest() {
+    void ratedSTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = ThreeWindingsTransformerNetworkFactory.create(service.getNetworkFactory());
             ThreeWindingsTransformer twt = network.getThreeWindingsTransformer("3WT");
@@ -3265,10 +3269,10 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testVisit2WTConnectedInOneVLOnlyIssue() {
+    void testVisit2WTConnectedInOneVLOnlyIssue() {
         String filePath = "/BrranchConnectedInOneVLOnlyIssue.uct";
         ReadOnlyDataSource dataSource = getResource(filePath, filePath);
-        Network network = new UcteImporter().importData(dataSource, new NetworkFactoryImpl(), null);
+        Network network = new UcteImporter().importData(dataSource, new NetworkFactoryImpl(), properties);
         Set<TwoSides> visitedLineSides = new HashSet<>();
         Set<TwoSides> visited2WTSides = new HashSet<>();
         Set<ThreeSides> visited3WTSides = new HashSet<>();
@@ -3301,7 +3305,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void activeAndApparentPowerLimitsTest() {
+    void activeAndApparentPowerLimitsTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -3415,7 +3419,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void activePowerLimitsAdderValidationTest() {
+    void activePowerLimitsAdderValidationTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -3451,7 +3455,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void apparentPowerLimitsAdderValidationTest() {
+    void apparentPowerLimitsAdderValidationTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -3487,7 +3491,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testImportWithoutFlush() {
+    void testImportWithoutFlush() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
 
             ReportNode report = ReportNode.newRootReportNode()
@@ -3506,7 +3510,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testImportWithProperties() {
+    void testImportWithProperties() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
 
             ReportNode report = ReportNode.newRootReportNode()
@@ -3527,7 +3531,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testImportWithReport() {
+    void testImportWithReport() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
 
             ReportNode report = ReportNode.newRootReportNode()
@@ -3538,16 +3542,13 @@ public class NetworkStoreIT {
             // There are validationWarnings and xiidmImportDone by default with SerDe
             assertFalse(report.getChildren().isEmpty());
 
-            service.importNetwork(getResource("uctNetwork.uct", "/"), report);
+            service.importNetwork(getResource("uctNetwork.uct", "/"), report, properties, true);
             assertFalse(report.getChildren().isEmpty());
-
-            service.importNetwork(getResource("uctNetwork.uct", "/"));
-
         }
     }
 
     @Test
-    public void testVariants() {
+    void testVariants() {
         // import network on initial variant
         UUID networkUuid;
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -3700,7 +3701,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void emptyCacheCloneTest() {
+    void emptyCacheCloneTest() {
         UUID networkUuid;
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
@@ -3821,7 +3822,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testVariantRemove() {
+    void testVariantRemove() {
         // import network on initial variant
         UUID networkUuid;
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -3881,7 +3882,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testVoltageLevelWithoutSubstation() {
+    void testVoltageLevelWithoutSubstation() {
         UUID networkUuid;
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.createNetwork("networknosubstation", "test");
@@ -3932,7 +3933,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testNanValues() {
+    void testNanValues() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createGeneratorNetwork(service.getNetworkFactory(), ReactiveLimitsKind.MIN_MAX));
         }
@@ -3969,7 +3970,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testNpeWithTemporaryLimits() {
+    void testNpeWithTemporaryLimits() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             var network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             var l = network.getLine("NHV1_NHV2_1");
@@ -3990,7 +3991,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testIncrementalUpdate() {
+    void testIncrementalUpdate() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             network.getBusView().getBuses(); // force storing calculated topology and connectivity
@@ -4058,7 +4059,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testFixNpeGetIdentifiable() {
+    void testFixNpeGetIdentifiable() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             service.flush(network);
@@ -4074,7 +4075,7 @@ public class NetworkStoreIT {
     }
 
     @Test
-    public void testGetIdentifiablePerf() {
+    void testGetIdentifiablePerf() {
         List<String> lineIds;
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = IeeeCdfNetworkFactory.create14(service.getNetworkFactory());

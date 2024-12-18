@@ -8,20 +8,13 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractLineTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class})
-    })
-@TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class LineIT extends AbstractLineTest {
 
     @Test
@@ -34,17 +27,5 @@ class LineIT extends AbstractLineTest {
     @Override
     public void testRemoveAcLine() {
         // FIXME remove this test when exception msg are homogenized with the powsybl-core
-    }
-
-    @Test
-    @Override
-    public void testMove1NbNetwork() {
-        // TODO : remove this function as soon as powsybl network store server will use powsybl network store 1.18.0 (it will correct this test)
-    }
-
-    @Test
-    @Override
-    public void testMove2Nb() {
-        // TODO : remove this function as soon as powsybl network store server will use powsybl network store 1.18.0 (it will correct this test)
     }
 }

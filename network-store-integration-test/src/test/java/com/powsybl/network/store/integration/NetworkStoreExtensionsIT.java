@@ -26,8 +26,7 @@ import com.powsybl.network.store.model.CgmesMetadataModelAttributes;
 import com.powsybl.network.store.model.CgmesMetadataModelsAttributes;
 import com.powsybl.network.store.model.CimCharacteristicsAttributes;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
@@ -36,28 +35,24 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
 
 import static com.powsybl.network.store.integration.TestUtils.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  * @author Etienne Homer <etienne.homer at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})
-})
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class, NetworkStoreService.class})})
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
-public class NetworkStoreExtensionsIT {
+class NetworkStoreExtensionsIT {
 
     @DynamicPropertySource
-    static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
+    private static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
         UUID uuid = UUID.randomUUID();
         registry.add("testDbSuffix", () -> uuid);
     }
@@ -66,7 +61,7 @@ public class NetworkStoreExtensionsIT {
     private int randomServerPort;
 
     @Test
-    public void testActivePowerControlExtension() {
+    void testActivePowerControlExtension() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
@@ -89,7 +84,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testGeneratorStartup() {
+    void testGeneratorStartup() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
@@ -118,7 +113,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testGeneratorShortCircuit() {
+    void testGeneratorShortCircuit() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
@@ -156,7 +151,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testIdentifiableShortCircuit() {
+    void testIdentifiableShortCircuit() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             VoltageLevel vl = network.getVoltageLevel("VLGEN");
@@ -188,7 +183,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void cgmesExtensionsTest() {
+    void cgmesExtensionsTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             Network network = service.importNetwork(CgmesConformity1Catalog.miniNodeBreaker().dataSource());
@@ -480,7 +475,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void extensionsTest() {
+    void extensionsTest() {
         // create network and save it
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             service.flush(createExtensionsNetwork(service.getNetworkFactory()));
@@ -554,7 +549,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void coordinatedReactiveControlTest() {
+    void coordinatedReactiveControlTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
@@ -580,7 +575,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void generatorEntsoeCategoryTest() {
+    void generatorEntsoeCategoryTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
@@ -606,7 +601,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void voltagePerReactivePowerControlTest() {
+    void voltagePerReactivePowerControlTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = SvcTestCaseFactory.create(service.getNetworkFactory());
             StaticVarCompensator svc2 = network.getStaticVarCompensator("SVC2");
@@ -632,7 +627,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void loadDetailExtensionTest() {
+    void loadDetailExtensionTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = SvcTestCaseFactory.create(service.getNetworkFactory());
             Load load2 = network.getLoad("L2");
@@ -680,7 +675,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void slackTerminalExtensionTest() {
+    void slackTerminalExtensionTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = SvcTestCaseFactory.create(service.getNetworkFactory());
             VoltageLevel vl = network.getVoltageLevel("VL1");
@@ -719,7 +714,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void threeWindingsTransformerPhaseAngleClockExtensionTest() {
+    void threeWindingsTransformerPhaseAngleClockExtensionTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = ThreeWindingsTransformerNetworkFactory.create(service.getNetworkFactory());
             Substation substation = network.getSubstation("SUBSTATION");
@@ -750,7 +745,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void twoWindingsTransformerPhaseAngleClockExtensionTest() {
+    void twoWindingsTransformerPhaseAngleClockExtensionTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
 
@@ -778,7 +773,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void svcVoltagePerReactivePowerExtensionTest() {
+    void svcVoltagePerReactivePowerExtensionTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = SvcTestCaseFactory.create(service.getNetworkFactory());
 
@@ -806,7 +801,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void coordinatedReactiveControlExtensionTest() {
+    void coordinatedReactiveControlExtensionTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = SvcTestCaseFactory.create(service.getNetworkFactory());
 
@@ -834,7 +829,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void batteryActivePowerControlTest() {
+    void batteryActivePowerControlTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -875,7 +870,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void lccActivePowerControlTest() {
+    void lccActivePowerControlTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -900,7 +895,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void loadActivePowerControlTest() {
+    void loadActivePowerControlTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = NetworkStorageTestCaseFactory.create(service.getNetworkFactory());
             service.flush(network);
@@ -927,7 +922,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void hvdcAngleDroopActivePowerControlExtensionTest() {
+    void hvdcAngleDroopActivePowerControlExtensionTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = HvdcTestNetwork.createVsc(service.getNetworkFactory());
             HvdcLine hvdcLine = network.getHvdcLine("L");
@@ -978,7 +973,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void hvdcOperatorActivePowerRangeExtensionTest() {
+    void hvdcOperatorActivePowerRangeExtensionTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = HvdcTestNetwork.createVsc(service.getNetworkFactory());
             HvdcLine hvdcLine = network.getHvdcLine("L");
@@ -1024,7 +1019,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void cgmesControlAreaDanglingLineTest() {
+    void cgmesControlAreaDanglingLineTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             Network network = service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseBE().dataSource());
@@ -1077,7 +1072,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void baseVoltageMappingTest() {
+    void baseVoltageMappingTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             Network network = service.importNetwork(CgmesConformity1Catalog.microGridBaseCaseBE().dataSource());
@@ -1133,7 +1128,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void cgmesControlAreaTieLineTest() {
+    void cgmesControlAreaTieLineTest() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             Properties properties = new Properties();
@@ -1180,7 +1175,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testRemoteReactivePowerControl() {
+    void testRemoteReactivePowerControl() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // import new network in the store
             Network network = service.importNetwork(CgmesConformity1ModifiedCatalog.microGridBaseCaseBEReactivePowerGen().dataSource());
@@ -1204,7 +1199,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testSubstationPosition() {
+    void testSubstationPosition() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Substation substation = network.getSubstation("P1");
@@ -1222,7 +1217,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testLinePosition() {
+    void testLinePosition() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Line line = network.getLine("NHV1_NHV2_1");
@@ -1257,7 +1252,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testNetworkExtension() {
+    void testNetworkExtension() {
         String filePath = "/network_test1_cgmes_metadata_models.xml";
         ReadOnlyDataSource dataSource = getResource(filePath, filePath);
 
@@ -1287,7 +1282,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testMeasurements() {
+    void testMeasurements() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
@@ -1359,7 +1354,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testDiscreteMeasurements() {
+    void testDiscreteMeasurements() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
@@ -1430,7 +1425,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testBranchObservability() {
+    void testBranchObservability() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = BatteryNetworkFactory.create(service.getNetworkFactory());
             Line line = network.getLine("NHV1_NHV2_1");
@@ -1474,7 +1469,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testInjectionObservability() {
+    void testInjectionObservability() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = BatteryNetworkFactory.create(service.getNetworkFactory());
             Generator generator = network.getGenerator("GEN");
@@ -1514,7 +1509,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void test2wtToBeEstimated() {
+    void test2wtToBeEstimated() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             TwoWindingsTransformer twoWindingsTransformer = network.getTwoWindingsTransformer("NHV2_NLOAD");
@@ -1537,7 +1532,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void test3wtToBeEstimated() {
+    void test3wtToBeEstimated() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = ThreeWindingsTransformerNetworkFactory.create(service.getNetworkFactory());
             ThreeWindingsTransformer threeWindingsTransformer = network.getThreeWindingsTransformer("3WT");
@@ -1568,7 +1563,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testRemoveExtension() {
+    void testRemoveExtension() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");
@@ -1600,7 +1595,7 @@ public class NetworkStoreExtensionsIT {
     }
 
     @Test
-    public void testRemoveEquipmentWithExtension() {
+    void testRemoveEquipmentWithExtension() {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
             Generator gen = network.getGenerator("GEN");

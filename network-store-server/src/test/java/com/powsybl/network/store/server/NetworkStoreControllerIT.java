@@ -16,9 +16,8 @@ import com.powsybl.iidm.network.extensions.ConnectablePosition;
 import com.powsybl.iidm.network.extensions.GeneratorStartup;
 import com.powsybl.network.store.model.*;
 import jakarta.servlet.ServletException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,7 +25,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.ZonedDateTime;
@@ -43,11 +41,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
-public class NetworkStoreControllerIT {
+class NetworkStoreControllerIT {
 
     @DynamicPropertySource
     static void makeTestDbSuffix(DynamicPropertyRegistry registry) {
@@ -58,20 +55,20 @@ public class NetworkStoreControllerIT {
     private static final UUID NETWORK_UUID = UUID.fromString("7928181c-7977-4592-ba19-88027e4254e4");
 
     @Autowired
-    protected ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Autowired
     private MockMvc mvc;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         this.objectMapper.registerModule(new JavaTimeModule())
                 .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
                 .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
     }
 
     @Test
-    public void test() throws Exception {
+    void test() throws Exception {
         mvc.perform(get("/" + VERSION + "/networks")
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -96,12 +93,11 @@ public class NetworkStoreControllerIT {
                 .andExpect(status().isCreated());
 
         //Do it again, it should error
-        assertThrows(ServletException.class, () -> {
+        assertThrows(ServletException.class, () ->
             mvc.perform(post("/" + VERSION + "/networks")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Collections.singleton(foo))))
-                .andReturn();
-        });
+                .andReturn());
 
         mvc.perform(get("/" + VERSION + "/networks")
                         .contentType(APPLICATION_JSON))
@@ -498,12 +494,12 @@ public class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].id").value("idLine"))
             .andExpect(jsonPath("data[0].attributes.p1").value(100.))
             .andExpect(jsonPath("data[0].attributes.properties[\"property1\"]").value("newValue1"))
-            .andExpect(jsonPath("data[1].id").value("idLine2"))
-            .andExpect(jsonPath("data[1].attributes.p1").value(30.))
-            .andExpect(jsonPath("data[1].attributes.properties[\"property12\"]").value("value12"))
-            .andExpect(jsonPath("data[2].id").value("idLineWithoutFirstPosition"))
-            .andExpect(jsonPath("data[2].attributes.p1").value(0.))
-            .andExpect(jsonPath("data[2].attributes.properties[\"property1\"]").value("value1"));
+            .andExpect(jsonPath("data[1].id").value("idLineWithoutFirstPosition"))
+            .andExpect(jsonPath("data[1].attributes.p1").value(0.))
+            .andExpect(jsonPath("data[1].attributes.properties[\"property1\"]").value("value1"))
+            .andExpect(jsonPath("data[2].id").value("idLine2"))
+            .andExpect(jsonPath("data[2].attributes.p1").value(30.))
+            .andExpect(jsonPath("data[2].attributes.properties[\"property12\"]").value("value12"));
 
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/vl1/lines")
             .contentType(APPLICATION_JSON))
@@ -524,8 +520,8 @@ public class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].attributes.voltageLevelId2").value("vl22"));
 
         // generator creation and update
-        RegulationPointAttributes regulationPointAttributes = RegulationPointAttributes.builder()
-            .regulatedEquipmentId("id")
+        RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
+            .regulatingEquipmentId("id")
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
             .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
             .build();
@@ -536,7 +532,7 @@ public class NetworkStoreControllerIT {
                         .name("gen1")
                         .energySource(EnergySource.HYDRO)
                         .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
-                        .regulationPoint(regulationPointAttributes)
+                        .regulatingPoint(regulatingPointAttributes)
                         .build())
                 .build();
 
@@ -549,15 +545,15 @@ public class NetworkStoreControllerIT {
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("ONE"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.regulatingTerminal.connectableId").value("idEq"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.regulatingTerminal.side").value("ONE"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("MIN_MAX"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.minQ").value(10.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.maxQ").value(10.));
 
-        generator.getAttributes().getRegulationPoint().getRegulatingTerminal().setConnectableId("idEq2");
-        generator.getAttributes().getRegulationPoint().getRegulatingTerminal().setSide("TWO");
+        generator.getAttributes().getRegulatingPoint().getRegulatingTerminal().setConnectableId("idEq2");
+        generator.getAttributes().getRegulatingPoint().getRegulatingTerminal().setSide("TWO");
         generator.getAttributes().setReactiveLimits(ReactiveCapabilityCurveAttributes.builder()
             .points(new TreeMap<>(Map.of(
                     50., ReactiveCapabilityCurvePointAttributes.builder().p(50.).minQ(11.).maxQ(76.).build(),
@@ -573,9 +569,9 @@ public class NetworkStoreControllerIT {
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq2"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("TWO"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.regulatingTerminal.connectableId").value("idEq2"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.regulatingTerminal.side").value("TWO"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("CURVE"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.0\"].p").value(50.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.0\"].minQ").value(11.))
@@ -897,7 +893,7 @@ public class NetworkStoreControllerIT {
     }
 
     @Test
-    public void networkCloneVariantTest() throws Exception {
+    void networkCloneVariantTest() throws Exception {
         // create a simple network with just one substation
         Resource<NetworkAttributes> n1 = Resource.networkBuilder()
                 .id("n1")
@@ -937,7 +933,7 @@ public class NetworkStoreControllerIT {
     }
 
     @Test
-    public void cloneNetworkTest() throws Exception {
+    void cloneNetworkTest() throws Exception {
         //Initialize network
         Resource<NetworkAttributes> n1 = Resource.networkBuilder()
                 .id("n1")
@@ -952,9 +948,9 @@ public class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Collections.singleton(n1))))
                 .andExpect(status().isCreated());
-        RegulationPointAttributes regulationPointAttributes = RegulationPointAttributes.builder()
-            .regulatedEquipmentId("id")
-            .resourceType(ResourceType.GENERATOR)
+        RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
+            .regulatingEquipmentId("id")
+            .regulatingResourceType(ResourceType.GENERATOR)
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
             .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
             .build();
@@ -965,7 +961,7 @@ public class NetworkStoreControllerIT {
                         .name("gen1")
                         .energySource(EnergySource.HYDRO)
                         .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
-                        .regulationPoint(regulationPointAttributes)
+                        .regulatingPoint(regulatingPointAttributes)
                         .build())
                 .build();
 
@@ -1036,9 +1032,9 @@ public class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.connectableId").value("idEq"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.regulatingTerminal.side").value("ONE"))
-                .andExpect(jsonPath("data[0].attributes.regulationPoint.localTerminal.connectableId").value("id"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.regulatingTerminal.connectableId").value("idEq"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.regulatingTerminal.side").value("ONE"))
+                .andExpect(jsonPath("data[0].attributes.regulatingPoint.localTerminal.connectableId").value("id"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.kind").value("MIN_MAX"))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.minQ").value(10.))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.maxQ").value(10.));
@@ -1055,7 +1051,7 @@ public class NetworkStoreControllerIT {
     }
 
     @Test
-    public void getExtensionAttributesTest() throws Exception {
+    void getExtensionAttributesTest() throws Exception {
         setupExtensionAttributesTest();
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/id/extensions/" + ActivePowerControl.NAME))
                 .andExpect(status().isOk())
@@ -1069,7 +1065,7 @@ public class NetworkStoreControllerIT {
     }
 
     @Test
-    public void getAllExtensionsAttributesByResourceTypeAndExtensionNameTest() throws Exception {
+    void getAllExtensionsAttributesByResourceTypeAndExtensionNameTest() throws Exception {
         setupExtensionAttributesTest();
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/types/" + ResourceType.GENERATOR + "/extensions/" + ActivePowerControl.NAME))
                 .andExpect(status().isOk())
@@ -1089,7 +1085,7 @@ public class NetworkStoreControllerIT {
     }
 
     @Test
-    public void getAllExtensionsAttributesByIdentifiableIdTest() throws Exception {
+    void getAllExtensionsAttributesByIdentifiableIdTest() throws Exception {
         setupExtensionAttributesTest();
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/id/extensions"))
                 .andExpect(status().isOk())
@@ -1109,7 +1105,7 @@ public class NetworkStoreControllerIT {
     }
 
     @Test
-    public void getAllExtensionsAttributesByResourceTypeTest() throws Exception {
+    void getAllExtensionsAttributesByResourceTypeTest() throws Exception {
         setupExtensionAttributesTest();
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/types/" + ResourceType.GENERATOR + "/extensions"))
                 .andExpect(status().isOk())
@@ -1142,7 +1138,7 @@ public class NetworkStoreControllerIT {
     }
 
     @Test
-    public void removeExtensionAttributesTest() throws Exception {
+    void removeExtensionAttributesTest() throws Exception {
         setupExtensionAttributesTest();
         mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/0/identifiables/id/extensions/" + ActivePowerControl.NAME))
                 .andExpect(status().isOk());

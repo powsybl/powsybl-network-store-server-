@@ -8,32 +8,26 @@ package com.powsybl.network.store.tck;
 
 import com.powsybl.iidm.network.tck.AbstractVoltageLevelExportTest;
 import com.powsybl.network.store.server.NetworkStoreApplication;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ContextHierarchy({
-    @ContextConfiguration(classes = {NetworkStoreApplication.class})
-    })
-@TestPropertySource(properties = { "spring.config.location=classpath:application.yaml" })
+import java.io.IOException;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {"spring.config.location=classpath:application.yaml"})
+@ContextHierarchy({@ContextConfiguration(classes = {NetworkStoreApplication.class})})
 class VoltageLevelExportIT extends AbstractVoltageLevelExportTest {
 
     @Test
     @Override
-    public void nodeBreakerTest() {
+    public void nodeBreakerTest() throws IOException {
         // FIXME remove this test when VoltageLevelImpl.exportTopology is implemented
     }
 
     @Test
     @Override
-    public void busBreakerTest() {
+    public void busBreakerTest() throws IOException {
         // FIXME remove this test when VoltageLevelImpl.exportTopology is implemented
     }
-
 }
