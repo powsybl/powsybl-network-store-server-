@@ -85,7 +85,7 @@ class NetworkStoreControllerIT {
                                              .uuid(NETWORK_UUID)
                                              .variantId("v")
                                              .variantMode(VariantMode.FULL)
-                                             .srcVariantNum(0)
+                                             .srcVariantNum(-1)
                                              .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                                              .build())
                 .build();
@@ -904,7 +904,7 @@ class NetworkStoreControllerIT {
                         .uuid(NETWORK_UUID)
                         .variantId(VariantManagerConstants.INITIAL_VARIANT_ID)
                         .variantMode(VariantMode.FULL)
-                        .srcVariantNum(0)
+                        .srcVariantNum(-1)
                         .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
@@ -946,7 +946,7 @@ class NetworkStoreControllerIT {
                         .uuid(NETWORK_UUID)
                         .variantId(VariantManagerConstants.INITIAL_VARIANT_ID)
                         .variantMode(VariantMode.FULL)
-                        .srcVariantNum(0)
+                        .srcVariantNum(-1)
                         .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
@@ -984,7 +984,7 @@ class NetworkStoreControllerIT {
                         .uuid(NETWORK_UUID)
                         .variantId("v2")
                         .variantMode(VariantMode.FULL)
-                        .srcVariantNum(0)
+                        .srcVariantNum(-1)
                         .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();
@@ -1001,7 +1001,7 @@ class NetworkStoreControllerIT {
                         .uuid(NETWORK_UUID)
                         .variantId("v3")
                         .variantMode(VariantMode.FULL)
-                        .srcVariantNum(0)
+                        .srcVariantNum(-1)
                         .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
                         .build())
                 .build();

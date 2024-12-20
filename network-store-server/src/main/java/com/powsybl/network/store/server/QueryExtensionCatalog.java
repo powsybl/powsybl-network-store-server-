@@ -6,8 +6,6 @@
  */
 package com.powsybl.network.store.server;
 
-import java.util.Collections;
-
 import static com.powsybl.network.store.server.QueryCatalog.*;
 
 /**
