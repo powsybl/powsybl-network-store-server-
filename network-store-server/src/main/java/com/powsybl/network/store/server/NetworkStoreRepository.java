@@ -264,7 +264,7 @@ public class NetworkStoreRepository {
                 preparedStmt.executeBatch();
             }
         }
-        extensionHandler.createExtensions(connection, extensionHandler.getExtensionsFromNetworks(resources));
+        extensionHandler.insertExtensions(connection, extensionHandler.getExtensionsFromNetworks(resources));
     }
 
     public void updateNetworks(List<Resource<NetworkAttributes>> resources) {
@@ -308,8 +308,20 @@ public class NetworkStoreRepository {
                     preparedStmt.execute();
                 }
             }
+            // Delete of tombstoned identifiables
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedIdentifiablesQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the temporary limits (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete of tombstoned temporary limits (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedTemporaryLimitsQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.executeUpdate();
             }
@@ -320,8 +332,20 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
+            // Delete tombstoned permanent limits (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedPermanentLimitsQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the reactive capability curve points (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete tombstoned reactive capability curve points (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedReactiveCapabilityCurvePointsQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.executeUpdate();
             }
@@ -332,15 +356,33 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
+            // Delete tombstoned regulating points (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedRegulatingPointsQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the tap changer steps (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.executeUpdate();
             }
 
+            // Delete tombstoned tap changer steps (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedTapChangerStepsQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the extensions (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsQuery())) {
                 preparedStmt.setObject(1, uuid);
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete tombstoned extensions (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteTombstonedExtensionsQuery())) {
+                preparedStmt.setObject(1, uuid.toString());
                 preparedStmt.executeUpdate();
             }
         } catch (SQLException e) {
@@ -368,9 +410,23 @@ public class NetworkStoreRepository {
                     preparedStmt.execute();
                 }
             }
+            // Delete of tombstoned identifiables
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedIdentifiablesVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the temporary limits (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsVariantQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete of the tombstoned temporary limits (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedTemporaryLimitsVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
             }
@@ -382,6 +438,13 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
+            // Delete tombstoned permanent limits (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedPermanentLimitsVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the reactive capability curve points (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsVariantQuery())) {
                 preparedStmt.setObject(1, uuid.toString());
@@ -389,8 +452,22 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
+            // Delete of the tombstoned reactive capability curve points (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedReactiveCapabilityCurvePointsVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the regulating points (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete of the tomsbtoned regulating points (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedRegulatingPointsVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
@@ -403,8 +480,22 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
 
+            // Delete of the tombstoned Tap Changer steps (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedTapChangerStepsVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
             // Delete of the extensions (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantQuery())) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.setInt(2, variantNum);
+                preparedStmt.executeUpdate();
+            }
+
+            // Delete of the tombstoned extensions (which are not Identifiables objects)
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteTombstonedExtensionsVariantQuery())) {
                 preparedStmt.setObject(1, uuid);
                 preparedStmt.setInt(2, variantNum);
                 preparedStmt.executeUpdate();
@@ -486,24 +577,27 @@ public class NetworkStoreRepository {
 
     private void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum, boolean isFullClone) throws SQLException {
         if (isFullClone) {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            int totalIdentifiableClones = 0;
             for (String tableName : ELEMENT_TABLES) {
                 try (var preparedStmt = connection.prepareStatement(buildCloneIdentifiablesQuery(tableName, mappings.getTableMapping(tableName.toLowerCase()).getColumnsMapping().keySet()))) {
                     preparedStmt.setInt(1, targetVariantNum);
                     preparedStmt.setObject(2, targetUuid);
                     preparedStmt.setObject(3, uuid);
                     preparedStmt.setInt(4, sourceVariantNum);
-                    preparedStmt.execute();
+                    totalIdentifiableClones += preparedStmt.executeUpdate();
                 }
             }
-
-            Stopwatch stopwatch = Stopwatch.createStarted();
+            LOGGER.info("Cloned {} identifiables in {}ms", totalIdentifiableClones, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            stopwatch.reset().start();
+            int totalExternalAttributesClones = 0;
             // Copy of the temporary limits (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(buildCloneTemporaryLimitsQuery())) {
                 preparedStmt.setString(1, targetUuid.toString());
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setString(3, uuid.toString());
                 preparedStmt.setInt(4, sourceVariantNum);
-                preparedStmt.execute();
+                totalExternalAttributesClones += preparedStmt.executeUpdate();
             }
 
             // Copy of the permanent limits (which are not Identifiables objects)
@@ -512,7 +606,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setString(3, uuid.toString());
                 preparedStmt.setInt(4, sourceVariantNum);
-                preparedStmt.execute();
+                totalExternalAttributesClones += preparedStmt.executeUpdate();
             }
 
             // Copy of the reactive capability curve points (which are not Identifiables objects)
@@ -521,7 +615,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setString(3, uuid.toString());
                 preparedStmt.setInt(4, sourceVariantNum);
-                preparedStmt.execute();
+                totalExternalAttributesClones += preparedStmt.executeUpdate();
             }
             // Copy of the regulating points (which are not Identifiables objects)
             try (var preparedStmt = connection.prepareStatement(buildCloneRegulatingPointsQuery())) {
@@ -529,7 +623,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
                 preparedStmt.setInt(4, sourceVariantNum);
-                preparedStmt.execute();
+                totalExternalAttributesClones += preparedStmt.executeUpdate();
             }
 
             // Copy of the Tap Changer steps (which are not Identifiables objects)
@@ -538,7 +632,7 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
                 preparedStmt.setInt(4, sourceVariantNum);
-                preparedStmt.execute();
+                totalExternalAttributesClones += preparedStmt.executeUpdate();
             }
 
             // Copy of the Extensions (which are not Identifiables objects)
@@ -547,15 +641,59 @@ public class NetworkStoreRepository {
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
                 preparedStmt.setInt(4, sourceVariantNum);
-                preparedStmt.execute();
+                totalExternalAttributesClones += preparedStmt.executeUpdate();
             }
             stopwatch.stop();
-            LOGGER.info("Cloned all external attributes in: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            LOGGER.info("Cloned {} external attributes in {}ms", totalExternalAttributesClones, stopwatch.elapsed(TimeUnit.MILLISECONDS));
         }
 
         // Copy of tombstoned equipments
-        //TODO: Do not copy tombstoned if it's a full clone because the data will be stored in full network (this partial clone => full clone need to be coded too)
         try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedIdentifiablesQuery())) {
+            preparedStmt.setObject(1, targetUuid);
+            preparedStmt.setInt(2, targetVariantNum);
+            preparedStmt.setObject(3, uuid);
+            preparedStmt.setInt(4, sourceVariantNum);
+            preparedStmt.execute();
+        }
+
+        // Copy of tombstoned temporary limits
+        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedTemporaryLimitsQuery())) {
+            preparedStmt.setObject(1, targetUuid);
+            preparedStmt.setInt(2, targetVariantNum);
+            preparedStmt.setObject(3, uuid);
+            preparedStmt.setInt(4, sourceVariantNum);
+            preparedStmt.execute();
+        }
+
+        // Copy of tombstoned permanent limits
+        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedPermanentLimitsQuery())) {
+            preparedStmt.setObject(1, targetUuid);
+            preparedStmt.setInt(2, targetVariantNum);
+            preparedStmt.setObject(3, uuid);
+            preparedStmt.setInt(4, sourceVariantNum);
+            preparedStmt.execute();
+        }
+
+        // Copy of tombstoned reactive capability curve points
+        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedReactiveCapabilityCurvePointsQuery())) {
+            preparedStmt.setObject(1, targetUuid);
+            preparedStmt.setInt(2, targetVariantNum);
+            preparedStmt.setObject(3, uuid);
+            preparedStmt.setInt(4, sourceVariantNum);
+            preparedStmt.execute();
+        }
+
+        // Copy of tombstoned regulating points
+        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedRegulatingPointsQuery())) {
+            preparedStmt.setObject(1, targetUuid);
+            preparedStmt.setInt(2, targetVariantNum);
+            preparedStmt.setObject(3, uuid);
+            preparedStmt.setInt(4, sourceVariantNum);
+            preparedStmt.execute();
+        }
+
+        // Copy of tombstoned tap changer steps
+        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedTapChangerStepsQuery())) {
             preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
             preparedStmt.setObject(3, uuid);
@@ -596,25 +734,9 @@ public class NetworkStoreRepository {
                                                                        TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
             insertIdentifiables(networkUuid, resources, tableMapping, connection);
-            extensionHandler.createExtensions(connection, extensionHandler.getExtensionsFromEquipments(networkUuid, resources));
-            if (!resources.isEmpty()) {
-                deleteTombstonedIdentifiables(networkUuid, resources, connection);
-            }
+            extensionHandler.insertExtensions(connection, extensionHandler.getExtensionsFromEquipments(networkUuid, resources));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
-        }
-    }
-
-    private <T extends IdentifiableAttributes> void deleteTombstonedIdentifiables(UUID networkUuid, List<Resource<T>> resources, Connection connection) throws SQLException {
-        try (var preparedStmt = connection.prepareStatement(buildDeleteTombstonedIdentifiablesQuery(resources.size()))) {
-            List<Object> values = new ArrayList<>(resources.size() * 2 + 1);
-            values.add(networkUuid);
-            for (Resource<T> resource : resources) {
-                values.add(resource.getVariantNum());
-                values.add(resource.getId());
-            }
-            bindValues(preparedStmt, values, mapper);
-            preparedStmt.executeUpdate();
         }
     }
 
@@ -1098,6 +1220,8 @@ public class NetworkStoreRepository {
                     preparedStmt.setInt(2, variantNum);
                     preparedStmt.setString(3, id);
                     preparedStmt.executeUpdate();
+                    preparedStmt.addBatch();
+
                 }
             }
             extensionHandler.deleteExtensionsFromIdentifiable(connection, networkUuid, variantNum, id);
@@ -1106,8 +1230,12 @@ public class NetworkStoreRepository {
         }
     }
 
-    private Resource<NetworkAttributes> getNetworkAttributes(Connection connection, UUID networkUuid, int variantNum) throws SQLException {
-        return getNetwork(connection, networkUuid, variantNum).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + networkUuid + ", variantNum : " + variantNum));
+    private Resource<NetworkAttributes> getNetworkAttributes(Connection connection, UUID networkUuid, int variantNum) {
+        try {
+            return getNetwork(connection, networkUuid, variantNum).orElseThrow(() -> new PowsyblException("Cannot retrieve source network attributes uuid : " + networkUuid + ", variantNum : " + variantNum));
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
     }
 
     // substation
@@ -1209,20 +1337,68 @@ public class NetworkStoreRepository {
         }
     }
 
-    public Set<String> getTombstonedIdentifiableIds(Connection connection, UUID networkUuid, int variantNum) {
-        Set<String> identifiables = new HashSet<>();
-        try (var preparedStmt = connection.prepareStatement(buildGetTombstonedIdentifiablesQuery())) {
+    public Set<String> getTombstonedTapChangerStepsIds(Connection connection, UUID networkUuid, int variantNum) {
+        Set<String> identifiableIds = new HashSet<>();
+        try (var preparedStmt = connection.prepareStatement(buildGetTombstonedTapChangerStepsIdsQuery())) {
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             try (var resultSet = preparedStmt.executeQuery()) {
                 while (resultSet.next()) {
-                    identifiables.add(resultSet.getString(EQUIPMENT_ID_COLUMN));
+                    identifiableIds.add(resultSet.getString(EQUIPMENT_ID_COLUMN));
                 }
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
-        return identifiables;
+        return identifiableIds;
+    }
+
+    public Set<String> getTombstonedTemporaryLimitsIds(Connection connection, UUID networkUuid, int variantNum) {
+        Set<String> identifiableIds = new HashSet<>();
+        try (var preparedStmt = connection.prepareStatement(buildGetTombstonedTemporaryLimitsIdsQuery())) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            try (var resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    identifiableIds.add(resultSet.getString(EQUIPMENT_ID_COLUMN));
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+        return identifiableIds;
+    }
+
+    public Set<String> getTombstonedPermanentLimitsIds(Connection connection, UUID networkUuid, int variantNum) {
+        Set<String> identifiableIds = new HashSet<>();
+        try (var preparedStmt = connection.prepareStatement(buildGetTombstonedPermanentLimitsIdsQuery())) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            try (var resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    identifiableIds.add(resultSet.getString(EQUIPMENT_ID_COLUMN));
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+        return identifiableIds;
+    }
+
+    public Set<String> getTombstonedIdentifiableIds(Connection connection, UUID networkUuid, int variantNum) {
+        Set<String> tombstonedIdentifiableIds = new HashSet<>();
+        try (var preparedStmt = connection.prepareStatement(buildGetTombstonedIdentifiablesIdsQuery())) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            try (var resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    tombstonedIdentifiableIds.add(resultSet.getString(EQUIPMENT_ID_COLUMN));
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+        return tombstonedIdentifiableIds;
     }
 
     public List<Resource<GeneratorAttributes>> getVoltageLevelGenerators(UUID networkUuid, int variantNum, String voltageLevelId) {
@@ -1243,13 +1419,57 @@ public class NetworkStoreRepository {
     public void updateGenerators(UUID networkUuid, List<Resource<GeneratorAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getGeneratorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        // To update the generator's reactive capability curve points, we will first delete them, then create them again.
-        // This is done this way to prevent issues in case the reactive capability curve point's primary key is to be
-        // modified because of the updated equipment's new values.
-        deleteReactiveCapabilityCurvePoints(networkUuid, resources);
-        insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
-        // regulating points
+        updateReactiveCapabilityCurvePoints(networkUuid, resources, ResourceType.GENERATOR);
         updateRegulatingPoints(networkUuid, resources, ResourceType.GENERATOR);
+    }
+
+    public <T extends IdentifiableAttributes & ReactiveLimitHolder> void updateReactiveCapabilityCurvePoints(UUID networkUuid, List<Resource<T>> resources, ResourceType resourceType) {
+        deleteReactiveCapabilityCurvePoints(networkUuid, resources);
+        Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePointsToInsert = getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources);
+        insertReactiveCapabilityCurvePoints(reactiveCapabilityCurvePointsToInsert);
+        insertTombstonedReactiveCapabilityCurvePoints(networkUuid, reactiveCapabilityCurvePointsToInsert, resources, resourceType);
+    }
+
+    private <T extends IdentifiableAttributes & ReactiveLimitHolder> void insertTombstonedReactiveCapabilityCurvePoints(UUID networkUuid, Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePointsToInsert, List<Resource<T>> resources, ResourceType resourceType) {
+        try (var connection = dataSource.getConnection()) {
+            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Set<OwnerInfo> tombstonedReactiveCapabilityCurvePoints = PartialVariantUtils.getExternalAttributesToTombstone(
+                    resourcesByVariant,
+                    variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
+                    (srcVariantNum, variantNum) -> getReactiveCapabilityCurvePointsForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_TYPE_COLUMN, resourceType.toString(), variantNum).keySet(),
+                    variantNum -> getTombstonedReactiveCapabilityCurvePointsIds(connection, networkUuid, variantNum),
+                    getExternalAttributesListToTombstoneFromEquipment(networkUuid, reactiveCapabilityCurvePointsToInsert, resources)
+            );
+
+            try (var preparedStmt = connection.prepareStatement(buildInsertTombstonedReactiveCapabilityCurvePointsQuery())) {
+                for (OwnerInfo reactiveCapabilityCurvePoint : tombstonedReactiveCapabilityCurvePoints) {
+                    preparedStmt.setObject(1, reactiveCapabilityCurvePoint.getNetworkUuid());
+                    preparedStmt.setInt(2, reactiveCapabilityCurvePoint.getVariantNum());
+                    preparedStmt.setString(3, reactiveCapabilityCurvePoint.getEquipmentId());
+                    preparedStmt.addBatch();
+                }
+                preparedStmt.executeBatch();
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private Set<String> getTombstonedReactiveCapabilityCurvePointsIds(Connection connection, UUID networkUuid, int variantNum) {
+        Set<String> identifiableIds = new HashSet<>();
+        try (var preparedStmt = connection.prepareStatement(buildGetTombstonedReactiveCapabilityCurvePointsIdsQuery())) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            try (var resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    identifiableIds.add(resultSet.getString(EQUIPMENT_ID_COLUMN));
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+        return identifiableIds;
     }
 
     public void updateGeneratorsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1301,11 +1521,7 @@ public class NetworkStoreRepository {
     public void updateBatteries(UUID networkUuid, List<Resource<BatteryAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getBatteryMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        // To update the battery's reactive capability curve points, we will first delete them, then create them again.
-        // This is done this way to prevent issues in case the reactive capability curve point's primary key is to be
-        // modified because of the updated equipment's new values.
-        deleteReactiveCapabilityCurvePoints(networkUuid, resources);
-        insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
+        updateReactiveCapabilityCurvePoints(networkUuid, resources, ResourceType.BATTERY);
     }
 
     public void updateBatteriesSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1436,13 +1652,7 @@ public class NetworkStoreRepository {
     public void updateVscConverterStations(UUID networkUuid, List<Resource<VscConverterStationAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getVscConverterStationMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        // To update the vscConverterStation's reactive capability curve points, we will first delete them, then create them again.
-        // This is done this way to prevent issues in case the reactive capability curve point's primary key is to be
-        // modified because of the updated equipment's new values.
-        deleteReactiveCapabilityCurvePoints(networkUuid, resources);
-        insertReactiveCapabilityCurvePoints(getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources));
-
-        // regulating points
+        updateReactiveCapabilityCurvePoints(networkUuid, resources, ResourceType.VSC_CONVERTER_STATION);
         updateRegulatingPoints(networkUuid, resources, ResourceType.VSC_CONVERTER_STATION);
     }
 
@@ -1636,17 +1846,54 @@ public class NetworkStoreRepository {
     public void updateTwoWindingsTransformers(UUID networkUuid, List<Resource<TwoWindingsTransformerAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getTwoWindingsTransformerMappings());
 
-        // To update the twowindingstransformer's temporary limits, we will first delete them, then create them again.
-        // This is done this way to prevent issues in case the temporary limit's primary key is to be
-        // modified because of the updated equipment's new values.
-        deleteTemporaryLimits(networkUuid, resources);
-        deletePermanentLimits(networkUuid, resources);
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
-        insertTemporaryLimits(limitsInfos);
-        insertPermanentLimits(limitsInfos);
+        updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.TWO_WINDINGS_TRANSFORMER);
+        updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.TWO_WINDINGS_TRANSFORMER);
+        updateTapChangerSteps(networkUuid, resources, ResourceType.TWO_WINDINGS_TRANSFORMER);
+    }
 
+    public <T extends IdentifiableAttributes> void updateTapChangerSteps(UUID networkUuid, List<Resource<T>> resources, ResourceType resourceType) {
         deleteTapChangerSteps(networkUuid, resources);
-        insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
+        Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerStepsToInsert = getTapChangerStepsFromEquipment(networkUuid, resources);
+        insertTapChangerSteps(tapChangerStepsToInsert);
+        insertTombstonedTapChangerSteps(networkUuid, tapChangerStepsToInsert, resources, resourceType);
+    }
+
+    private <T extends IdentifiableAttributes> void insertTombstonedTapChangerSteps(UUID networkUuid, Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerStepsToInsert, List<Resource<T>> resources, ResourceType resourceType) {
+        try (var connection = dataSource.getConnection()) {
+            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Set<OwnerInfo> tombstonedTapChangerSteps = PartialVariantUtils.getExternalAttributesToTombstone(
+                    resourcesByVariant,
+                    variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
+                    (srcVariantNum, variantNum) -> getTapChangerStepsForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_TYPE_COLUMN, resourceType.toString(), variantNum).keySet(),
+                    variantNum -> getTombstonedTapChangerStepsIds(connection, networkUuid, variantNum),
+                    getExternalAttributesListToTombstoneFromEquipment(networkUuid, tapChangerStepsToInsert, resources)
+            );
+
+            try (var preparedStmt = connection.prepareStatement(buildInsertTombstonedTapChangerStepsQuery())) {
+                for (OwnerInfo tapChangerStep : tombstonedTapChangerSteps) {
+                    preparedStmt.setObject(1, tapChangerStep.getNetworkUuid());
+                    preparedStmt.setInt(2, tapChangerStep.getVariantNum());
+                    preparedStmt.setString(3, tapChangerStep.getEquipmentId());
+                    preparedStmt.addBatch();
+                }
+                preparedStmt.executeBatch();
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private <T extends IdentifiableAttributes, U> Set<OwnerInfo> getExternalAttributesListToTombstoneFromEquipment(UUID networkUuid, Map<OwnerInfo, List<U>> externalAttributesToInsert, List<Resource<T>> resources) {
+        Set<OwnerInfo> externalAttributesToTombstoneFromEquipment = new HashSet<>();
+        for (Resource<T> resource : resources) {
+            OwnerInfo ownerInfo = new OwnerInfo(resource.getId(), resource.getType(), networkUuid, resource.getVariantNum());
+            if (!externalAttributesToInsert.containsKey(ownerInfo) || externalAttributesToInsert.get(ownerInfo).isEmpty()) {
+                externalAttributesToTombstoneFromEquipment.add(ownerInfo);
+            }
+        }
+        return externalAttributesToTombstoneFromEquipment;
     }
 
     public void updateTwoWindingsTransformersSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources) {
@@ -1712,14 +1959,10 @@ public class NetworkStoreRepository {
         // To update the threewindingstransformer's temporary limits, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
         // modified because of the updated equipment's new values.
-        deleteTemporaryLimits(networkUuid, resources);
-        deletePermanentLimits(networkUuid, resources);
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
-        insertTemporaryLimits(limitsInfos);
-        insertPermanentLimits(limitsInfos);
-
-        deleteTapChangerSteps(networkUuid, resources);
-        insertTapChangerSteps(getTapChangerStepsFromEquipment(networkUuid, resources));
+        updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.THREE_WINDINGS_TRANSFORMER);
+        updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.THREE_WINDINGS_TRANSFORMER);
+        updateTapChangerSteps(networkUuid, resources, ResourceType.THREE_WINDINGS_TRANSFORMER);
     }
 
     public void updateThreeWindingsTransformersSv(UUID networkUuid, List<Resource<ThreeWindingsTransformerSvAttributes>> resources) {
@@ -1785,11 +2028,105 @@ public class NetworkStoreRepository {
         // To update the line's temporary limits, we will first delete them, then create them again.
         // This is done this way to prevent issues in case the temporary limit's primary key is to be
         // modified because of the updated equipment's new values.
-        deleteTemporaryLimits(networkUuid, resources);
-        deletePermanentLimits(networkUuid, resources);
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
+        updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.LINE);
+        updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.LINE);
+    }
+
+    public <T extends IdentifiableAttributes> void updateTemporaryLimits(UUID networkUuid, List<Resource<T>> resources, Map<OwnerInfo, LimitsInfos> limitsInfos, ResourceType resourceType) {
+        deleteTemporaryLimits(networkUuid, resources);
         insertTemporaryLimits(limitsInfos);
+        insertTombstonedTemporaryLimits(networkUuid, limitsInfos, resources, resourceType);
+    }
+
+    private <T extends IdentifiableAttributes> void insertTombstonedTemporaryLimits(UUID networkUuid, Map<OwnerInfo, LimitsInfos> limitsInfos, List<Resource<T>> resources, ResourceType resourceType) {
+        try (var connection = dataSource.getConnection()) {
+            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Set<OwnerInfo> tombstonedTemporaryLimits = PartialVariantUtils.getExternalAttributesToTombstone(
+                    resourcesByVariant,
+                    variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
+                    (srcVariantNum, variantNum) -> getTemporaryLimitsForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_TYPE_COLUMN, resourceType.toString(), variantNum).keySet(),
+                    variantNum -> getTombstonedTemporaryLimitsIds(connection, networkUuid, variantNum),
+                    getTemporaryLimitsToTombstoneFromEquipment(networkUuid, limitsInfos, resources)
+            );
+
+            try (var preparedStmt = connection.prepareStatement(buildInsertTombstonedTemporaryLimitsQuery())) {
+                for (OwnerInfo temporaryLimit : tombstonedTemporaryLimits) {
+                    preparedStmt.setObject(1, temporaryLimit.getNetworkUuid());
+                    preparedStmt.setInt(2, temporaryLimit.getVariantNum());
+                    preparedStmt.setString(3, temporaryLimit.getEquipmentId());
+                    preparedStmt.addBatch();
+                }
+                preparedStmt.executeBatch();
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private <T extends IdentifiableAttributes, U> Set<OwnerInfo> getRegulatingPointsToTombstoneFromEquipment(UUID networkUuid, Map<OwnerInfo, U> externalAttributesToInsert, List<Resource<T>> resources) {
+        Set<OwnerInfo> externalAttributesToTombstoneFromEquipment = new HashSet<>();
+        for (Resource<T> resource : resources) {
+            OwnerInfo ownerInfo = new OwnerInfo(resource.getId(), resource.getType(), networkUuid, resource.getVariantNum());
+            if (!externalAttributesToInsert.containsKey(ownerInfo)) {
+                externalAttributesToTombstoneFromEquipment.add(ownerInfo);
+            }
+        }
+        return externalAttributesToTombstoneFromEquipment;
+    }
+
+    private <T extends IdentifiableAttributes> Set<OwnerInfo> getPermanentLimitsToTombstoneFromEquipment(UUID networkUuid, Map<OwnerInfo, LimitsInfos> externalAttributesToInsert, List<Resource<T>> resources) {
+        Set<OwnerInfo> externalAttributesToTombstoneFromEquipment = new HashSet<>();
+        for (Resource<T> resource : resources) {
+            OwnerInfo ownerInfo = new OwnerInfo(resource.getId(), resource.getType(), networkUuid, resource.getVariantNum());
+            if (!externalAttributesToInsert.containsKey(ownerInfo) || externalAttributesToInsert.get(ownerInfo).getPermanentLimits().isEmpty()) {
+                externalAttributesToTombstoneFromEquipment.add(ownerInfo);
+            }
+        }
+        return externalAttributesToTombstoneFromEquipment;
+    }
+
+    private <T extends IdentifiableAttributes> Set<OwnerInfo> getTemporaryLimitsToTombstoneFromEquipment(UUID networkUuid, Map<OwnerInfo, LimitsInfos> externalAttributesToInsert, List<Resource<T>> resources) {
+        Set<OwnerInfo> externalAttributesToTombstoneFromEquipment = new HashSet<>();
+        for (Resource<T> resource : resources) {
+            OwnerInfo ownerInfo = new OwnerInfo(resource.getId(), resource.getType(), networkUuid, resource.getVariantNum());
+            if (!externalAttributesToInsert.containsKey(ownerInfo) || externalAttributesToInsert.get(ownerInfo).getTemporaryLimits().isEmpty()) {
+                externalAttributesToTombstoneFromEquipment.add(ownerInfo);
+            }
+        }
+        return externalAttributesToTombstoneFromEquipment;
+    }
+
+    public <T extends IdentifiableAttributes> void updatePermanentLimits(UUID networkUuid, List<Resource<T>> resources, Map<OwnerInfo, LimitsInfos> limitsInfos, ResourceType resourceType) {
+        deletePermanentLimits(networkUuid, resources);
         insertPermanentLimits(limitsInfos);
+        insertTombstonedPermanentLimits(networkUuid, limitsInfos, resources, resourceType);
+    }
+
+    private <T extends IdentifiableAttributes> void insertTombstonedPermanentLimits(UUID networkUuid, Map<OwnerInfo, LimitsInfos> limitsInfos, List<Resource<T>> resources, ResourceType resourceType) {
+        try (var connection = dataSource.getConnection()) {
+            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
+                       .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Set<OwnerInfo> tombstonedPermanentLimits = PartialVariantUtils.getExternalAttributesToTombstone(
+                        resourcesByVariant,
+                        variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
+                        (srcVariantNum, variantNum) -> getPermanentLimitsForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_TYPE_COLUMN, resourceType.toString(), variantNum).keySet(),
+                        variantNum -> getTombstonedPermanentLimitsIds(connection, networkUuid, variantNum),
+                        getPermanentLimitsToTombstoneFromEquipment(networkUuid, limitsInfos, resources)
+                );
+            try (var preparedStmt = connection.prepareStatement(buildInsertTombstonedPermanentLimitsQuery())) {
+                for (OwnerInfo temporaryLimit : tombstonedPermanentLimits) {
+                    preparedStmt.setObject(1, temporaryLimit.getNetworkUuid());
+                    preparedStmt.setInt(2, temporaryLimit.getVariantNum());
+                    preparedStmt.setString(3, temporaryLimit.getEquipmentId());
+                    preparedStmt.addBatch();
+                }
+                preparedStmt.executeBatch();
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
     }
 
     public void updateLinesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources) {
@@ -1869,14 +2206,9 @@ public class NetworkStoreRepository {
     public void updateDanglingLines(UUID networkUuid, List<Resource<DanglingLineAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getDanglingLineMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        // To update the danglingline's temporary limits, we will first delete them, then create them again.
-        // This is done this way to prevent issues in case the temporary limit's primary key is to be
-        // modified because of the updated equipment's new values.
-        deleteTemporaryLimits(networkUuid, resources);
-        deletePermanentLimits(networkUuid, resources);
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
-        insertTemporaryLimits(limitsInfos);
-        insertPermanentLimits(limitsInfos);
+        updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.DANGLING_LINE);
+        updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.TWO_WINDINGS_TRANSFORMER);
     }
 
     public void updateDanglingLinesSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -2034,7 +2366,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedTemporaryLimitsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getTemporaryLimitsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2065,7 +2397,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedPermanentLimitsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getPermanentLimitsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2122,7 +2454,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedTemporaryLimitsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getTemporaryLimitsForVariant(connection, networkUuid, variant, columnNameForWhereClause, valueForWhereClause, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2148,7 +2480,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedPermanentLimitsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getPermanentLimitsForVariant(connection, networkUuid, variant, columnNameForWhereClause, valueForWhereClause, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2473,7 +2805,51 @@ public class NetworkStoreRepository {
 
     public <T extends AbstractRegulatingEquipmentAttributes> void updateRegulatingPoints(UUID networkUuid, List<Resource<T>> resources, ResourceType resourceType) {
         deleteRegulatingPoints(networkUuid, resources, resourceType);
-        insertRegulatingPoints(getRegulatingPointFromEquipment(networkUuid, resources));
+        Map<OwnerInfo, RegulatingPointAttributes> regulatingPointToInsert = getRegulatingPointFromEquipment(networkUuid, resources);
+        insertRegulatingPoints(regulatingPointToInsert);
+        insertTombstonedRegulatingPoints(networkUuid, regulatingPointToInsert, resources, resourceType);
+    }
+
+    private <T extends AbstractRegulatingEquipmentAttributes> void insertTombstonedRegulatingPoints(UUID networkUuid, Map<OwnerInfo, RegulatingPointAttributes> regulatingPointToInsert, List<Resource<T>> resources, ResourceType resourceType) {
+        try (var connection = dataSource.getConnection()) {
+            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Set<OwnerInfo> tombstonedRegulatingPoints = PartialVariantUtils.getExternalAttributesToTombstone(
+                    resourcesByVariant,
+                    variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
+                    (srcVariantNum, variantNum) -> getRegulatingPointsForVariant(connection, networkUuid, srcVariantNum, resourceType, variantNum).keySet(),
+                    variantNum -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
+                    getRegulatingPointsToTombstoneFromEquipment(networkUuid, regulatingPointToInsert, resources)
+            );
+
+            try (var preparedStmt = connection.prepareStatement(buildInsertTombstonedRegulatingPointsQuery())) {
+                for (OwnerInfo tapChangerStep : tombstonedRegulatingPoints) {
+                    preparedStmt.setObject(1, tapChangerStep.getNetworkUuid());
+                    preparedStmt.setInt(2, tapChangerStep.getVariantNum());
+                    preparedStmt.setString(3, tapChangerStep.getEquipmentId());
+                    preparedStmt.addBatch();
+                }
+                preparedStmt.executeBatch();
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    private Set<String> getTombstonedRegulatingPointsIds(Connection connection, UUID networkUuid, int variantNum) {
+        Set<String> identifiableIds = new HashSet<>();
+        try (var preparedStmt = connection.prepareStatement(buildGetTombstonedRegulatingPointsIdsQuery())) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            try (var resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    identifiableIds.add(resultSet.getString(EQUIPMENT_ID_COLUMN));
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+        return identifiableIds;
     }
 
     private <T extends IdentifiableAttributes> void deleteRegulatingPoints(UUID networkUuid, List<Resource<T>> resources, ResourceType type) {
@@ -2496,7 +2872,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                 variantNum,
                 getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                 () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getRegulatingPointsForVariant(connection, networkUuid, variant, type, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2525,7 +2901,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                 variantNum,
                 getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                 () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getRegulatingPointsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, type, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2549,7 +2925,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    private void deleteRegulatingPoints(UUID networkUuid, int variantNum, List<String> equipmentIds, ResourceType type) {
+    protected void deleteRegulatingPoints(UUID networkUuid, int variantNum, List<String> equipmentIds, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(buildDeleteRegulatingPointsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setObject(1, networkUuid);
@@ -2601,7 +2977,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                 variantNum,
                 getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedReactiveCapabilityCurvePointsIds(connection, networkUuid, variantNum),
                 () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getReactiveCapabilityCurvePointsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2632,7 +3008,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedReactiveCapabilityCurvePointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getReactiveCapabilityCurvePointsForVariant(connection, networkUuid, variant, columnNameForWhereClause, valueForWhereClause, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2775,12 +3151,13 @@ public class NetworkStoreRepository {
         }
     }
 
+    //TODO tests
     private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipments(UUID networkUuid, int variantNum, ResourceType type, TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getRegulatingEquipmentsForVariant(connection, networkUuid, variant, type, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2801,6 +3178,7 @@ public class NetworkStoreRepository {
         }
     }
 
+    //TODO tests
     public Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, ResourceType type, TableMapping tableMapping) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
@@ -2809,7 +3187,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                 variantNum,
                 getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                 () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getRegulatingEquipmentsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, type, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -2935,7 +3313,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getRegulatingEquipmentsForIdentifiableForVariant(connection, networkUuid, variant, equipmentId, type),
                     Function.identity());
@@ -3078,7 +3456,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                 variantNum,
                 getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedTapChangerStepsIds(connection, networkUuid, variantNum),
                 () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getTapChangerStepsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -3108,7 +3486,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum),
-                    () -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableMapping.getTable())),
+                    () -> getTombstonedTapChangerStepsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getTapChangerStepsForVariant(connection, networkUuid, variant, columnNameForWhereClause, valueForWhereClause, variantNum),
                     OwnerInfo::getEquipmentId);
@@ -3452,11 +3830,6 @@ public class NetworkStoreRepository {
             if (srcVariantNum != -1) {
                 // Retrieve extensionsAttributesByResourceTypeAndExtensionName from the (full) variant first
                 extensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(connection, networkId, srcVariantNum, type.toString(), extensionName);
-
-                // Retrieve updated extensionsAttributesByResourceTypeAndExtensionName in partial
-                Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(connection, networkId, variantNum, type.toString(), extensionName);
-                // Combine base and updated extensionsAttributesByResourceTypeAndExtensionName
-                extensionsAttributesByResourceTypeAndExtensionName.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
                 // Remove tombstoned resources in the current variant
                 Set<String> tombstonedIds = getTombstonedIdentifiableIds(connection, networkId, variantNum);
                 extensionsAttributesByResourceTypeAndExtensionName.keySet().removeIf(tombstonedIds::contains);
@@ -3467,6 +3840,10 @@ public class NetworkStoreRepository {
                     Set<String> tombstonedForResource = tombstonedExtensions.get(resourceId);
                     return tombstonedForResource != null && tombstonedForResource.contains(extensionName);
                 });
+                // Retrieve updated extensionsAttributesByResourceTypeAndExtensionName in partial
+                Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(connection, networkId, variantNum, type.toString(), extensionName);
+                // Combine base and updated extensionsAttributesByResourceTypeAndExtensionName
+                extensionsAttributesByResourceTypeAndExtensionName.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
             } else {
                 // If the variant is FULL, retrieve extensionsAttributesByResourceTypeAndExtensionName for the specified variant directly
                 extensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(connection, networkId, variantNum, type.toString(), extensionName);
@@ -3493,18 +3870,17 @@ public class NetworkStoreRepository {
 
                 // Retrieve extensionsAttributesByIdentifiableId from the (full) variant first
                 extensionsAttributesByIdentifiableId = extensionHandler.getAllExtensionsAttributesByIdentifiableId(connection, networkId, srcVariantNum, identifiableId);
-
-                // Retrieve updated extensionsAttributesByIdentifiableId in partial
-                Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByIdentifiableId(connection, networkId, variantNum, identifiableId);
-                // Combine base and updated extensionsAttributesByIdentifiableId
-                extensionsAttributesByIdentifiableId.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
-                // Remove tombstoned extensions in the current variant
+                // Remove tombstoned extensions from full
                 Map<String, Set<String>> tombstonedExtensions = extensionHandler.getTombstonedExtensions(connection, networkId, variantNum);
                 extensionsAttributesByIdentifiableId.entrySet().removeIf(entry -> {
                     String extensionName = entry.getKey();
                     Set<String> tombstonedForResource = tombstonedExtensions.get(identifiableId);
                     return tombstonedForResource != null && tombstonedForResource.contains(extensionName);
                 });
+                // Retrieve updated extensionsAttributesByIdentifiableId in partial
+                Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByIdentifiableId(connection, networkId, variantNum, identifiableId);
+                // Combine base and updated extensionsAttributesByIdentifiableId
+                extensionsAttributesByIdentifiableId.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
             } else {
                 // If the variant is FULL, retrieve extensionsAttributesByIdentifiableId for the specified variant directly
                 extensionsAttributesByIdentifiableId = extensionHandler.getAllExtensionsAttributesByIdentifiableId(connection, networkId, variantNum, identifiableId);
@@ -3525,7 +3901,17 @@ public class NetworkStoreRepository {
             if (srcVariantNum != -1) {
                 // Retrieve extensionsAttributesByResourceType from the (full) variant first
                 extensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(connection, networkId, srcVariantNum, type.toString());
-
+                // Remove tombstoned resources in the current variant
+                Set<String> tombstonedIds = getTombstonedIdentifiableIds(connection, networkId, variantNum);
+                extensionsAttributesByResourceType.keySet().removeIf(tombstonedIds::contains);
+                // Remove tombstoned extensions in the current variant
+                Map<String, Set<String>> tombstonedExtensions = extensionHandler.getTombstonedExtensions(connection, networkId, variantNum);
+                extensionsAttributesByResourceType.forEach((identifiableId, nestedMap) -> {
+                    Set<String> tombstonedForResource = tombstonedExtensions.get(identifiableId);
+                    if (tombstonedForResource != null) {
+                        nestedMap.keySet().removeIf(tombstonedForResource::contains);
+                    }
+                });
                 // Combine base and updated extensionsAttributesByResourceType
                 Map<String, Map<String, ExtensionAttributes>> updatedExtensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(connection, networkId, variantNum, type.toString());
                 // Merge maps and nested maps of updatedExtensionsAttributesByResourceType in extensionsAttributesByResourceType
@@ -3555,17 +3941,6 @@ public class NetworkStoreRepository {
                             }
                     );
                 }
-                // Remove tombstoned resources in the current variant
-                Set<String> tombstonedIds = getTombstonedIdentifiableIds(connection, networkId, variantNum);
-                extensionsAttributesByResourceType.keySet().removeIf(tombstonedIds::contains);
-                // Remove tombstoned extensions in the current variant
-                Map<String, Set<String>> tombstonedExtensions = extensionHandler.getTombstonedExtensions(connection, networkId, variantNum);
-                extensionsAttributesByResourceType.forEach((identifiableId, nestedMap) -> {
-                    Set<String> tombstonedForResource = tombstonedExtensions.get(identifiableId);
-                    if (tombstonedForResource != null) {
-                        nestedMap.keySet().removeIf(tombstonedForResource::contains);
-                    }
-                });
                 // Remove ids with empty nested maps not sure it's necessary ? => TO TEST
                 extensionsAttributesByResourceType.entrySet().removeIf(entry -> entry.getValue().isEmpty());
             } else {

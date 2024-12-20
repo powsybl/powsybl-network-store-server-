@@ -42,39 +42,6 @@ public class ExtensionHandler {
         this.mapper = mapper;
     }
 
-    public void createExtensions(Connection connection, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) throws SQLException {
-        Map<OwnerInfo, Map<String, ExtensionAttributes>> filteredExtensions = extensions.entrySet().stream()
-                .filter(entry -> !entry.getValue().isEmpty())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        if (filteredExtensions.isEmpty()) {
-            return;
-        }
-        insertExtensions(connection, filteredExtensions);
-        deleteTombstonedExtensions(connection, filteredExtensions);
-    }
-
-    private void deleteTombstonedExtensions(Connection connection, Map<OwnerInfo, Map<String, ExtensionAttributes>> filteredExtensions) throws SQLException {
-        List<Object> values = new ArrayList<>(filteredExtensions.size() * 4);
-        List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(filteredExtensions.entrySet());
-        for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : list) {
-            for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
-                values.add(entry.getKey().getNetworkUuid());
-                values.add(entry.getKey().getVariantNum());
-                values.add(entry.getKey().getEquipmentId());
-                values.add(extension.getKey());
-            }
-        }
-
-        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteTombstonedExtensionsQuery(values.size() / 4))) {
-            bindValues(preparedStmt, values, mapper);
-            preparedStmt.executeUpdate();
-        }
-    }
-
-    public void recreateExtensionsForUpdate(Connection connection, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) throws SQLException {
-        insertExtensions(connection, extensions);
-    }
-
     public void insertExtensions(Connection connection, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) throws SQLException {
         try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildInsertExtensionsQuery())) {
             List<Object> values = new ArrayList<>(6);
@@ -270,7 +237,7 @@ public class ExtensionHandler {
      */
     public <T extends IdentifiableAttributes> void updateExtensionsFromEquipments(Connection connection, UUID networkUuid, List<Resource<T>> resources) throws SQLException {
         deleteExtensionsFromEquipments(connection, networkUuid, resources);
-        recreateExtensionsForUpdate(connection, getExtensionsFromEquipments(networkUuid, resources));
+        insertExtensions(connection, getExtensionsFromEquipments(networkUuid, resources));
     }
 
     public <T extends IdentifiableAttributes> Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
@@ -310,7 +277,7 @@ public class ExtensionHandler {
      */
     public void updateExtensionsFromNetworks(Connection connection, List<Resource<NetworkAttributes>> resources) throws SQLException {
         deleteExtensionsFromNetworks(connection, resources);
-        recreateExtensionsForUpdate(connection, getExtensionsFromNetworks(resources));
+        insertExtensions(connection, getExtensionsFromNetworks(resources));
     }
 
     public Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {

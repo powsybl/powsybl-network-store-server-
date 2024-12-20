@@ -9,11 +9,10 @@
         </addColumn>
     </changeSet>
     <changeSet author="bouhoursant" id="2986331049290-2">
-        <createTable tableName="tombstoned">
+        <createTable tableName="tombstonedidentifiable">
             <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="equipmenttype" type="VARCHAR(255)"/>
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
             </column>
@@ -21,12 +20,11 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <createIndex indexName="tombstoned_networkuuid_variantnum_equipmenttype_idx" tableName="tombstoned">
+        <createIndex indexName="tombstonedidentifiable_networkuuid_variantnum_idx" tableName="tombstonedidentifiable">
             <column name="networkuuid"/>
             <column name="variantnum"/>
-            <column name="equipmenttype"/>
         </createIndex>
-        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstoned_pkey" tableName="tombstoned"/>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedidentifiable_pkey" tableName="tombstonedidentifiable"/>
         <createTable tableName="tombstonedextension">
             <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
@@ -46,5 +44,85 @@
             <column name="variantnum"/>
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, name" constraintName="tombstonedextension_pkey" tableName="tombstonedextension"/>
+        <createTable tableName="tombstonedpermanentlimit">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="tombstonedpermanentlimit_networkuuid_variantnum_idx" tableName="tombstonedpermanentlimit">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+        </createIndex>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedpermanentlimit_pkey" tableName="tombstonedpermanentlimit"/>
+        <createTable tableName="tombstonedreactivecapabilitycurvepoint">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="tombstonedreactivecapabilitycurvepoint_networkuuid_variantnum_idx" tableName="tombstonedreactivecapabilitycurvepoint">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+        </createIndex>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedreactivecapabilitycurvepoint_pkey" tableName="tombstonedreactivecapabilitycurvepoint"/>
+        <createTable tableName="tombstonedregulatingpoint">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="tombstonedregulatingpoint_networkuuid_variantnum_idx" tableName="tombstonedregulatingpoint">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+        </createIndex>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedregulatingpoint_pkey" tableName="tombstonedregulatingpoint"/>
+        <createTable tableName="tombstonedtapchangerstep">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="tombstonedtapchangerstep_networkuuid_variantnum_idx" tableName="tombstonedtapchangerstep">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+        </createIndex>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedtapchangerstep_pkey" tableName="tombstonedtapchangerstep"/>
+        <createTable tableName="tombstonedtemporarylimit">
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="networkuuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex indexName="tombstonedtemporarylimit_networkuuid_variantnum_idx" tableName="tombstonedtemporarylimit">
+            <column name="networkuuid"/>
+            <column name="variantnum"/>
+        </createIndex>
+        <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedtemporarylimit_pkey" tableName="tombstonedtemporarylimit"/>
     </changeSet>
 </databaseChangeLog>

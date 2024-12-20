@@ -52,7 +52,12 @@ public final class QueryCatalog {
     static final String LIMIT_TYPE_COLUMN = "limitType";
     static final Predicate<String> CLONE_PREDICATE = column -> !column.equals(UUID_COLUMN) && !column.equals(VARIANT_ID_COLUMN)
             && !column.equals(NAME_COLUMN) && !column.equals(VARIANT_MODE_COLUMN) && !column.equals(SRC_VARIANT_NUM_COLUMN);
-    public static final String TOMBSTONED_TABLE = "tombstoned";
+    public static final String TOMBSTONED_IDENTIFIABLE_TABLE = "tombstonedidentifiable";
+    public static final String TOMBSTONED_TAPCHANGER_STEP_TABLE = "tombstonedtapchangerstep";
+    private static final String TOMBSTONED_TEMPORARY_LIMITS_TABLE = "tombstonedtemporarylimit";
+    private static final String TOMBSTONED_PERMANENT_LIMITS_TABLE = "tombstonedpermanentlimit";
+    private static final String TOMBSTONED_REGULATING_POINTS_TABLE = "tombstonedregulatingpoint";
+    private static final String TOMBSTONED_REACTIVE_CAPABILITY_CURVE_POINTS_TABLE = "tombstonedreactivecapabilitycurvepoint";
 
     private QueryCatalog() {
     }
@@ -755,35 +760,127 @@ public final class QueryCatalog {
 
     // Tombstoned identifiables
     public static String buildInsertTombstonedIdentifiablesQuery() {
-        return "insert into " + TOMBSTONED_TABLE + " (" + NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + EQUIPMENT_ID_COLUMN + ") " +
-                "values (?, ?, ?)";
+        return TombstonedQueryUtils.buildInsertQuery(TOMBSTONED_IDENTIFIABLE_TABLE);
     }
 
-    public static String buildGetTombstonedIdentifiablesQuery() {
-        return "select " + EQUIPMENT_ID_COLUMN + " FROM " + TOMBSTONED_TABLE + " WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
+    public static String buildGetTombstonedIdentifiablesIdsQuery() {
+        return TombstonedQueryUtils.buildGetQuery(TOMBSTONED_IDENTIFIABLE_TABLE);
     }
 
-    public static String buildDeleteTombstonedIdentifiablesQuery(int resourceCount) {
-        if (resourceCount < 1) {
-            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
-        }
-        return "delete from " + TOMBSTONED_TABLE + " where " + NETWORK_UUID_COLUMN + " = ? AND ("
-                + VARIANT_NUM_COLUMN + ", "
-                + EQUIPMENT_ID_COLUMN + ") in (" + String.join(",", Collections.nCopies(resourceCount, "(?, ?)")) + ")";
+    public static String buildDeleteTombstonedIdentifiablesQuery() {
+        return TombstonedQueryUtils.buildDeleteQuery(TOMBSTONED_IDENTIFIABLE_TABLE);
+    }
+
+    public static String buildDeleteTombstonedIdentifiablesVariantQuery() {
+        return TombstonedQueryUtils.buildDeleteVariantQuery(TOMBSTONED_IDENTIFIABLE_TABLE);
     }
 
     public static String buildCloneTombstonedIdentifiablesQuery() {
-        return "insert into " + TOMBSTONED_TABLE + " (" +
-                NETWORK_UUID_COLUMN + ", " +
-                VARIANT_NUM_COLUMN + ", " +
-                EQUIPMENT_ID_COLUMN + ") " +
-                "select " +
-                "?" + "," +
-                "?" + "," +
-                EQUIPMENT_ID_COLUMN +
-                " from " + TOMBSTONED_TABLE + " " +
-                "where " +
-                NETWORK_UUID_COLUMN + " = ?" + " and " +
-                VARIANT_NUM_COLUMN + " = ? ";
+        return TombstonedQueryUtils.buildCloneQuery(TOMBSTONED_IDENTIFIABLE_TABLE);
+    }
+
+    // Tombstoned temporary limits
+    public static String buildInsertTombstonedTemporaryLimitsQuery() {
+        return TombstonedQueryUtils.buildInsertQuery(TOMBSTONED_TEMPORARY_LIMITS_TABLE);
+    }
+
+    public static String buildGetTombstonedTemporaryLimitsIdsQuery() {
+        return TombstonedQueryUtils.buildGetQuery(TOMBSTONED_TEMPORARY_LIMITS_TABLE);
+    }
+
+    public static String buildDeleteTombstonedTemporaryLimitsQuery() {
+        return TombstonedQueryUtils.buildDeleteQuery(TOMBSTONED_TEMPORARY_LIMITS_TABLE);
+    }
+
+    public static String buildDeleteTombstonedTemporaryLimitsVariantQuery() {
+        return TombstonedQueryUtils.buildDeleteVariantQuery(TOMBSTONED_TEMPORARY_LIMITS_TABLE);
+    }
+
+    public static String buildCloneTombstonedTemporaryLimitsQuery() {
+        return TombstonedQueryUtils.buildCloneQuery(TOMBSTONED_TEMPORARY_LIMITS_TABLE);
+    }
+
+    // Tombstoned permanent limits
+    public static String buildInsertTombstonedPermanentLimitsQuery() {
+        return TombstonedQueryUtils.buildInsertQuery(TOMBSTONED_PERMANENT_LIMITS_TABLE);
+    }
+
+    public static String buildGetTombstonedPermanentLimitsIdsQuery() {
+        return TombstonedQueryUtils.buildGetQuery(TOMBSTONED_PERMANENT_LIMITS_TABLE);
+    }
+
+    public static String buildDeleteTombstonedPermanentLimitsQuery() {
+        return TombstonedQueryUtils.buildDeleteQuery(TOMBSTONED_PERMANENT_LIMITS_TABLE);
+    }
+
+    public static String buildDeleteTombstonedPermanentLimitsVariantQuery() {
+        return TombstonedQueryUtils.buildDeleteVariantQuery(TOMBSTONED_PERMANENT_LIMITS_TABLE);
+    }
+
+    public static String buildCloneTombstonedPermanentLimitsQuery() {
+        return TombstonedQueryUtils.buildCloneQuery(TOMBSTONED_PERMANENT_LIMITS_TABLE);
+    }
+
+    // Tombstoned reactive capability curves
+    public static String buildInsertTombstonedReactiveCapabilityCurvePointsQuery() {
+        return TombstonedQueryUtils.buildInsertQuery(TOMBSTONED_REACTIVE_CAPABILITY_CURVE_POINTS_TABLE);
+    }
+
+    public static String buildGetTombstonedReactiveCapabilityCurvePointsIdsQuery() {
+        return TombstonedQueryUtils.buildGetQuery(TOMBSTONED_REACTIVE_CAPABILITY_CURVE_POINTS_TABLE);
+    }
+
+    public static String buildDeleteTombstonedReactiveCapabilityCurvePointsQuery() {
+        return TombstonedQueryUtils.buildDeleteQuery(TOMBSTONED_REACTIVE_CAPABILITY_CURVE_POINTS_TABLE);
+    }
+
+    public static String buildDeleteTombstonedReactiveCapabilityCurvePointsVariantQuery() {
+        return TombstonedQueryUtils.buildDeleteVariantQuery(TOMBSTONED_REACTIVE_CAPABILITY_CURVE_POINTS_TABLE);
+    }
+
+    public static String buildCloneTombstonedReactiveCapabilityCurvePointsQuery() {
+        return TombstonedQueryUtils.buildCloneQuery(TOMBSTONED_REACTIVE_CAPABILITY_CURVE_POINTS_TABLE);
+    }
+
+    // Tombstoned regulating points
+    public static String buildInsertTombstonedRegulatingPointsQuery() {
+        return TombstonedQueryUtils.buildInsertQuery(TOMBSTONED_REGULATING_POINTS_TABLE);
+    }
+
+    public static String buildGetTombstonedRegulatingPointsIdsQuery() {
+        return TombstonedQueryUtils.buildGetQuery(TOMBSTONED_REGULATING_POINTS_TABLE);
+    }
+
+    public static String buildDeleteTombstonedRegulatingPointsQuery() {
+        return TombstonedQueryUtils.buildDeleteQuery(TOMBSTONED_REGULATING_POINTS_TABLE);
+    }
+
+    public static String buildDeleteTombstonedRegulatingPointsVariantQuery() {
+        return TombstonedQueryUtils.buildDeleteVariantQuery(TOMBSTONED_REGULATING_POINTS_TABLE);
+    }
+
+    public static String buildCloneTombstonedRegulatingPointsQuery() {
+        return TombstonedQueryUtils.buildCloneQuery(TOMBSTONED_REGULATING_POINTS_TABLE);
+    }
+
+    // Tombstoned tap changer steps
+    public static String buildInsertTombstonedTapChangerStepsQuery() {
+        return TombstonedQueryUtils.buildInsertQuery(TOMBSTONED_TAPCHANGER_STEP_TABLE);
+    }
+
+    public static String buildGetTombstonedTapChangerStepsIdsQuery() {
+        return TombstonedQueryUtils.buildGetQuery(TOMBSTONED_TAPCHANGER_STEP_TABLE);
+    }
+
+    public static String buildDeleteTombstonedTapChangerStepsQuery() {
+        return TombstonedQueryUtils.buildDeleteQuery(TOMBSTONED_TAPCHANGER_STEP_TABLE);
+    }
+
+    public static String buildDeleteTombstonedTapChangerStepsVariantQuery() {
+        return TombstonedQueryUtils.buildDeleteVariantQuery(TOMBSTONED_TAPCHANGER_STEP_TABLE);
+    }
+
+    public static String buildCloneTombstonedTapChangerStepsQuery() {
+        return TombstonedQueryUtils.buildCloneQuery(TOMBSTONED_TAPCHANGER_STEP_TABLE);
     }
 }

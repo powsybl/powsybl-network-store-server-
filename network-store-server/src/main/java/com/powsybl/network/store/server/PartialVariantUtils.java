@@ -9,8 +9,10 @@ package com.powsybl.network.store.server;
 import com.powsybl.network.store.model.Attributes;
 import com.powsybl.network.store.model.NetworkAttributes;
 import com.powsybl.network.store.model.Resource;
+import com.powsybl.network.store.server.dto.OwnerInfo;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -27,7 +29,7 @@ public final class PartialVariantUtils {
     public static <T, U> Map<T, U> getExternalAttributes(
             int variantNum,
             Resource<NetworkAttributes> network,
-            Supplier<Set<String>> fetchUpdatedIdentifiblesIdsInVariant,
+            Supplier<Set<String>> fetchTombstonedExternalAttributesIds,
             Supplier<Set<String>> fetchTombstonedIds,
             IntFunction<Map<T, U>> fetchExternalAttributesInVariant,
             Function<T, String> idExtractor) {
@@ -44,8 +46,8 @@ public final class PartialVariantUtils {
         // Remove external attributes associated to tombstoned resources
         // And updated attributes from updated Ids
         Set<String> tombstonedIds = fetchTombstonedIds.get();
-        Set<String> updatedIdentifiablesIds = fetchUpdatedIdentifiblesIdsInVariant.get();
-        externalAttributes.keySet().removeIf(ownerInfo -> tombstonedIds.contains(idExtractor.apply(ownerInfo)) || updatedIdentifiablesIds.contains(idExtractor.apply(ownerInfo)));
+        Set<String> tombstonedExternalAttributesIds = fetchTombstonedExternalAttributesIds.get();
+        externalAttributes.keySet().removeIf(ownerInfo -> tombstonedIds.contains(idExtractor.apply(ownerInfo)) || tombstonedExternalAttributesIds.contains(idExtractor.apply(ownerInfo)));
 
         // Retrieve updated external attributes in partial variant
         Map<T, U> externalAttributesUpdatedInPartialVariant = fetchExternalAttributesInVariant.apply(variantNum);
@@ -54,6 +56,31 @@ public final class PartialVariantUtils {
         externalAttributes.putAll(externalAttributesUpdatedInPartialVariant);
 
         return externalAttributes;
+    }
+
+    public static <T> Set<OwnerInfo> getExternalAttributesToTombstone(
+            Map<Integer, T> externalAttributesResourcesByVariant,
+            IntFunction<Resource<NetworkAttributes>> fetchNetworkAttributes,
+            BiFunction<Integer, Integer, Set<OwnerInfo>> fetchExternalAttributesOwnerInfoInVariant,
+            IntFunction<Set<String>> fetchTombstonedExternalAttributesIds,
+            Set<OwnerInfo> externalAttributesToTombstoneFromEquipment
+    ) {
+        Set<OwnerInfo> externalAttributesResourcesInFullVariant = new HashSet<>();
+        Set<String> tombstonedExternalAttributes = new HashSet<>();
+        Set<Integer> fullVariant = new HashSet<>();
+        for (int variantNum : externalAttributesResourcesByVariant.keySet()) {
+            Resource<NetworkAttributes> networkAttributes = fetchNetworkAttributes.apply(variantNum);
+            int srcVariantNum = networkAttributes.getAttributes().getSrcVariantNum();
+            if (srcVariantNum == -1) {
+                fullVariant.add(variantNum);
+            }
+            externalAttributesResourcesInFullVariant.addAll(fetchExternalAttributesOwnerInfoInVariant.apply(srcVariantNum, variantNum));
+            tombstonedExternalAttributes.addAll(fetchTombstonedExternalAttributesIds.apply(variantNum));
+        }
+        return externalAttributesToTombstoneFromEquipment.stream().filter(owner ->
+                externalAttributesResourcesInFullVariant.contains(owner) &&
+                !tombstonedExternalAttributes.contains(owner.getEquipmentId()) &&
+                !fullVariant.contains(owner.getVariantNum())).collect(Collectors.toSet());
     }
 
     public static <T> List<T> getIdentifiables(

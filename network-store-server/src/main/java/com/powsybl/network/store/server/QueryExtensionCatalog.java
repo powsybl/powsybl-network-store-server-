@@ -133,15 +133,12 @@ public final class QueryExtensionCatalog {
         return "select " + EQUIPMENT_ID_COLUMN + ", " + EXTENSION_NAME_COLUMN + " FROM " + TOMBSTONED_EXTENSION_TABLE + " WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildDeleteTombstonedExtensionsQuery(int extensionCount) {
-        if (extensionCount < 1) {
-            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
-        }
-        return "DELETE FROM " + TOMBSTONED_EXTENSION_TABLE
-                + " WHERE (" + NETWORK_UUID_COLUMN + ", "
-                + VARIANT_NUM_COLUMN + ", "
-                + EQUIPMENT_ID_COLUMN + ", "
-                + EXTENSION_NAME_COLUMN + ") IN (" + String.join(",", Collections.nCopies(extensionCount, "(?, ?, ?, ?)")) + ")";
+    public static String buildDeleteTombstonedExtensionsQuery() {
+        return TombstonedQueryUtils.buildDeleteQuery(TOMBSTONED_EXTENSION_TABLE);
+    }
+
+    public static String buildDeleteTombstonedExtensionsVariantQuery() {
+        return TombstonedQueryUtils.buildDeleteVariantQuery(TOMBSTONED_EXTENSION_TABLE);
     }
 
     public static String buildCloneTombstonedExtensionsQuery() {
