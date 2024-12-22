@@ -6,7 +6,6 @@
  */
 package com.powsybl.network.store.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -353,7 +352,6 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(switch2, "switches");
         deleteIdentifiableList(List.of("b1", "b2"), "switches");
-
 
         // switch creation and update
         Resource<SwitchAttributes> resBreaker = Resource.switchBuilder()
