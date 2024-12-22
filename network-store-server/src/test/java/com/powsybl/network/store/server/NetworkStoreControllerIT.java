@@ -6,6 +6,7 @@
  */
 package com.powsybl.network.store.server;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -172,6 +173,27 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("meta.totalCount").value("2"))
                 .andExpect(jsonPath("data", hasSize(1)));
 
+        // substation delete
+        Resource<SubstationAttributes> sub1 = Resource.substationBuilder().id("sub1")
+                .attributes(SubstationAttributes.builder()
+                        .country(Country.FR)
+                        .tso("RTE")
+                        .entsoeArea(EntsoeAreaAttributes.builder().code("D7").build())
+                        .build())
+                .build();
+        createIdentifiable(sub1, "substations");
+
+        Resource<SubstationAttributes> sub2 = Resource.substationBuilder().id("sub2")
+                .attributes(SubstationAttributes.builder()
+                        .country(Country.FR)
+                        .tso("RTE")
+                        .entsoeArea(EntsoeAreaAttributes.builder().code("D7").build())
+                        .build())
+                .build();
+        createIdentifiable(sub2, "substations");
+
+        deleteIdentifiableList(List.of("sub1", "sub2"), "substations");
+
         List<InternalConnectionAttributes> ics1 = new ArrayList<>();
         ics1.add(InternalConnectionAttributes.builder()
                 .node1(10)
@@ -271,9 +293,67 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.calculatedBusesForBusView[0].vertices[0].node").value(13))
                 .andExpect(jsonPath("data[0].attributes.calculatedBusesForBusView[0].vertices[0].side").value("TWO"));
 
+        // voltage level delete
+        Resource<VoltageLevelAttributes> vl1 = Resource.voltageLevelBuilder()
+                .id("vl1")
+                .attributes(VoltageLevelAttributes.builder()
+                        .nominalV(382)
+                        .lowVoltageLimit(362)
+                        .highVoltageLimit(402)
+                        .topologyKind(TopologyKind.NODE_BREAKER)
+                        .internalConnections(Collections.emptyList())
+                        .build())
+                .build();
+        createIdentifiable(vl1, "voltage-levels");
+
+        Resource<VoltageLevelAttributes> vl2 = Resource.voltageLevelBuilder()
+                .id("vl2")
+                .attributes(VoltageLevelAttributes.builder()
+                        .nominalV(382)
+                        .lowVoltageLimit(362)
+                        .highVoltageLimit(402)
+                        .topologyKind(TopologyKind.NODE_BREAKER)
+                        .internalConnections(Collections.emptyList())
+                        .build())
+                .build();
+        createIdentifiable(vl2, "voltage-levels");
+
+        deleteIdentifiableList(List.of("vl1", "vl2"), "voltage-levels");
+
+        // switch delete
         mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/switches/b1")
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
+
+        Resource<SwitchAttributes> switch1 = Resource.switchBuilder()
+                .id("b1")
+                .attributes(SwitchAttributes.builder()
+                        .voltageLevelId("baz")
+                        .kind(SwitchKind.BREAKER)
+                        .node1(1)
+                        .node2(2)
+                        .open(false)
+                        .retained(false)
+                        .fictitious(false)
+                        .build())
+                .build();
+        createIdentifiable(switch1, "switches");
+
+        Resource<SwitchAttributes> switch2 = Resource.switchBuilder()
+                .id("b2")
+                .attributes(SwitchAttributes.builder()
+                        .voltageLevelId("baz")
+                        .kind(SwitchKind.BREAKER)
+                        .node1(1)
+                        .node2(2)
+                        .open(false)
+                        .retained(false)
+                        .fictitious(false)
+                        .build())
+                .build();
+        createIdentifiable(switch2, "switches");
+        deleteIdentifiableList(List.of("b1", "b2"), "switches");
+
 
         // switch creation and update
         Resource<SwitchAttributes> resBreaker = Resource.switchBuilder()
@@ -311,7 +391,7 @@ class NetworkStoreControllerIT {
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
                 .andExpect(jsonPath("data[0].attributes.open").value("true"));
 
-        // line creation and update
+        // line creation, update and delete
         Resource<LineAttributes> resLine = Resource.lineBuilder()
             .id("idLine")
             .attributes(LineAttributes.builder()
@@ -519,7 +599,27 @@ class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].attributes.voltageLevelId1").value("vl12"))
             .andExpect(jsonPath("data[0].attributes.voltageLevelId2").value("vl22"));
 
-        // generator creation and update
+        Resource<LineAttributes> line1 = Resource.lineBuilder()
+                .id("line1")
+                .attributes(LineAttributes.builder()
+                                .voltageLevelId1("vl12")
+                                .voltageLevelId2("vl22")
+                        .build())
+                .build();
+        createIdentifiable(line1, "lines");
+
+        Resource<LineAttributes> line2 = Resource.lineBuilder()
+                .id("line2")
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl12")
+                        .voltageLevelId2("vl22")
+                        .build())
+                .build();
+        createIdentifiable(line2, "lines");
+
+        deleteIdentifiableList(List.of("line1", "line2"), "lines");
+
+        // generator creation, update and delete
         RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
             .regulatingEquipmentId("id")
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
@@ -580,7 +680,31 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.12\"].minQ").value(11.12))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.12\"].maxQ").value(76.12));
 
-        // battery creation and update
+        Resource<GeneratorAttributes> generator1 = Resource.generatorBuilder()
+                .id("gen1")
+                .attributes(GeneratorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("gen1")
+                        .energySource(EnergySource.HYDRO)
+                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
+                        .regulatingPoint(regulatingPointAttributes)
+                        .build())
+                .build();
+        createIdentifiable(generator1, "generators");
+
+        Resource<GeneratorAttributes> generator2 = Resource.generatorBuilder()
+                .id("gen2")
+                .attributes(GeneratorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("gen1")
+                        .energySource(EnergySource.HYDRO)
+                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
+                        .regulatingPoint(regulatingPointAttributes)
+                        .build())
+                .build();
+        createIdentifiable(generator2, "generators");
+
+        // battery creation, update and delete
         Resource<BatteryAttributes> battery = Resource.batteryBuilder()
                 .id("batteryId")
                 .attributes(BatteryAttributes.builder()
@@ -641,7 +765,37 @@ class NetworkStoreControllerIT {
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        // shunt compensator creation and update
+        Resource<BatteryAttributes> battery1 = Resource.batteryBuilder()
+                .id("bat1")
+                .attributes(BatteryAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("battery1")
+                        .targetP(250)
+                        .targetQ(100)
+                        .maxP(500)
+                        .minP(100)
+                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
+                        .build())
+                .build();
+        createIdentifiable(battery1, "batteries");
+
+        Resource<BatteryAttributes> battery2 = Resource.batteryBuilder()
+                .id("bat2")
+                .attributes(BatteryAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("battery1")
+                        .targetP(250)
+                        .targetQ(100)
+                        .maxP(500)
+                        .minP(100)
+                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
+                        .build())
+                .build();
+        createIdentifiable(battery2, "batteries");
+
+        deleteIdentifiableList(List.of("bat1", "bat2"), "batteries");
+
+        // shunt compensator creation, update and delete
         Resource<ShuntCompensatorAttributes> shuntCompensator = Resource.shuntCompensatorBuilder()
                 .id("idShunt")
                 .attributes(ShuntCompensatorAttributes.builder()
@@ -698,7 +852,31 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.model.gperSection").value(22))
                 .andExpect(jsonPath("data[0].attributes.p").value(200.));
 
-        // dangling line creation and update
+        Resource<ShuntCompensatorAttributes> shuntCompensator1 = Resource.shuntCompensatorBuilder()
+                .id("idShunt1")
+                .attributes(ShuntCompensatorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("shunt1")
+                        .model(ShuntCompensatorLinearModelAttributes.builder().bPerSection(1).gPerSection(2).maximumSectionCount(3).build())
+                        .p(100.)
+                        .build())
+                .build();
+        createIdentifiable(shuntCompensator1, "shunt-compensators");
+
+        Resource<ShuntCompensatorAttributes> shuntCompensator2 = Resource.shuntCompensatorBuilder()
+                .id("idShunt2")
+                .attributes(ShuntCompensatorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("shunt1")
+                        .model(ShuntCompensatorLinearModelAttributes.builder().bPerSection(1).gPerSection(2).maximumSectionCount(3).build())
+                        .p(100.)
+                        .build())
+                .build();
+        createIdentifiable(shuntCompensator2, "shunt-compensators");
+
+        deleteIdentifiableList(List.of("idShunt2", "idShunt1"), "shunt-compensators");
+
+        // dangling line creation, update and delete
         Resource<DanglingLineAttributes> danglingLine = Resource.danglingLineBuilder()
                 .id("idDanglingLine")
                 .attributes(DanglingLineAttributes.builder()
@@ -781,7 +959,77 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.generation.targetQ").value(54))
                 .andExpect(jsonPath("data[0].attributes.generation.voltageRegulationOn").value(true));
 
-        // ground creation and update
+        Resource<DanglingLineAttributes> danglingLine1 = Resource.danglingLineBuilder()
+                .id("idDanglingLine1")
+                .attributes(DanglingLineAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("dl1")
+                        .fictitious(true)
+                        .node(5)
+                        .p0(10)
+                        .q0(20)
+                        .r(6)
+                        .x(7)
+                        .g(8)
+                        .b(9)
+                        .generation(DanglingLineGenerationAttributes.builder()
+                                .minP(1)
+                                .maxP(2)
+                                .targetP(3)
+                                .targetQ(4)
+                                .targetV(5)
+                                .voltageRegulationOn(false)
+                                .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().minQ(20).maxQ(30).build())
+                                .build())
+                        .pairingKey("XN1")
+                        .selectedOperationalLimitsGroupId("group1")
+                        .operationalLimitsGroups(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
+                        .p(100.)
+                        .q(200)
+                        .build())
+                .build();
+        createIdentifiable(danglingLine1, "dangling-lines");
+
+        Resource<DanglingLineAttributes> danglingLine2 = Resource.danglingLineBuilder()
+                .id("idDanglingLine2")
+                .attributes(DanglingLineAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("dl1")
+                        .fictitious(true)
+                        .node(5)
+                        .p0(10)
+                        .q0(20)
+                        .r(6)
+                        .x(7)
+                        .g(8)
+                        .b(9)
+                        .generation(DanglingLineGenerationAttributes.builder()
+                                .minP(1)
+                                .maxP(2)
+                                .targetP(3)
+                                .targetQ(4)
+                                .targetV(5)
+                                .voltageRegulationOn(false)
+                                .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().minQ(20).maxQ(30).build())
+                                .build())
+                        .pairingKey("XN1")
+                        .selectedOperationalLimitsGroupId("group1")
+                        .operationalLimitsGroups(Map.of("group1", OperationalLimitsGroupAttributes.builder()
+                                .id("group1")
+                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
+                                .build()))
+                        .p(100.)
+                        .q(200)
+                        .build())
+                .build();
+        createIdentifiable(danglingLine2, "dangling-lines");
+
+        deleteIdentifiableList(List.of("idDanglingLine1", "idDanglingLine2"), "dangling-lines");
+
+        // ground creation, update and delete
         Resource<GroundAttributes> ground = Resource.groundBuilder()
                 .id("idGround")
                 .attributes(GroundAttributes.builder()
@@ -849,6 +1097,44 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.q").value(40))
                 .andExpect(jsonPath("data[0].attributes.node").value(6));
 
+        Resource<GroundAttributes> ground1 = Resource.groundBuilder()
+                .id("idGround1")
+                .attributes(GroundAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("ground1")
+                        .fictitious(true)
+                        .node(5)
+                        .p(10)
+                        .q(20)
+                        .position(ConnectablePositionAttributes.builder()
+                                .direction(ConnectablePosition.Direction.BOTTOM)
+                                .label("label")
+                                .order(1)
+                                .build())
+                        .build())
+                .build();
+        createIdentifiable(ground1, "grounds");
+
+        Resource<GroundAttributes> ground2 = Resource.groundBuilder()
+                .id("idGround2")
+                .attributes(GroundAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("ground1")
+                        .fictitious(true)
+                        .node(5)
+                        .p(10)
+                        .q(20)
+                        .position(ConnectablePositionAttributes.builder()
+                                .direction(ConnectablePosition.Direction.BOTTOM)
+                                .label("label")
+                                .order(1)
+                                .build())
+                        .build())
+                .build();
+        createIdentifiable(ground2, "grounds");
+
+        deleteIdentifiableList(List.of("idGround2", "idGround1"), "grounds");
+
         // Test removals
         mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/switches/b1")
                 .contentType(APPLICATION_JSON))
@@ -862,7 +1148,7 @@ class NetworkStoreControllerIT {
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        // tie line creation and update
+        // tie line creation, update and delete
         Resource<TieLineAttributes> tieLine = Resource.tieLineBuilder()
                 .id("idTieLine")
                 .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
@@ -890,6 +1176,22 @@ class NetworkStoreControllerIT {
         mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/tie-lines/idTieLine")
                 .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
+
+        Resource<TieLineAttributes> tieLine1 = Resource.tieLineBuilder()
+                .id("idTieLine1")
+                .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
+                        .build())
+                .build();
+        createIdentifiable(tieLine, "tie-lines");
+
+        Resource<TieLineAttributes> tieLine2 = Resource.tieLineBuilder()
+                .id("idTieLine2")
+                .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
+                        .build())
+                .build();
+        createIdentifiable(tieLine2, "tie-lines");
+
+        deleteIdentifiableList(List.of("idTieLine1", "idTieLine2"), "tie-lines");
     }
 
     @Test
@@ -1198,5 +1500,19 @@ class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Collections.singleton(generator2))))
                 .andExpect(status().isCreated());
+    }
+
+    private void createIdentifiable(Resource<? extends AbstractIdentifiableAttributes> resource, String identifiableType) throws Exception {
+        mvc.perform(post("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + identifiableType)
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Collections.singleton(resource))))
+                .andExpect(status().isCreated());
+    }
+
+    private void deleteIdentifiableList(List<String> ids, String identifiableType) throws Exception {
+        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/" + identifiableType)
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ids)))
+                .andExpect(status().isOk());
     }
 }
