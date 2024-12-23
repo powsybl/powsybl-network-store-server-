@@ -43,8 +43,7 @@ public final class PartialVariantUtils {
         // Retrieve external attributes from the full variant first
         Map<T, U> externalAttributes = fetchExternalAttributesInVariant.apply(srcVariantNum);
 
-        // Remove external attributes associated to tombstoned resources
-        // And updated attributes from updated Ids
+        // Remove external attributes associated to tombstoned resources and tombstoned external attributes
         Set<String> tombstonedIds = fetchTombstonedIds.get();
         Set<String> tombstonedExternalAttributesIds = fetchTombstonedExternalAttributesIds.get();
         externalAttributes.keySet().removeIf(ownerInfo -> tombstonedIds.contains(idExtractor.apply(ownerInfo)) || tombstonedExternalAttributesIds.contains(idExtractor.apply(ownerInfo)));
@@ -58,7 +57,7 @@ public final class PartialVariantUtils {
         return externalAttributes;
     }
 
-    public static <T> Set<OwnerInfo> getExternalAttributesToTombstone(
+    public static Set<OwnerInfo> getExternalAttributesToTombstone(
             Map<Integer, List<String>> externalAttributesResourcesIdsByVariant,
             IntFunction<Resource<NetworkAttributes>> fetchNetworkAttributes,
             TriFunction<Integer, Integer, List<String>, Set<OwnerInfo>> fetchExternalAttributesOwnerInfoInVariant,

@@ -3717,29 +3717,15 @@ public class NetworkStoreRepository {
 
     public Optional<ExtensionAttributes> getExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
         try (var connection = dataSource.getConnection()) {
-            Resource<NetworkAttributes> network = getNetworkAttributes(connection, networkId, variantNum);
-            int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-            if (srcVariantNum != -1) {
-                // Remove tombstoned resources in the current variant
-                Set<String> tombstonedIds = getTombstonedIdentifiableIds(connection, networkId, variantNum);
-                if (tombstonedIds.contains(identifiableId)) {
-                    return Optional.empty();
-                }
-                // Remove tombstoned extensions in the current variant
-                Map<String, Set<String>> tombstonedExtensions = extensionHandler.getTombstonedExtensions(connection, networkId, variantNum);
-                if (tombstonedExtensions.containsKey(identifiableId) && tombstonedExtensions.get(identifiableId).contains(extensionName)) {
-                    return Optional.empty();
-                }
-
-                // Retrieve updated extension in partial variant
-                Optional<ExtensionAttributes> extensionAttributes = extensionHandler.getExtensionAttributes(connection, networkId, variantNum, identifiableId, extensionName);
-                if (extensionAttributes.isPresent()) {
-                    return extensionAttributes;
-                }
-                return extensionHandler.getExtensionAttributes(connection, networkId, srcVariantNum, identifiableId, extensionName);
-            }
-            return extensionHandler.getExtensionAttributes(connection, networkId, variantNum, identifiableId, extensionName);
+            int srcVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum();
+            return extensionHandler.getExtensionAttributes(
+                    connection,
+                    networkId,
+                    variantNum,
+                    identifiableId,
+                    extensionName,
+                    srcVariantNum,
+                    () -> getTombstonedIdentifiableIds(connection, networkId, variantNum));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -3747,33 +3733,15 @@ public class NetworkStoreRepository {
 
     public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionName(UUID networkId, int variantNum, ResourceType type, String extensionName) {
         try (var connection = dataSource.getConnection()) {
-            Resource<NetworkAttributes> network = getNetworkAttributes(connection, networkId, variantNum);
-            int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-            Map<String, ExtensionAttributes> extensionsAttributesByResourceTypeAndExtensionName;
-
-            if (srcVariantNum != -1) {
-                // Retrieve extensionsAttributesByResourceTypeAndExtensionName from the (full) variant first
-                extensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(connection, networkId, srcVariantNum, type.toString(), extensionName);
-                // Remove tombstoned resources in the current variant
-                Set<String> tombstonedIds = getTombstonedIdentifiableIds(connection, networkId, variantNum);
-                extensionsAttributesByResourceTypeAndExtensionName.keySet().removeIf(tombstonedIds::contains);
-                // Remove tombstoned extensions in the current variant
-                Map<String, Set<String>> tombstonedExtensions = extensionHandler.getTombstonedExtensions(connection, networkId, variantNum);
-                extensionsAttributesByResourceTypeAndExtensionName.entrySet().removeIf(entry -> {
-                    String resourceId = entry.getKey();
-                    Set<String> tombstonedForResource = tombstonedExtensions.get(resourceId);
-                    return tombstonedForResource != null && tombstonedForResource.contains(extensionName);
-                });
-                // Retrieve updated extensionsAttributesByResourceTypeAndExtensionName in partial
-                Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(connection, networkId, variantNum, type.toString(), extensionName);
-                // Combine base and updated extensionsAttributesByResourceTypeAndExtensionName
-                extensionsAttributesByResourceTypeAndExtensionName.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
-            } else {
-                // If the variant is FULL, retrieve extensionsAttributesByResourceTypeAndExtensionName for the specified variant directly
-                extensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(connection, networkId, variantNum, type.toString(), extensionName);
-            }
-            return extensionsAttributesByResourceTypeAndExtensionName;
+            int srcVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum();
+            return extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(
+                    connection,
+                    networkId,
+                    variantNum,
+                    type.toString(),
+                    extensionName,
+                    srcVariantNum,
+                    () -> getTombstonedIdentifiableIds(connection, networkId, variantNum));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -3781,36 +3749,14 @@ public class NetworkStoreRepository {
 
     public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableId(UUID networkId, int variantNum, String identifiableId) {
         try (var connection = dataSource.getConnection()) {
-            Resource<NetworkAttributes> network = getNetworkAttributes(connection, networkId, variantNum);
-            int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-            Map<String, ExtensionAttributes> extensionsAttributesByIdentifiableId;
-
-            if (srcVariantNum != -1) {
-                // If the equipment is tombstoned, we return directly
-                Set<String> tombstonedIds = getTombstonedIdentifiableIds(connection, networkId, variantNum);
-                if (tombstonedIds.contains(identifiableId)) {
-                    return Map.of();
-                }
-
-                // Retrieve extensionsAttributesByIdentifiableId from the (full) variant first
-                extensionsAttributesByIdentifiableId = extensionHandler.getAllExtensionsAttributesByIdentifiableId(connection, networkId, srcVariantNum, identifiableId);
-                // Remove tombstoned extensions from full
-                Map<String, Set<String>> tombstonedExtensions = extensionHandler.getTombstonedExtensions(connection, networkId, variantNum);
-                extensionsAttributesByIdentifiableId.entrySet().removeIf(entry -> {
-                    String extensionName = entry.getKey();
-                    Set<String> tombstonedForResource = tombstonedExtensions.get(identifiableId);
-                    return tombstonedForResource != null && tombstonedForResource.contains(extensionName);
-                });
-                // Retrieve updated extensionsAttributesByIdentifiableId in partial
-                Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = extensionHandler.getAllExtensionsAttributesByIdentifiableId(connection, networkId, variantNum, identifiableId);
-                // Combine base and updated extensionsAttributesByIdentifiableId
-                extensionsAttributesByIdentifiableId.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
-            } else {
-                // If the variant is FULL, retrieve extensionsAttributesByIdentifiableId for the specified variant directly
-                extensionsAttributesByIdentifiableId = extensionHandler.getAllExtensionsAttributesByIdentifiableId(connection, networkId, variantNum, identifiableId);
-            }
-            return extensionsAttributesByIdentifiableId;
+            int srcVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum();
+            return extensionHandler.getAllExtensionsAttributesByIdentifiableId(
+                    connection,
+                    networkId,
+                    variantNum,
+                    identifiableId,
+                    srcVariantNum,
+                    () -> getTombstonedIdentifiableIds(connection, networkId, variantNum));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -3818,61 +3764,14 @@ public class NetworkStoreRepository {
 
     public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceType(UUID networkId, int variantNum, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
-            Resource<NetworkAttributes> network = getNetworkAttributes(connection, networkId, variantNum);
-            int srcVariantNum = network.getAttributes().getSrcVariantNum();
-
-            Map<String, Map<String, ExtensionAttributes>> extensionsAttributesByResourceType;
-
-            if (srcVariantNum != -1) {
-                // Retrieve extensionsAttributesByResourceType from the (full) variant first
-                extensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(connection, networkId, srcVariantNum, type.toString());
-                // Remove tombstoned resources in the current variant
-                Set<String> tombstonedIds = getTombstonedIdentifiableIds(connection, networkId, variantNum);
-                extensionsAttributesByResourceType.keySet().removeIf(tombstonedIds::contains);
-                // Remove tombstoned extensions in the current variant
-                Map<String, Set<String>> tombstonedExtensions = extensionHandler.getTombstonedExtensions(connection, networkId, variantNum);
-                extensionsAttributesByResourceType.forEach((identifiableId, nestedMap) -> {
-                    Set<String> tombstonedForResource = tombstonedExtensions.get(identifiableId);
-                    if (tombstonedForResource != null) {
-                        nestedMap.keySet().removeIf(tombstonedForResource::contains);
-                    }
-                });
-                // Combine base and updated extensionsAttributesByResourceType
-                Map<String, Map<String, ExtensionAttributes>> updatedExtensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(connection, networkId, variantNum, type.toString());
-                // Merge maps and nested maps of updatedExtensionsAttributesByResourceType in extensionsAttributesByResourceType
-                for (Map.Entry<String, Map<String, ExtensionAttributes>> entry : updatedExtensionsAttributesByResourceType.entrySet()) {
-                    String resourceId = entry.getKey();
-                    Map<String, ExtensionAttributes> updatedNestedMap = entry.getValue();
-
-                    extensionsAttributesByResourceType.merge(
-                            resourceId,
-                            updatedNestedMap,
-                            (existingNestedMap, newNestedMap) -> {
-                                // Merge the nested maps
-                                for (Map.Entry<String, ExtensionAttributes> nestedEntry : newNestedMap.entrySet()) {
-                                    String nestedKey = nestedEntry.getKey();
-                                    ExtensionAttributes updatedAttributes = nestedEntry.getValue();
-
-                                    // Add or update the nested map entry
-                                    existingNestedMap.merge(
-                                            nestedKey,
-                                            updatedAttributes,
-                                            (existingAttributes, newAttributes) -> {
-                                                return newAttributes;
-                                            }
-                                    );
-                                }
-                                return existingNestedMap;
-                            }
-                    );
-                }
-                // Remove ids with empty nested maps not sure it's necessary ? => TO TEST
-                extensionsAttributesByResourceType.entrySet().removeIf(entry -> entry.getValue().isEmpty());
-            } else {
-                // If the variant is FULL, retrieve extensionsAttributesByResourceType for the specified variant directly
-                extensionsAttributesByResourceType = extensionHandler.getAllExtensionsAttributesByResourceType(connection, networkId, variantNum, type.toString());
-            }
-            return extensionsAttributesByResourceType;
+            int srcVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum();
+            return extensionHandler.getAllExtensionsAttributesByResourceType(
+                    connection,
+                    networkId,
+                    variantNum,
+                    type,
+                    srcVariantNum,
+                    () -> getTombstonedIdentifiableIds(connection, networkId, variantNum));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -3880,18 +3779,10 @@ public class NetworkStoreRepository {
 
     public void removeExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
         try (var connection = dataSource.getConnection()) {
-            extensionHandler.deleteExtensionsFromIdentifiables(connection, networkId, variantNum, Map.of(identifiableId, Set.of(extensionName)));
-            insertTombstonedExtensions(networkId, variantNum, identifiableId, extensionName, connection);
+            boolean isPartial = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum() != -1;
+            extensionHandler.deleteAndTombstoneExtensions(connection, networkId, variantNum, Map.of(identifiableId, Set.of(extensionName)), isPartial);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
-        }
-    }
-
-    private void insertTombstonedExtensions(UUID networkId, int variantNum, String identifiableId, String extensionName, Connection connection) throws SQLException {
-        Resource<NetworkAttributes> network = getNetworkAttributes(connection, networkId, variantNum);
-        int srcVariantNum = network.getAttributes().getSrcVariantNum();
-        if (srcVariantNum != -1) {
-            extensionHandler.insertTombstonedExtensions(networkId, variantNum, identifiableId, extensionName, connection);
         }
     }
 }

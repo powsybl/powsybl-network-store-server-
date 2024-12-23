@@ -336,7 +336,7 @@ class NetworkStoreRepositoryPartialVariantTest {
             assertNull(networkStoreRepository.getRegulatingPointsForVariant(connection, networkUuid, variantNum, ResourceType.GENERATOR, variantNum).get(ownerInfo));
 
             // Extensions
-            assertTrue(extensionHandler.getAllExtensionsAttributesByIdentifiableId(connection, networkUuid, variantNum, lineId).isEmpty());
+            assertTrue(extensionHandler.getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkUuid, variantNum, lineId).isEmpty());
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -1022,10 +1022,12 @@ class NetworkStoreRepositoryPartialVariantTest {
         Resource<LineAttributes> lineVariant2 = createLine(2, lineId1, "vl2", "vl3");
 
         // Variant 1 (removed line1)
+        assertTrue(networkStoreRepository.getLines(NETWORK_UUID, 1).isEmpty());
         assertTrue(getIdentifiablesForVariant(NETWORK_UUID, 1, mappings.getLineMappings()).isEmpty());
         assertTrue(getStoredIdentifiableIdsInVariant(NETWORK_UUID, 1).isEmpty());
         assertEquals(Set.of(lineId1), getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 1));
         // Variant 2 (recreated line1 with different attributes)
+        assertEquals(List.of(lineVariant2), networkStoreRepository.getLines(NETWORK_UUID, 2));
         assertEquals(List.of(lineVariant2), getIdentifiablesForVariant(NETWORK_UUID, 2, mappings.getLineMappings()));
         assertEquals(List.of(lineId1), getStoredIdentifiableIdsInVariant(NETWORK_UUID, 2));
         assertEquals(Set.of(lineId1), getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 1));
@@ -1712,6 +1714,7 @@ class NetworkStoreRepositoryPartialVariantTest {
         networkStoreRepository.removeExtensionAttributes(NETWORK_UUID, 1, lineId2, ActivePowerControl.NAME);
 
         assertEquals(Optional.empty(), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
+        assertEquals(Optional.of(extensionAttributesMap2.get(OperatingStatus.NAME)), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId2, OperatingStatus.NAME));
         assertEquals(Map.of(), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId1));
         assertEquals(Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status2")), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId2));
         Map<String, ExtensionAttributes> expExtensionAttributesOsLine = Map.of(lineId2, buildOperatingStatusAttributes("status2"));
