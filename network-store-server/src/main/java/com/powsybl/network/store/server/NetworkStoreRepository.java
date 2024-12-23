@@ -1432,12 +1432,15 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes & ReactiveLimitHolder> void insertTombstonedReactiveCapabilityCurvePoints(UUID networkUuid, Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePointsToInsert, List<Resource<T>> resources, ResourceType resourceType) {
         try (var connection = dataSource.getConnection()) {
-            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
-                    .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Map<Integer, List<String>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(
+                            Resource::getVariantNum,
+                            Collectors.mapping(Resource::getId, Collectors.toList())
+                    ));
             Set<OwnerInfo> tombstonedReactiveCapabilityCurvePoints = PartialVariantUtils.getExternalAttributesToTombstone(
                     resourcesByVariant,
                     variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                    (srcVariantNum, variantNum) -> getReactiveCapabilityCurvePointsForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_TYPE_COLUMN, resourceType.toString(), variantNum).keySet(),
+                    (srcVariantNum, variantNum, ids) -> getReactiveCapabilityCurvePointsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
                     variantNum -> getTombstonedReactiveCapabilityCurvePointsIds(connection, networkUuid, variantNum),
                     getExternalAttributesListToTombstoneFromEquipment(networkUuid, reactiveCapabilityCurvePointsToInsert, resources)
             );
@@ -1861,12 +1864,15 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes> void insertTombstonedTapChangerSteps(UUID networkUuid, Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerStepsToInsert, List<Resource<T>> resources, ResourceType resourceType) {
         try (var connection = dataSource.getConnection()) {
-            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
-                    .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Map<Integer, List<String>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(
+                            Resource::getVariantNum,
+                            Collectors.mapping(Resource::getId, Collectors.toList())
+                    ));
             Set<OwnerInfo> tombstonedTapChangerSteps = PartialVariantUtils.getExternalAttributesToTombstone(
                     resourcesByVariant,
                     variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                    (srcVariantNum, variantNum) -> getTapChangerStepsForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_TYPE_COLUMN, resourceType.toString(), variantNum).keySet(),
+                    (srcVariantNum, variantNum, ids) -> getTapChangerStepsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
                     variantNum -> getTombstonedTapChangerStepsIds(connection, networkUuid, variantNum),
                     getExternalAttributesListToTombstoneFromEquipment(networkUuid, tapChangerStepsToInsert, resources)
             );
@@ -2041,12 +2047,15 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes> void insertTombstonedTemporaryLimits(UUID networkUuid, Map<OwnerInfo, LimitsInfos> limitsInfos, List<Resource<T>> resources, ResourceType resourceType) {
         try (var connection = dataSource.getConnection()) {
-            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
-                    .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Map<Integer, List<String>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(
+                            Resource::getVariantNum,
+                            Collectors.mapping(Resource::getId, Collectors.toList())
+                    ));
             Set<OwnerInfo> tombstonedTemporaryLimits = PartialVariantUtils.getExternalAttributesToTombstone(
                     resourcesByVariant,
                     variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                    (srcVariantNum, variantNum) -> getTemporaryLimitsForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_TYPE_COLUMN, resourceType.toString(), variantNum).keySet(),
+                    (srcVariantNum, variantNum, ids) -> getTemporaryLimitsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
                     variantNum -> getTombstonedTemporaryLimitsIds(connection, networkUuid, variantNum),
                     getTemporaryLimitsToTombstoneFromEquipment(networkUuid, limitsInfos, resources)
             );
@@ -2106,12 +2115,15 @@ public class NetworkStoreRepository {
 
     private <T extends IdentifiableAttributes> void insertTombstonedPermanentLimits(UUID networkUuid, Map<OwnerInfo, LimitsInfos> limitsInfos, List<Resource<T>> resources, ResourceType resourceType) {
         try (var connection = dataSource.getConnection()) {
-            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
-                       .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Map<Integer, List<String>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(
+                            Resource::getVariantNum,
+                            Collectors.mapping(Resource::getId, Collectors.toList())
+                    ));
             Set<OwnerInfo> tombstonedPermanentLimits = PartialVariantUtils.getExternalAttributesToTombstone(
                         resourcesByVariant,
                         variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                        (srcVariantNum, variantNum) -> getPermanentLimitsForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_TYPE_COLUMN, resourceType.toString(), variantNum).keySet(),
+                        (srcVariantNum, variantNum, ids) -> getPermanentLimitsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
                         variantNum -> getTombstonedPermanentLimitsIds(connection, networkUuid, variantNum),
                         getPermanentLimitsToTombstoneFromEquipment(networkUuid, limitsInfos, resources)
                 );
@@ -2812,12 +2824,15 @@ public class NetworkStoreRepository {
 
     private <T extends AbstractRegulatingEquipmentAttributes> void insertTombstonedRegulatingPoints(UUID networkUuid, Map<OwnerInfo, RegulatingPointAttributes> regulatingPointToInsert, List<Resource<T>> resources, ResourceType resourceType) {
         try (var connection = dataSource.getConnection()) {
-            Map<Integer, List<Resource<T>>> resourcesByVariant = resources.stream()
-                    .collect(Collectors.groupingBy(Resource::getVariantNum));
+            Map<Integer, List<String>> resourcesByVariant = resources.stream()
+                    .collect(Collectors.groupingBy(
+                            Resource::getVariantNum,
+                            Collectors.mapping(Resource::getId, Collectors.toList())
+                    ));
             Set<OwnerInfo> tombstonedRegulatingPoints = PartialVariantUtils.getExternalAttributesToTombstone(
                     resourcesByVariant,
                     variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                    (srcVariantNum, variantNum) -> getRegulatingPointsForVariant(connection, networkUuid, srcVariantNum, resourceType, variantNum).keySet(),
+                    (srcVariantNum, variantNum, ids) -> getRegulatingPointsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, resourceType, variantNum).keySet(),
                     variantNum -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     getRegulatingPointsToTombstoneFromEquipment(networkUuid, regulatingPointToInsert, resources)
             );

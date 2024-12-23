@@ -10,9 +10,9 @@ import com.powsybl.network.store.model.Attributes;
 import com.powsybl.network.store.model.NetworkAttributes;
 import com.powsybl.network.store.model.Resource;
 import com.powsybl.network.store.server.dto.OwnerInfo;
+import org.apache.commons.lang3.function.TriFunction;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -59,22 +59,28 @@ public final class PartialVariantUtils {
     }
 
     public static <T> Set<OwnerInfo> getExternalAttributesToTombstone(
-            Map<Integer, T> externalAttributesResourcesByVariant,
+            Map<Integer, List<String>> externalAttributesResourcesIdsByVariant,
             IntFunction<Resource<NetworkAttributes>> fetchNetworkAttributes,
-            BiFunction<Integer, Integer, Set<OwnerInfo>> fetchExternalAttributesOwnerInfoInVariant,
+            TriFunction<Integer, Integer, List<String>, Set<OwnerInfo>> fetchExternalAttributesOwnerInfoInVariant,
             IntFunction<Set<String>> fetchTombstonedExternalAttributesIds,
             Set<OwnerInfo> externalAttributesToTombstoneFromEquipment
     ) {
+        if (externalAttributesToTombstoneFromEquipment.isEmpty()) {
+            return Set.of();
+        }
+
         Set<OwnerInfo> externalAttributesResourcesInFullVariant = new HashSet<>();
         Set<String> tombstonedExternalAttributes = new HashSet<>();
         Set<Integer> fullVariant = new HashSet<>();
-        for (int variantNum : externalAttributesResourcesByVariant.keySet()) {
+        for (Map.Entry<Integer, List<String>> entry : externalAttributesResourcesIdsByVariant.entrySet()) {
+            int variantNum = entry.getKey();
+            List<String> resourcesIds = entry.getValue();
             Resource<NetworkAttributes> networkAttributes = fetchNetworkAttributes.apply(variantNum);
             int srcVariantNum = networkAttributes.getAttributes().getSrcVariantNum();
             if (srcVariantNum == -1) {
                 fullVariant.add(variantNum);
             }
-            externalAttributesResourcesInFullVariant.addAll(fetchExternalAttributesOwnerInfoInVariant.apply(srcVariantNum, variantNum));
+            externalAttributesResourcesInFullVariant.addAll(fetchExternalAttributesOwnerInfoInVariant.apply(srcVariantNum, variantNum, resourcesIds));
             tombstonedExternalAttributes.addAll(fetchTombstonedExternalAttributesIds.apply(variantNum));
         }
         return externalAttributesToTombstoneFromEquipment.stream().filter(owner ->
