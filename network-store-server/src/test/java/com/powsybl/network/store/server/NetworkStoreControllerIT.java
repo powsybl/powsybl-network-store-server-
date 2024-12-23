@@ -1190,6 +1190,152 @@ class NetworkStoreControllerIT {
         createIdentifiable(tieLine2, "tie-lines");
 
         deleteIdentifiableList(List.of("idTieLine1", "idTieLine2"), "tie-lines");
+
+        // test batch removal
+        // VscConverterStation
+        Resource<VscConverterStationAttributes> vsc1 = Resource.vscConverterStationBuilder()
+                .id("vsc1")
+                .attributes(VscConverterStationAttributes.builder().name("vsc1").build())
+                .build();
+        createIdentifiable(vsc1, "vsc-converter-stations");
+
+        Resource<VscConverterStationAttributes> vsc2 = Resource.vscConverterStationBuilder()
+                .id("vsc2")
+                .attributes(VscConverterStationAttributes.builder().name("vsc2").build())
+                .build();
+        createIdentifiable(vsc2, "vsc-converter-stations");
+
+        deleteIdentifiableList(List.of("vsc1", "vsc2"), "vsc-converter-stations");
+
+        // LccConverterStation
+        Resource<LccConverterStationAttributes> lcc1 = Resource.lccConverterStationBuilder()
+                .id("lcc1")
+                .attributes(LccConverterStationAttributes.builder().name("lcc1").build())
+                .build();
+        createIdentifiable(lcc1, "lcc-converter-stations");
+
+        Resource<LccConverterStationAttributes> lcc2 = Resource.lccConverterStationBuilder()
+                .id("lcc2")
+                .attributes(LccConverterStationAttributes.builder().name("lcc2").build())
+                .build();
+        createIdentifiable(lcc2, "lcc-converter-stations");
+
+        deleteIdentifiableList(List.of("lcc1", "lcc2"), "lcc-converter-stations");
+
+        //HVDC
+        Resource<HvdcLineAttributes> hvdc1 = Resource.hvdcLineBuilder()
+                .id("hvdc1")
+                .attributes(HvdcLineAttributes.builder().name("hvdc1").build())
+                .build();
+        createIdentifiable(hvdc1, "hvdc-lines");
+
+        Resource<HvdcLineAttributes> hvdc2 = Resource.hvdcLineBuilder()
+                .id("hvdc2")
+                .attributes(HvdcLineAttributes.builder().name("hvdc2").build())
+                .build();
+        createIdentifiable(hvdc2, "hvdc-lines");
+
+        deleteIdentifiableList(List.of("hvdc1", "hvdc2"), "hvdc-lines");
+
+        // load
+        Resource<LoadAttributes> load1 = Resource.loadBuilder()
+                .id("load1")
+                .attributes(LoadAttributes.builder().name("load1").build())
+                .build();
+        createIdentifiable(load1, "loads");
+
+        Resource<LoadAttributes> load2 = Resource.loadBuilder()
+                .id("load2")
+                .attributes(LoadAttributes.builder().name("load2").build())
+                .build();
+        createIdentifiable(load2, "loads");
+
+        deleteIdentifiableList(List.of("load1", "load2"), "loads");
+
+        // StaticVarCompensator
+        Resource<StaticVarCompensatorAttributes> svc1 = Resource.staticVarCompensatorBuilder()
+                .id("svc1")
+                .attributes(StaticVarCompensatorAttributes.builder().name("svc1").build())
+                .build();
+        createIdentifiable(svc1, "static-var-compensators");
+
+        Resource<StaticVarCompensatorAttributes> svc2 = Resource.staticVarCompensatorBuilder()
+                .id("svc2")
+                .attributes(StaticVarCompensatorAttributes.builder().name("svc2").build())
+                .build();
+        createIdentifiable(svc2, "static-var-compensators");
+
+        deleteIdentifiableList(List.of("svc1", "svc2"), "static-var-compensators");
+
+        // TwoWindingsTransformer
+        Resource<TwoWindingsTransformerAttributes> twoWT1 = Resource.twoWindingsTransformerBuilder()
+                .id("TwoWT1")
+                .attributes(TwoWindingsTransformerAttributes.builder().name("TwoWT1").build())
+                .build();
+        createIdentifiable(twoWT1, "2-windings-transformers");
+
+        Resource<TwoWindingsTransformerAttributes> twoWT2 = Resource.twoWindingsTransformerBuilder()
+                .id("TwoWT2")
+                .attributes(TwoWindingsTransformerAttributes.builder().name("TwoWT2").build())
+                .build();
+        createIdentifiable(twoWT2, "2-windings-transformers");
+
+        deleteIdentifiableList(List.of("TwoWT1", "TwoWT2"), "2-windings-transformers");
+
+        // ThreeWindingsTransformer
+        Resource<ThreeWindingsTransformerAttributes> threeWT1 = Resource.threeWindingsTransformerBuilder()
+                .id("ThreeWT1")
+                .attributes(ThreeWindingsTransformerAttributes.builder()
+                        .name("ThreeWT1")
+                        .leg1(LegAttributes.builder().voltageLevelId("baz").build())
+                        .leg2(LegAttributes.builder().voltageLevelId("baz").build())
+                        .leg3(LegAttributes.builder().voltageLevelId("baz").build())
+                        .build())
+                .build();
+        createIdentifiable(threeWT1, "3-windings-transformers");
+
+        Resource<ThreeWindingsTransformerAttributes> threeWT2 = Resource.threeWindingsTransformerBuilder()
+                .id("ThreeWT2")
+                .attributes(ThreeWindingsTransformerAttributes.builder()
+                        .name("ThreeWT2")
+                        .leg1(LegAttributes.builder().voltageLevelId("baz").build())
+                        .leg2(LegAttributes.builder().voltageLevelId("baz").build())
+                        .leg3(LegAttributes.builder().voltageLevelId("baz").build())
+                        .build())
+                .build();
+        createIdentifiable(threeWT2, "3-windings-transformers");
+
+        deleteIdentifiableList(List.of("ThreeWT2", "ThreeWT1"), "3-windings-transformers");
+
+        // BusbarSection
+        Resource<BusbarSectionAttributes> busBar1 = Resource.busbarSectionBuilder()
+                .id("busBar1")
+                .attributes(BusbarSectionAttributes.builder().name("busBar1").build())
+                .build();
+        createIdentifiable(busBar1, "busbar-sections");
+
+        Resource<BusbarSectionAttributes> busBar2 = Resource.busbarSectionBuilder()
+                .id("busBar2")
+                .attributes(BusbarSectionAttributes.builder().name("busBar2").build())
+                .build();
+        createIdentifiable(busBar2, "busbar-sections");
+
+        deleteIdentifiableList(List.of("busBar2", "busBar1"), "busbar-sections");
+
+        // ConfiguredBus
+        Resource<ConfiguredBusAttributes> bus1 = Resource.configuredBusBuilder()
+                .id("bus1")
+                .attributes(ConfiguredBusAttributes.builder().name("bus1").build())
+                .build();
+        createIdentifiable(bus1, "configured-buses");
+
+        Resource<ConfiguredBusAttributes> bus2 = Resource.configuredBusBuilder()
+                .id("bus2")
+                .attributes(ConfiguredBusAttributes.builder().name("bus2").build())
+                .build();
+        createIdentifiable(bus2, "configured-buses");
+
+        deleteIdentifiableList(List.of("bus1", "bus2"), "configured-buses");
     }
 
     @Test
