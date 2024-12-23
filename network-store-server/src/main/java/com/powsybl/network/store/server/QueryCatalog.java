@@ -86,18 +86,18 @@ public final class QueryCatalog {
                 " and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    public static String buildGetIdentifiablesInVariantExcludingOtherVariantQuery(String tableName, Collection<String> columns) {
+    public static String buildGetIdentifiablesWithInClauseQuery(String tableName, Collection<String> columns, int numberOfValues) {
+        if (numberOfValues < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+
         return "select " + ID_COLUMN + ", " +
                 String.join(", ", columns) +
                 " from " + tableName +
                 " where " + NETWORK_UUID_COLUMN + " = ?" +
                 " and " + VARIANT_NUM_COLUMN + " = ?" +
-                " and " + ID_COLUMN + " not in (" +
-                "select " + ID_COLUMN +
-                " from " + tableName +
-                " where " + NETWORK_UUID_COLUMN + " = ?" +
-                " and " + VARIANT_NUM_COLUMN + " = ?)" +
-                " and " + ID_COLUMN + " = ANY (?)";
+                " and " + ID_COLUMN + " in (" +
+                "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
     public static String buildGetIdentifiablesInContainerQuery(String tableName, Collection<String> columns, Set<String> containerColumns) {

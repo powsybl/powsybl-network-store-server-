@@ -702,7 +702,6 @@ public class NetworkStoreRepository {
         }
 
         // Copy of tombstoned extensions
-        //TODO: Do not copy tombstoned if it's a full clone because the data will be stored in full network (this partial clone => full clone need to be coded too)
         try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneTombstonedExtensionsQuery())) {
             preparedStmt.setObject(1, targetUuid);
             preparedStmt.setInt(2, targetVariantNum);
@@ -733,11 +732,15 @@ public class NetworkStoreRepository {
     public <T extends IdentifiableAttributes> void createIdentifiables(UUID networkUuid, List<Resource<T>> resources,
                                                                        TableMapping tableMapping) {
         try (var connection = dataSource.getConnection()) {
-            insertIdentifiables(networkUuid, resources, tableMapping, connection);
-            extensionHandler.insertExtensions(connection, extensionHandler.getExtensionsFromEquipments(networkUuid, resources));
+            processInsertIdentifiables(networkUuid, resources, tableMapping, connection);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
+    }
+
+    private <T extends IdentifiableAttributes> void processInsertIdentifiables(UUID networkUuid, List<Resource<T>> resources, TableMapping tableMapping, Connection connection) throws SQLException {
+        insertIdentifiables(networkUuid, resources, tableMapping, connection);
+        extensionHandler.insertExtensions(connection, extensionHandler.getExtensionsFromEquipments(networkUuid, resources));
     }
 
     private <T extends IdentifiableAttributes> void insertIdentifiables(UUID networkUuid, List<Resource<T>> resources, TableMapping tableMapping, Connection connection) throws SQLException {
@@ -923,6 +926,23 @@ public class NetworkStoreRepository {
         return identifiables;
     }
 
+    private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesWithInClauseForVariant(Connection connection, UUID networkUuid, int variantNum, TableMapping tableMapping, List<String> valuesForInClause, int variantNumOverride) {
+        if (valuesForInClause.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try (var preparedStmt = connection.prepareStatement(buildGetIdentifiablesWithInClauseQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), valuesForInClause.size()))) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            for (int i = 0; i < valuesForInClause.size(); i++) {
+                preparedStmt.setString(3 + i, valuesForInClause.get(i));
+            }
+
+            return getIdentifiablesInternal(variantNumOverride, preparedStmt, tableMapping);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
     private <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesInContainer(UUID networkUuid, int variantNum, String containerId,
                                                                                              Set<String> containerColumns,
                                                                                              TableMapping tableMapping) {
@@ -963,78 +983,55 @@ public class NetworkStoreRepository {
     public <T extends IdentifiableAttributes & Contained> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
                                                                                    TableMapping tableMapping, String columnToAddToWhereClause) {
         try (var connection = dataSource.getConnection()) {
-            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
-
-            String updateQuery = buildUpdateIdentifiableQuery(
-                    tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause);
-            String insertQuery = buildInsertIdentifiableQuery(
-                    tableMapping.getTable(), tableMapping.getColumnsMapping().keySet());
-            try (var updateStatement = connection.prepareStatement(updateQuery);
-                 var insertStatement = connection.prepareStatement(insertQuery)) {
-                List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
-                for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                    for (Resource<T> resource : subResources) {
-                        T attributes = resource.getAttributes();
-                        values.clear();
-                        int variantNum = resource.getVariantNum();
-                        String resourceId = resource.getId();
-                        if (existingIds.get(variantNum).contains(resourceId)) {
-                            for (var e : tableMapping.getColumnsMapping().entrySet()) {
-                                String columnName = e.getKey();
-                                var mapping = e.getValue();
-                                if (!columnName.equals(columnToAddToWhereClause)) {
-                                    values.add(mapping.get(attributes));
-                                }
-                            }
-                            values.add(networkUuid);
-                            values.add(variantNum);
-                            values.add(resourceId);
-                            values.add(resource.getAttributes().getContainerIds().iterator().next());
-                            bindValues(updateStatement, values, mapper);
-                            updateStatement.addBatch();
-                        } else {
-                            values.add(networkUuid);
-                            values.add(variantNum);
-                            values.add(resourceId);
-                            for (var mapping : tableMapping.getColumnsMapping().values()) {
-                                values.add(mapping.get(attributes));
-                            }
-                            bindValues(insertStatement, values, mapper);
-                            insertStatement.addBatch();
-                        }
-                    }
-                    insertStatement.executeBatch();
-                    updateStatement.executeBatch();
-                }
-            }
-            extensionHandler.updateExtensionsFromEquipments(connection, networkUuid, resources);
+            Map<Boolean, List<Resource<T>>> partitionResourcesByExistenceInVariant = partitionResourcesByExistenceInVariant(connection, networkUuid, resources, tableMapping.getTable());
+            processInsertIdentifiables(networkUuid, partitionResourcesByExistenceInVariant.get(false), tableMapping, connection);
+            processUpdateIdentifiables(connection, networkUuid, partitionResourcesByExistenceInVariant.get(true), tableMapping, columnToAddToWhereClause);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    private static <T extends Attributes> Map<Integer, Set<String>> getExistingIdsPerVariant(UUID networkUuid, List<Resource<T>> resources, String table, Connection connection) throws SQLException {
-        //TODO we can select only if partial variant? for full we know that it exists
-        // Update can update resources of multiple variants
-        // upsert might be more efficient than this? But needs a specific Postgres container to run the tests or delete + create? or merge into
-        // but you need to cast each https://github.com/h2database/h2database/issues/2007 for it to work in H2
-        // or can we H2 in compatibility mode POSTGRES?
-        Set<Integer> variantNums = resources.stream().map(Resource::getVariantNum).collect(Collectors.toSet());
-        Map<Integer, Set<String>> existingIds = new HashMap<>();
-        try (var selectStatement = connection.prepareStatement(buildGetIdsQuery(table))) {
-            selectStatement.setObject(1, networkUuid);
-            for (int variantNum : variantNums) {
-                selectStatement.setInt(2, variantNum);
-                Set<String> existingIdsPerVariant = new HashSet<>();
-                try (var resultSet = selectStatement.executeQuery()) {
-                    while (resultSet.next()) {
-                        existingIdsPerVariant.add(resultSet.getString(ID_COLUMN));
+    private <T extends Attributes> Map<Boolean, List<Resource<T>>> partitionResourcesByExistenceInVariant(Connection connection, UUID networkUuid, List<Resource<T>> resources, String tableName) {
+        Map<Integer, Set<String>> existingIdsByVariant = resources.stream()
+                .map(Resource::getVariantNum)
+                .distinct()
+                .collect(Collectors.toMap(
+                        variantNum -> variantNum,
+                        variantNum -> new HashSet<>(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, tableName))
+                ));
+
+        return resources.stream()
+                .collect(Collectors.partitioningBy(
+                        resource -> existingIdsByVariant.get(resource.getVariantNum()).contains(resource.getId())
+                ));
+    }
+
+    public <T extends IdentifiableAttributes & Contained> void processUpdateIdentifiables(Connection connection, UUID networkUuid, List<Resource<T>> resources,
+                                                                                          TableMapping tableMapping, String columnToAddToWhereClause) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), columnToAddToWhereClause))) {
+            List<Object> values = new ArrayList<>(4 + tableMapping.getColumnsMapping().size());
+            for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
+                for (Resource<T> resource : subResources) {
+                    T attributes = resource.getAttributes();
+                    values.clear();
+                    for (var e : tableMapping.getColumnsMapping().entrySet()) {
+                        String columnName = e.getKey();
+                        var mapping = e.getValue();
+                        if (!columnName.equals(columnToAddToWhereClause)) {
+                            values.add(mapping.get(attributes));
+                        }
                     }
+                    values.add(networkUuid);
+                    values.add(resource.getVariantNum());
+                    values.add(resource.getId());
+                    values.add(resource.getAttributes().getContainerIds().iterator().next());
+                    bindValues(preparedStmt, values, mapper);
+                    preparedStmt.addBatch();
                 }
-                existingIds.put(variantNum, existingIdsPerVariant);
+                preparedStmt.executeBatch();
             }
         }
-        return existingIds;
+        extensionHandler.updateExtensionsFromEquipments(connection, networkUuid, resources);
     }
 
     public void updateInjectionsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources, String tableName, TableMapping tableMapping) {
@@ -1053,98 +1050,87 @@ public class NetworkStoreRepository {
             List<Resource<U>> updatedSvResources,
             TableMapping tableMapping,
             String updateQuery,
-            BiConsumer<T, U> attributeUpdater,
-            BiConsumer<U, List<Object>> attributeBinder
+            BiConsumer<T, U> svAttributeUpdater,
+            BiConsumer<U, List<Object>> svAttributeBinder
     ) {
         try (var connection = dataSource.getConnection()) {
-            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, updatedSvResources, tableMapping.getTable(), connection);
-            try (var preparedStmt = connection.prepareStatement(updateQuery)) {
-                List<Object> values = new ArrayList<>();
-                for (List<Resource<U>> subResources : Lists.partition(updatedSvResources, BATCH_SIZE)) {
-                    for (Resource<U> resource : subResources) {
-                        int variantNum = resource.getVariantNum();
-                        String resourceId = resource.getId();
-                        if (existingIds.get(variantNum).contains(resourceId)) {
-                            U attributes = resource.getAttributes();
-                            values.clear();
-                            attributeBinder.accept(attributes, values);
-                            values.add(networkUuid);
-                            values.add(variantNum);
-                            values.add(resourceId);
-                            bindValues(preparedStmt, values, mapper);
-                            preparedStmt.addBatch();
-                        }
-                    }
-                    preparedStmt.executeBatch();
-                }
-            }
-            cloneAndUpdateMissingVariantResources(networkUuid, tableMapping, updatedSvResources, connection, attributeUpdater);
+            Map<Boolean, List<Resource<U>>> partitionedResourcesByExistenceInVariant = partitionResourcesByExistenceInVariant(connection, networkUuid, updatedSvResources, tableMapping.getTable());
+            processUpdateIdentifiablesSv(networkUuid, partitionedResourcesByExistenceInVariant.get(true), updateQuery, svAttributeBinder, connection);
+            processInsertUpdatedIdentifiablesSv(networkUuid, tableMapping, partitionedResourcesByExistenceInVariant.get(false), connection, svAttributeUpdater);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    private <T extends IdentifiableAttributes, U extends Attributes> void cloneAndUpdateMissingVariantResources(
+    private <U extends Attributes> void processUpdateIdentifiablesSv(UUID networkUuid, List<Resource<U>> updatedSvResources, String updateQuery, BiConsumer<U, List<Object>> attributeBinder, Connection connection) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(updateQuery)) {
+            List<Object> values = new ArrayList<>();
+            for (List<Resource<U>> subResources : Lists.partition(updatedSvResources, BATCH_SIZE)) {
+                for (Resource<U> resource : subResources) {
+                    int variantNum = resource.getVariantNum();
+                    String resourceId = resource.getId();
+                    U attributes = resource.getAttributes();
+                    values.clear();
+                    attributeBinder.accept(attributes, values);
+                    values.add(networkUuid);
+                    values.add(variantNum);
+                    values.add(resourceId);
+                    bindValues(preparedStmt, values, mapper);
+                    preparedStmt.addBatch();
+                }
+                preparedStmt.executeBatch();
+            }
+        }
+    }
+
+    private <T extends IdentifiableAttributes, U extends Attributes> void processInsertUpdatedIdentifiablesSv(
             UUID networkUuid,
             TableMapping tableMapping,
-            List<Resource<U>> updatedSvResources,
+            List<Resource<U>> svResources,
             Connection connection,
-            BiConsumer<T, U> attributesUpdater
+            BiConsumer<T, U> svAttributesUpdater
     ) throws SQLException {
-        Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant = updatedSvResources.stream()
+        if (svResources.isEmpty()) {
+            return;
+        }
+
+        Map<Integer, Map<String, Resource<U>>> svResourcesByVariant = svResources.stream()
                 .collect(Collectors.groupingBy(
                         Resource::getVariantNum,
                         Collectors.toMap(Resource::getId, Function.identity())
                 ));
 
-        List<Resource<T>> missingVariantResources = retrieveResourcesMissingFromVariants(networkUuid, tableMapping, updatedSvResourcesByVariant, connection);
+        // Get resources from full variant
+        List<Resource<T>> resourcesToUpdate = retrieveResourcesFromFullVariant(networkUuid, tableMapping, svResourcesByVariant, connection);
 
-        // Update identifiables with values from updatedSvResources, using the provided update function
-        if (!missingVariantResources.isEmpty()) {
-            updateAttributesFromMissingVariantResources(attributesUpdater, missingVariantResources, updatedSvResourcesByVariant);
+        // Update identifiables from full variant with SV values
+        List<Resource<T>> resourcesUpdatedSv = updateSvResourcesFromFullVariant(svAttributesUpdater, resourcesToUpdate, svResourcesByVariant);
 
-            // Batch insert the modified identifiables from srcVariant updated with values from updatedSvResources
-            insertIdentifiables(networkUuid, missingVariantResources, tableMapping, connection);
-            LOGGER.info("Inserted {} missing identifiables in variants (updated with new SV values)", missingVariantResources.size());
-        }
+        // Insert updated identifiables
+        insertIdentifiables(networkUuid, resourcesUpdatedSv, tableMapping, connection);
+        LOGGER.info("Inserted {} identifiables with updated SV values", resourcesUpdatedSv.size());
     }
 
-    private static <T extends IdentifiableAttributes, U extends Attributes> void updateAttributesFromMissingVariantResources(BiConsumer<T, U> svAttributesUpdater, List<Resource<T>> missingVariantResources, Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant) {
-        for (Resource<T> resource : missingVariantResources) {
-            Resource<U> updatedSvResource = updatedSvResourcesByVariant.getOrDefault(resource.getVariantNum(), Map.of()).get(resource.getId());
-            if (updatedSvResource != null) {
-                svAttributesUpdater.accept(resource.getAttributes(), updatedSvResource.getAttributes());
-            }
+    private static <T extends IdentifiableAttributes, U extends Attributes> List<Resource<T>> updateSvResourcesFromFullVariant(BiConsumer<T, U> svAttributesUpdater, List<Resource<T>> resourcesToUpdate, Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant) {
+        for (Resource<T> resource : resourcesToUpdate) {
+            Resource<U> svResource = updatedSvResourcesByVariant.get(resource.getVariantNum()).get(resource.getId());
+            svAttributesUpdater.accept(resource.getAttributes(), svResource.getAttributes());
         }
+        return resourcesToUpdate;
     }
 
-    private <T extends IdentifiableAttributes, U extends Attributes> List<Resource<T>> retrieveResourcesMissingFromVariants(UUID networkUuid, TableMapping tableMapping,
-                                                                                                      Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant,
-                                                                                                      Connection connection) throws SQLException {
-        List<Resource<T>> missingVariantResources = new ArrayList<>();
-        for (var entry : updatedSvResourcesByVariant.entrySet()) {
+    private <T extends IdentifiableAttributes, U extends Attributes> List<Resource<T>> retrieveResourcesFromFullVariant(UUID networkUuid, TableMapping tableMapping,
+                                                                                                                        Map<Integer, Map<String, Resource<U>>> svResourcesByVariant,
+                                                                                                                        Connection connection) {
+        List<Resource<T>> fullVariantResources = new ArrayList<>();
+        for (var entry : svResourcesByVariant.entrySet()) {
             int variantNum = entry.getKey();
-            Set<String> equipmentIds = entry.getValue().keySet();
+            List<String> equipmentIds = new ArrayList<>(entry.getValue().keySet());
             Resource<NetworkAttributes> network = getNetworkAttributes(connection, networkUuid, variantNum);
             int srcVariantNum = network.getAttributes().getSrcVariantNum();
-            // If the variant is a full clone, all resources are already present in the variant
-            if (srcVariantNum == -1) {
-                continue;
-            }
-            try (var preparedStmt = connection.prepareStatement(buildGetIdentifiablesInVariantExcludingOtherVariantQuery(
-                    tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()))) {
-                preparedStmt.setObject(1, networkUuid);
-                preparedStmt.setInt(2, srcVariantNum);
-                preparedStmt.setObject(3, networkUuid);
-                preparedStmt.setInt(4, variantNum);
-                String[] equipmentIdsArray = equipmentIds.toArray(new String[0]);
-                preparedStmt.setArray(5, connection.createArrayOf("VARCHAR", equipmentIdsArray));
-
-                List<Resource<T>> foundResourcesInSrcVariant = getIdentifiablesInternal(variantNum, preparedStmt, tableMapping);
-                missingVariantResources.addAll(foundResourcesInSrcVariant);
-            }
+            fullVariantResources.addAll(getIdentifiablesWithInClauseForVariant(connection, networkUuid, srcVariantNum, tableMapping, equipmentIds, variantNum));
         }
-        return missingVariantResources;
+        return fullVariantResources;
     }
 
     public void updateBranchesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources, String tableName, TableMapping tableMapping) {
@@ -1158,49 +1144,35 @@ public class NetworkStoreRepository {
         );
     }
 
+    public <T extends IdentifiableAttributes> void processUpdateIdentifiables(Connection connection, UUID networkUuid, List<Resource<T>> resources,
+                                                                       TableMapping tableMapping) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildUpdateIdentifiableQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), null))) {
+            List<Object> values = new ArrayList<>(3 + tableMapping.getColumnsMapping().size());
+            for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
+                for (Resource<T> resource : subResources) {
+                    T attributes = resource.getAttributes();
+                    values.clear();
+                    for (var mapping : tableMapping.getColumnsMapping().values()) {
+                        values.add(mapping.get(attributes));
+                    }
+                    values.add(networkUuid);
+                    values.add(resource.getVariantNum());
+                    values.add(resource.getId());
+                    bindValues(preparedStmt, values, mapper);
+                    preparedStmt.addBatch();
+                }
+                preparedStmt.executeBatch();
+            }
+        }
+        extensionHandler.updateExtensionsFromEquipments(connection, networkUuid, resources);
+    }
+
     public <T extends IdentifiableAttributes> void updateIdentifiables(UUID networkUuid, List<Resource<T>> resources,
                                                                        TableMapping tableMapping) {
         executeWithoutAutoCommit(connection -> {
-            Map<Integer, Set<String>> existingIds = getExistingIdsPerVariant(networkUuid, resources, tableMapping.getTable(), connection);
-
-            String updateQuery = buildUpdateIdentifiableQuery(
-                    tableMapping.getTable(), tableMapping.getColumnsMapping().keySet(), null);
-            String insertQuery = buildInsertIdentifiableQuery(
-                    tableMapping.getTable(), tableMapping.getColumnsMapping().keySet());
-            try (var updateStatement = connection.prepareStatement(updateQuery);
-                 var insertStatement = connection.prepareStatement(insertQuery)) {
-                List<Object> values = new ArrayList<>(3 + tableMapping.getColumnsMapping().size());
-                for (List<Resource<T>> subResources : Lists.partition(resources, BATCH_SIZE)) {
-                    for (Resource<T> resource : subResources) {
-                        T attributes = resource.getAttributes();
-                        values.clear();
-                        int variantNum = resource.getVariantNum();
-                        String resourceId = resource.getId();
-                        if (existingIds.get(variantNum).contains(resourceId)) {
-                            for (var mapping : tableMapping.getColumnsMapping().values()) {
-                                values.add(mapping.get(attributes));
-                            }
-                            values.add(networkUuid);
-                            values.add(variantNum);
-                            values.add(resourceId);
-                            bindValues(updateStatement, values, mapper);
-                            updateStatement.addBatch();
-                        } else {
-                            values.add(networkUuid);
-                            values.add(variantNum);
-                            values.add(resourceId);
-                            for (var mapping : tableMapping.getColumnsMapping().values()) {
-                                values.add(mapping.get(attributes));
-                            }
-                            bindValues(insertStatement, values, mapper);
-                            insertStatement.addBatch();
-                        }
-                    }
-                    insertStatement.executeBatch();
-                    updateStatement.executeBatch();
-                }
-            }
-            extensionHandler.updateExtensionsFromEquipments(connection, networkUuid, resources);
+            Map<Boolean, List<Resource<T>>> partitionResourcesByExistenceInVariant = partitionResourcesByExistenceInVariant(connection, networkUuid, resources, tableMapping.getTable());
+            processInsertIdentifiables(networkUuid, partitionResourcesByExistenceInVariant.get(false), tableMapping, connection);
+            processUpdateIdentifiables(connection, networkUuid, partitionResourcesByExistenceInVariant.get(true), tableMapping);
         });
     }
 
