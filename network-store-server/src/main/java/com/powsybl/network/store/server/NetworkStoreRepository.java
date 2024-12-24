@@ -853,14 +853,16 @@ public class NetworkStoreRepository {
 
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiableListQuery(tableName, ids.size()))) {
-                preparedStmt.setObject(1, networkUuid);
-                preparedStmt.setInt(2, variantNum);
+                for (List<String> idsPartition : Lists.partition(ids, BATCH_SIZE)) {
+                    preparedStmt.setObject(1, networkUuid);
+                    preparedStmt.setInt(2, variantNum);
 
-                for (int i = 0; i < ids.size(); i++) {
-                    preparedStmt.setString(3 + i, ids.get(i));
+                    for (int i = 0; i < idsPartition.size(); i++) {
+                        preparedStmt.setString(3 + i, idsPartition.get(i));
+                    }
+
+                    preparedStmt.executeUpdate();
                 }
-
-                preparedStmt.executeUpdate();
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
