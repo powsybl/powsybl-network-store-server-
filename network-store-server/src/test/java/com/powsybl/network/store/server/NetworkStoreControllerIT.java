@@ -845,6 +845,11 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.q").value(40))
                 .andExpect(jsonPath("data[0].attributes.node").value(6));
 
+        // Test removals
+        deleteIdentifiables(List.of("b1"), "switches");
+        deleteIdentifiables(List.of("baz"), "voltage-levels");
+        deleteIdentifiables(List.of("bar"), "substations");
+
         // tie line creation and update
         Resource<TieLineAttributes> tieLine = Resource.tieLineBuilder()
                 .id("idTieLine")
@@ -869,6 +874,8 @@ class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Collections.singleton(tieLine))))
                 .andExpect(status().isOk());
+
+        deleteIdentifiables(List.of("idTieLine"), "tie-lines");
     }
 
     @Test
