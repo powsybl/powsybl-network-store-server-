@@ -95,12 +95,16 @@ public final class QueryCatalog {
         return sql.toString();
     }
 
-    public static String buildDeleteIdentifiablesQuery(String tableName, int idCount) {
+    public static String buildDeleteIdentifiablesQuery(String tableName, int numberOfValues) {
+        if (numberOfValues < 1) {
+            throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
+        }
+
         return "delete from " + tableName + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 ID_COLUMN + " in (" +
-                "?, ".repeat(idCount - 1) + "?)";
+                "?, ".repeat(numberOfValues - 1) + "?)";
     }
 
     public static String buildDeleteNetworkQuery() {
