@@ -172,27 +172,6 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("meta.totalCount").value("2"))
                 .andExpect(jsonPath("data", hasSize(1)));
 
-        // substation delete
-        Resource<SubstationAttributes> sub1 = Resource.substationBuilder().id("sub1")
-                .attributes(SubstationAttributes.builder()
-                        .country(Country.FR)
-                        .tso("RTE")
-                        .entsoeArea(EntsoeAreaAttributes.builder().code("D7").build())
-                        .build())
-                .build();
-        createIdentifiable(sub1, "substations");
-
-        Resource<SubstationAttributes> sub2 = Resource.substationBuilder().id("sub2")
-                .attributes(SubstationAttributes.builder()
-                        .country(Country.FR)
-                        .tso("RTE")
-                        .entsoeArea(EntsoeAreaAttributes.builder().code("D7").build())
-                        .build())
-                .build();
-        createIdentifiable(sub2, "substations");
-
-        deleteIdentifiables(List.of("sub1", "sub2"), "substations");
-
         List<InternalConnectionAttributes> ics1 = new ArrayList<>();
         ics1.add(InternalConnectionAttributes.builder()
                 .node1(10)
@@ -292,64 +271,7 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.calculatedBusesForBusView[0].vertices[0].node").value(13))
                 .andExpect(jsonPath("data[0].attributes.calculatedBusesForBusView[0].vertices[0].side").value("TWO"));
 
-        // voltage level delete
-        Resource<VoltageLevelAttributes> vl1 = Resource.voltageLevelBuilder()
-                .id("vl1")
-                .attributes(VoltageLevelAttributes.builder()
-                        .nominalV(382)
-                        .lowVoltageLimit(362)
-                        .highVoltageLimit(402)
-                        .topologyKind(TopologyKind.NODE_BREAKER)
-                        .internalConnections(Collections.emptyList())
-                        .build())
-                .build();
-        createIdentifiable(vl1, "voltage-levels");
-
-        Resource<VoltageLevelAttributes> vl2 = Resource.voltageLevelBuilder()
-                .id("vl2")
-                .attributes(VoltageLevelAttributes.builder()
-                        .nominalV(382)
-                        .lowVoltageLimit(362)
-                        .highVoltageLimit(402)
-                        .topologyKind(TopologyKind.NODE_BREAKER)
-                        .internalConnections(Collections.emptyList())
-                        .build())
-                .build();
-        createIdentifiable(vl2, "voltage-levels");
-
-        deleteIdentifiables(List.of("vl1", "vl2"), "voltage-levels");
-
-        // switch delete
         deleteIdentifiables(List.of("bar"), "switches");
-
-        Resource<SwitchAttributes> switch1 = Resource.switchBuilder()
-                .id("b1")
-                .attributes(SwitchAttributes.builder()
-                        .voltageLevelId("baz")
-                        .kind(SwitchKind.BREAKER)
-                        .node1(1)
-                        .node2(2)
-                        .open(false)
-                        .retained(false)
-                        .fictitious(false)
-                        .build())
-                .build();
-        createIdentifiable(switch1, "switches");
-
-        Resource<SwitchAttributes> switch2 = Resource.switchBuilder()
-                .id("b2")
-                .attributes(SwitchAttributes.builder()
-                        .voltageLevelId("baz")
-                        .kind(SwitchKind.BREAKER)
-                        .node1(1)
-                        .node2(2)
-                        .open(false)
-                        .retained(false)
-                        .fictitious(false)
-                        .build())
-                .build();
-        createIdentifiable(switch2, "switches");
-        deleteIdentifiables(List.of("b1", "b2"), "switches");
 
         // switch creation and update
         Resource<SwitchAttributes> resBreaker = Resource.switchBuilder()
@@ -387,7 +309,7 @@ class NetworkStoreControllerIT {
                 .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
                 .andExpect(jsonPath("data[0].attributes.open").value("true"));
 
-        // line creation, update and delete
+        // line creation and update
         Resource<LineAttributes> resLine = Resource.lineBuilder()
             .id("idLine")
             .attributes(LineAttributes.builder()
@@ -595,27 +517,7 @@ class NetworkStoreControllerIT {
             .andExpect(jsonPath("data[0].attributes.voltageLevelId1").value("vl12"))
             .andExpect(jsonPath("data[0].attributes.voltageLevelId2").value("vl22"));
 
-        Resource<LineAttributes> line1 = Resource.lineBuilder()
-                .id("line1")
-                .attributes(LineAttributes.builder()
-                                .voltageLevelId1("vl12")
-                                .voltageLevelId2("vl22")
-                        .build())
-                .build();
-        createIdentifiable(line1, "lines");
-
-        Resource<LineAttributes> line2 = Resource.lineBuilder()
-                .id("line2")
-                .attributes(LineAttributes.builder()
-                        .voltageLevelId1("vl12")
-                        .voltageLevelId2("vl22")
-                        .build())
-                .build();
-        createIdentifiable(line2, "lines");
-
-        deleteIdentifiables(List.of("line1", "line2"), "lines");
-
-        // generator creation, update and delete
+        // generator creation and update
         RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
             .regulatingEquipmentId("id")
             .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
@@ -676,31 +578,7 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.12\"].minQ").value(11.12))
                 .andExpect(jsonPath("data[0].attributes.reactiveLimits.points[\"50.12\"].maxQ").value(76.12));
 
-        Resource<GeneratorAttributes> generator1 = Resource.generatorBuilder()
-                .id("gen1")
-                .attributes(GeneratorAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("gen1")
-                        .energySource(EnergySource.HYDRO)
-                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
-                        .regulatingPoint(regulatingPointAttributes)
-                        .build())
-                .build();
-        createIdentifiable(generator1, "generators");
-
-        Resource<GeneratorAttributes> generator2 = Resource.generatorBuilder()
-                .id("gen2")
-                .attributes(GeneratorAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("gen1")
-                        .energySource(EnergySource.HYDRO)
-                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
-                        .regulatingPoint(regulatingPointAttributes)
-                        .build())
-                .build();
-        createIdentifiable(generator2, "generators");
-
-        // battery creation, update and delete
+        // battery creation and update
         Resource<BatteryAttributes> battery = Resource.batteryBuilder()
                 .id("batteryId")
                 .attributes(BatteryAttributes.builder()
@@ -759,37 +637,7 @@ class NetworkStoreControllerIT {
 
         deleteIdentifiables(List.of("battery1"), "batteries");
 
-        Resource<BatteryAttributes> battery1 = Resource.batteryBuilder()
-                .id("bat1")
-                .attributes(BatteryAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("battery1")
-                        .targetP(250)
-                        .targetQ(100)
-                        .maxP(500)
-                        .minP(100)
-                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
-                        .build())
-                .build();
-        createIdentifiable(battery1, "batteries");
-
-        Resource<BatteryAttributes> battery2 = Resource.batteryBuilder()
-                .id("bat2")
-                .attributes(BatteryAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("battery1")
-                        .targetP(250)
-                        .targetQ(100)
-                        .maxP(500)
-                        .minP(100)
-                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
-                        .build())
-                .build();
-        createIdentifiable(battery2, "batteries");
-
-        deleteIdentifiables(List.of("bat1", "bat2"), "batteries");
-
-        // shunt compensator creation, update and delete
+        // shunt compensator creation and update
         Resource<ShuntCompensatorAttributes> shuntCompensator = Resource.shuntCompensatorBuilder()
                 .id("idShunt")
                 .attributes(ShuntCompensatorAttributes.builder()
@@ -846,31 +694,7 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.model.gperSection").value(22))
                 .andExpect(jsonPath("data[0].attributes.p").value(200.));
 
-        Resource<ShuntCompensatorAttributes> shuntCompensator1 = Resource.shuntCompensatorBuilder()
-                .id("idShunt1")
-                .attributes(ShuntCompensatorAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("shunt1")
-                        .model(ShuntCompensatorLinearModelAttributes.builder().bPerSection(1).gPerSection(2).maximumSectionCount(3).build())
-                        .p(100.)
-                        .build())
-                .build();
-        createIdentifiable(shuntCompensator1, "shunt-compensators");
-
-        Resource<ShuntCompensatorAttributes> shuntCompensator2 = Resource.shuntCompensatorBuilder()
-                .id("idShunt2")
-                .attributes(ShuntCompensatorAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("shunt1")
-                        .model(ShuntCompensatorLinearModelAttributes.builder().bPerSection(1).gPerSection(2).maximumSectionCount(3).build())
-                        .p(100.)
-                        .build())
-                .build();
-        createIdentifiable(shuntCompensator2, "shunt-compensators");
-
-        deleteIdentifiables(List.of("idShunt2", "idShunt1"), "shunt-compensators");
-
-        // dangling line creation, update and delete
+        // dangling line creation and update
         Resource<DanglingLineAttributes> danglingLine = Resource.danglingLineBuilder()
                 .id("idDanglingLine")
                 .attributes(DanglingLineAttributes.builder()
@@ -953,77 +777,7 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.generation.targetQ").value(54))
                 .andExpect(jsonPath("data[0].attributes.generation.voltageRegulationOn").value(true));
 
-        Resource<DanglingLineAttributes> danglingLine1 = Resource.danglingLineBuilder()
-                .id("idDanglingLine1")
-                .attributes(DanglingLineAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("dl1")
-                        .fictitious(true)
-                        .node(5)
-                        .p0(10)
-                        .q0(20)
-                        .r(6)
-                        .x(7)
-                        .g(8)
-                        .b(9)
-                        .generation(DanglingLineGenerationAttributes.builder()
-                                .minP(1)
-                                .maxP(2)
-                                .targetP(3)
-                                .targetQ(4)
-                                .targetV(5)
-                                .voltageRegulationOn(false)
-                                .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().minQ(20).maxQ(30).build())
-                                .build())
-                        .pairingKey("XN1")
-                        .selectedOperationalLimitsGroupId("group1")
-                        .operationalLimitsGroups(Map.of("group1", OperationalLimitsGroupAttributes.builder()
-                                .id("group1")
-                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
-                                .build()))
-                        .p(100.)
-                        .q(200)
-                        .build())
-                .build();
-        createIdentifiable(danglingLine1, "dangling-lines");
-
-        Resource<DanglingLineAttributes> danglingLine2 = Resource.danglingLineBuilder()
-                .id("idDanglingLine2")
-                .attributes(DanglingLineAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("dl1")
-                        .fictitious(true)
-                        .node(5)
-                        .p0(10)
-                        .q0(20)
-                        .r(6)
-                        .x(7)
-                        .g(8)
-                        .b(9)
-                        .generation(DanglingLineGenerationAttributes.builder()
-                                .minP(1)
-                                .maxP(2)
-                                .targetP(3)
-                                .targetQ(4)
-                                .targetV(5)
-                                .voltageRegulationOn(false)
-                                .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().minQ(20).maxQ(30).build())
-                                .build())
-                        .pairingKey("XN1")
-                        .selectedOperationalLimitsGroupId("group1")
-                        .operationalLimitsGroups(Map.of("group1", OperationalLimitsGroupAttributes.builder()
-                                .id("group1")
-                                .currentLimits(LimitsAttributes.builder().permanentLimit(20.).build())
-                                .build()))
-                        .p(100.)
-                        .q(200)
-                        .build())
-                .build();
-        createIdentifiable(danglingLine2, "dangling-lines");
-
-        deleteIdentifiables(List.of("idDanglingLine1", "idDanglingLine2"), "dangling-lines");
-
-        // ground creation, update and delete
+        // ground creation and update
         Resource<GroundAttributes> ground = Resource.groundBuilder()
                 .id("idGround")
                 .attributes(GroundAttributes.builder()
@@ -1091,45 +845,7 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.q").value(40))
                 .andExpect(jsonPath("data[0].attributes.node").value(6));
 
-        Resource<GroundAttributes> ground1 = Resource.groundBuilder()
-                .id("idGround1")
-                .attributes(GroundAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("ground1")
-                        .fictitious(true)
-                        .node(5)
-                        .p(10)
-                        .q(20)
-                        .position(ConnectablePositionAttributes.builder()
-                                .direction(ConnectablePosition.Direction.BOTTOM)
-                                .label("label")
-                                .order(1)
-                                .build())
-                        .build())
-                .build();
-        createIdentifiable(ground1, "grounds");
-
-        Resource<GroundAttributes> ground2 = Resource.groundBuilder()
-                .id("idGround2")
-                .attributes(GroundAttributes.builder()
-                        .voltageLevelId("vl1")
-                        .name("ground1")
-                        .fictitious(true)
-                        .node(5)
-                        .p(10)
-                        .q(20)
-                        .position(ConnectablePositionAttributes.builder()
-                                .direction(ConnectablePosition.Direction.BOTTOM)
-                                .label("label")
-                                .order(1)
-                                .build())
-                        .build())
-                .build();
-        createIdentifiable(ground2, "grounds");
-
-        deleteIdentifiables(List.of("idGround2", "idGround1"), "grounds");
-
-        // tie line creation, update and delete
+        // tie line creation and update
         Resource<TieLineAttributes> tieLine = Resource.tieLineBuilder()
                 .id("idTieLine")
                 .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
@@ -1153,168 +869,6 @@ class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Collections.singleton(tieLine))))
                 .andExpect(status().isOk());
-
-        Resource<TieLineAttributes> tieLine1 = Resource.tieLineBuilder()
-                .id("idTieLine1")
-                .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
-                        .build())
-                .build();
-        createIdentifiable(tieLine1, "tie-lines");
-
-        Resource<TieLineAttributes> tieLine2 = Resource.tieLineBuilder()
-                .id("idTieLine2")
-                .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
-                        .build())
-                .build();
-        createIdentifiable(tieLine2, "tie-lines");
-
-        deleteIdentifiables(List.of("idTieLine1", "idTieLine2"), "tie-lines");
-
-        // test batch removal
-        // VscConverterStation
-        Resource<VscConverterStationAttributes> vsc1 = Resource.vscConverterStationBuilder()
-                .id("vsc1")
-                .attributes(VscConverterStationAttributes.builder().name("vsc1").build())
-                .build();
-        createIdentifiable(vsc1, "vsc-converter-stations");
-
-        Resource<VscConverterStationAttributes> vsc2 = Resource.vscConverterStationBuilder()
-                .id("vsc2")
-                .attributes(VscConverterStationAttributes.builder().name("vsc2").build())
-                .build();
-        createIdentifiable(vsc2, "vsc-converter-stations");
-
-        deleteIdentifiables(List.of("vsc1", "vsc2"), "vsc-converter-stations");
-
-        // LccConverterStation
-        Resource<LccConverterStationAttributes> lcc1 = Resource.lccConverterStationBuilder()
-                .id("lcc1")
-                .attributes(LccConverterStationAttributes.builder().name("lcc1").build())
-                .build();
-        createIdentifiable(lcc1, "lcc-converter-stations");
-
-        Resource<LccConverterStationAttributes> lcc2 = Resource.lccConverterStationBuilder()
-                .id("lcc2")
-                .attributes(LccConverterStationAttributes.builder().name("lcc2").build())
-                .build();
-        createIdentifiable(lcc2, "lcc-converter-stations");
-
-        deleteIdentifiables(List.of("lcc1", "lcc2"), "lcc-converter-stations");
-
-        //HVDC
-        Resource<HvdcLineAttributes> hvdc1 = Resource.hvdcLineBuilder()
-                .id("hvdc1")
-                .attributes(HvdcLineAttributes.builder().name("hvdc1").build())
-                .build();
-        createIdentifiable(hvdc1, "hvdc-lines");
-
-        Resource<HvdcLineAttributes> hvdc2 = Resource.hvdcLineBuilder()
-                .id("hvdc2")
-                .attributes(HvdcLineAttributes.builder().name("hvdc2").build())
-                .build();
-        createIdentifiable(hvdc2, "hvdc-lines");
-
-        deleteIdentifiables(List.of("hvdc1", "hvdc2"), "hvdc-lines");
-
-        // load
-        Resource<LoadAttributes> load1 = Resource.loadBuilder()
-                .id("load1")
-                .attributes(LoadAttributes.builder().name("load1").build())
-                .build();
-        createIdentifiable(load1, "loads");
-
-        Resource<LoadAttributes> load2 = Resource.loadBuilder()
-                .id("load2")
-                .attributes(LoadAttributes.builder().name("load2").build())
-                .build();
-        createIdentifiable(load2, "loads");
-
-        deleteIdentifiables(List.of("load1", "load2"), "loads");
-
-        // StaticVarCompensator
-        Resource<StaticVarCompensatorAttributes> svc1 = Resource.staticVarCompensatorBuilder()
-                .id("svc1")
-                .attributes(StaticVarCompensatorAttributes.builder().name("svc1").build())
-                .build();
-        createIdentifiable(svc1, "static-var-compensators");
-
-        Resource<StaticVarCompensatorAttributes> svc2 = Resource.staticVarCompensatorBuilder()
-                .id("svc2")
-                .attributes(StaticVarCompensatorAttributes.builder().name("svc2").build())
-                .build();
-        createIdentifiable(svc2, "static-var-compensators");
-
-        deleteIdentifiables(List.of("svc1", "svc2"), "static-var-compensators");
-
-        // TwoWindingsTransformer
-        Resource<TwoWindingsTransformerAttributes> twoWT1 = Resource.twoWindingsTransformerBuilder()
-                .id("TwoWT1")
-                .attributes(TwoWindingsTransformerAttributes.builder().name("TwoWT1").build())
-                .build();
-        createIdentifiable(twoWT1, "2-windings-transformers");
-
-        Resource<TwoWindingsTransformerAttributes> twoWT2 = Resource.twoWindingsTransformerBuilder()
-                .id("TwoWT2")
-                .attributes(TwoWindingsTransformerAttributes.builder().name("TwoWT2").build())
-                .build();
-        createIdentifiable(twoWT2, "2-windings-transformers");
-
-        deleteIdentifiables(List.of("TwoWT1", "TwoWT2"), "2-windings-transformers");
-
-        // ThreeWindingsTransformer
-        Resource<ThreeWindingsTransformerAttributes> threeWT1 = Resource.threeWindingsTransformerBuilder()
-                .id("ThreeWT1")
-                .attributes(ThreeWindingsTransformerAttributes.builder()
-                        .name("ThreeWT1")
-                        .leg1(LegAttributes.builder().voltageLevelId("baz").build())
-                        .leg2(LegAttributes.builder().voltageLevelId("baz").build())
-                        .leg3(LegAttributes.builder().voltageLevelId("baz").build())
-                        .build())
-                .build();
-        createIdentifiable(threeWT1, "3-windings-transformers");
-
-        Resource<ThreeWindingsTransformerAttributes> threeWT2 = Resource.threeWindingsTransformerBuilder()
-                .id("ThreeWT2")
-                .attributes(ThreeWindingsTransformerAttributes.builder()
-                        .name("ThreeWT2")
-                        .leg1(LegAttributes.builder().voltageLevelId("baz").build())
-                        .leg2(LegAttributes.builder().voltageLevelId("baz").build())
-                        .leg3(LegAttributes.builder().voltageLevelId("baz").build())
-                        .build())
-                .build();
-        createIdentifiable(threeWT2, "3-windings-transformers");
-
-        deleteIdentifiables(List.of("ThreeWT2", "ThreeWT1"), "3-windings-transformers");
-
-        // BusbarSection
-        Resource<BusbarSectionAttributes> busBar1 = Resource.busbarSectionBuilder()
-                .id("busBar1")
-                .attributes(BusbarSectionAttributes.builder().name("busBar1").build())
-                .build();
-        createIdentifiable(busBar1, "busbar-sections");
-
-        Resource<BusbarSectionAttributes> busBar2 = Resource.busbarSectionBuilder()
-                .id("busBar2")
-                .attributes(BusbarSectionAttributes.builder().name("busBar2").build())
-                .build();
-        createIdentifiable(busBar2, "busbar-sections");
-
-        deleteIdentifiables(List.of("busBar2", "busBar1"), "busbar-sections");
-
-        // ConfiguredBus
-        Resource<ConfiguredBusAttributes> bus1 = Resource.configuredBusBuilder()
-                .id("bus1")
-                .attributes(ConfiguredBusAttributes.builder().name("bus1").build())
-                .build();
-        createIdentifiable(bus1, "configured-buses");
-
-        Resource<ConfiguredBusAttributes> bus2 = Resource.configuredBusBuilder()
-                .id("bus2")
-                .attributes(ConfiguredBusAttributes.builder().name("bus2").build())
-                .build();
-        createIdentifiable(bus2, "configured-buses");
-
-        deleteIdentifiables(List.of("bus1", "bus2"), "configured-buses");
     }
 
     @Test
@@ -1623,6 +1177,414 @@ class NetworkStoreControllerIT {
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Collections.singleton(generator2))))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void testDeleteIdentifiables() throws Exception {
+        Resource<NetworkAttributes> foo = Resource.networkBuilder()
+                .id("foo")
+                .attributes(NetworkAttributes.builder()
+                        .uuid(NETWORK_UUID)
+                        .variantId(String.valueOf(Resource.INITIAL_VARIANT_NUM))
+                        .caseDate(ZonedDateTime.parse("2015-01-01T00:00:00.000Z"))
+                        .build())
+                .build();
+        mvc.perform(post("/" + VERSION + "/networks")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Collections.singleton(foo))))
+                .andExpect(status().isCreated());
+
+        Resource<VoltageLevelAttributes> vl1 = Resource.voltageLevelBuilder()
+                .id("vl1")
+                .attributes(VoltageLevelAttributes.builder()
+                        .nominalV(382)
+                        .lowVoltageLimit(362)
+                        .highVoltageLimit(402)
+                        .topologyKind(TopologyKind.NODE_BREAKER)
+                        .internalConnections(Collections.emptyList())
+                        .build())
+                .build();
+        createIdentifiable(vl1, "voltage-levels");
+
+        // substations
+        Resource<SubstationAttributes> sub1 = Resource.substationBuilder().id("sub1")
+                .attributes(SubstationAttributes.builder()
+                        .country(Country.FR)
+                        .tso("RTE")
+                        .entsoeArea(EntsoeAreaAttributes.builder().code("D7").build())
+                        .build())
+                .build();
+        createIdentifiable(sub1, "substations");
+
+        Resource<SubstationAttributes> sub2 = Resource.substationBuilder().id("sub2")
+                .attributes(SubstationAttributes.builder()
+                        .country(Country.FR)
+                        .tso("RTE")
+                        .entsoeArea(EntsoeAreaAttributes.builder().code("D7").build())
+                        .build())
+                .build();
+        createIdentifiable(sub2, "substations");
+
+        deleteIdentifiables(List.of("sub1", "sub2"), "substations");
+
+        // voltage levels
+        Resource<VoltageLevelAttributes> vl11 = Resource.voltageLevelBuilder()
+                .id("vl11")
+                .attributes(VoltageLevelAttributes.builder()
+                        .nominalV(382)
+                        .lowVoltageLimit(362)
+                        .highVoltageLimit(402)
+                        .topologyKind(TopologyKind.NODE_BREAKER)
+                        .internalConnections(Collections.emptyList())
+                        .build())
+                .build();
+        createIdentifiable(vl11, "voltage-levels");
+
+        Resource<VoltageLevelAttributes> vl12 = Resource.voltageLevelBuilder()
+                .id("vl12")
+                .attributes(VoltageLevelAttributes.builder()
+                        .nominalV(382)
+                        .lowVoltageLimit(362)
+                        .highVoltageLimit(402)
+                        .topologyKind(TopologyKind.NODE_BREAKER)
+                        .internalConnections(Collections.emptyList())
+                        .build())
+                .build();
+        createIdentifiable(vl12, "voltage-levels");
+
+        deleteIdentifiables(List.of("vl11", "vl12"), "voltage-levels");
+
+        // generators
+        Resource<GeneratorAttributes> generator1 = Resource.generatorBuilder()
+                .id("gen1")
+                .attributes(GeneratorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("gen1")
+                        .energySource(EnergySource.HYDRO)
+                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build()).build())
+                .build();
+        createIdentifiable(generator1, "generators");
+
+        Resource<GeneratorAttributes> generator2 = Resource.generatorBuilder()
+                .id("gen2")
+                .attributes(GeneratorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("gen1")
+                        .energySource(EnergySource.HYDRO)
+                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
+                        .build())
+                .build();
+        createIdentifiable(generator2, "generators");
+
+        // switches
+        Resource<SwitchAttributes> switch1 = Resource.switchBuilder()
+                .id("b1")
+                .attributes(SwitchAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .kind(SwitchKind.BREAKER)
+                        .node1(1)
+                        .node2(2)
+                        .open(false)
+                        .retained(false)
+                        .fictitious(false)
+                        .build())
+                .build();
+        createIdentifiable(switch1, "switches");
+
+        Resource<SwitchAttributes> switch2 = Resource.switchBuilder()
+                .id("b2")
+                .attributes(SwitchAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .kind(SwitchKind.BREAKER)
+                        .node1(1)
+                        .node2(2)
+                        .open(false)
+                        .retained(false)
+                        .fictitious(false)
+                        .build())
+                .build();
+        createIdentifiable(switch2, "switches");
+        deleteIdentifiables(List.of("b1", "b2"), "switches");
+
+        // lines
+        Resource<LineAttributes> line1 = Resource.lineBuilder()
+                .id("line1")
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .build())
+                .build();
+        createIdentifiable(line1, "lines");
+
+        Resource<LineAttributes> line2 = Resource.lineBuilder()
+                .id("line2")
+                .attributes(LineAttributes.builder()
+                        .voltageLevelId1("vl1")
+                        .voltageLevelId2("vl2")
+                        .build())
+                .build();
+        createIdentifiable(line2, "lines");
+
+        deleteIdentifiables(List.of("line1", "line2"), "lines");
+
+        // batteries
+        Resource<BatteryAttributes> battery1 = Resource.batteryBuilder()
+                .id("bat1")
+                .attributes(BatteryAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("battery1")
+                        .targetP(250)
+                        .targetQ(100)
+                        .maxP(500)
+                        .minP(100)
+                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
+                        .build())
+                .build();
+        createIdentifiable(battery1, "batteries");
+
+        Resource<BatteryAttributes> battery2 = Resource.batteryBuilder()
+                .id("bat2")
+                .attributes(BatteryAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("battery1")
+                        .targetP(250)
+                        .targetQ(100)
+                        .maxP(500)
+                        .minP(100)
+                        .reactiveLimits(MinMaxReactiveLimitsAttributes.builder().maxQ(10).minQ(10).build())
+                        .build())
+                .build();
+        createIdentifiable(battery2, "batteries");
+
+        deleteIdentifiables(List.of("bat1", "bat2"), "batteries");
+
+        // shunt-compensators
+        Resource<ShuntCompensatorAttributes> shuntCompensator1 = Resource.shuntCompensatorBuilder()
+                .id("idShunt1")
+                .attributes(ShuntCompensatorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("shunt1")
+                        .model(ShuntCompensatorLinearModelAttributes.builder().bPerSection(1).gPerSection(2).maximumSectionCount(3).build())
+                        .p(100.)
+                        .build())
+                .build();
+        createIdentifiable(shuntCompensator1, "shunt-compensators");
+
+        Resource<ShuntCompensatorAttributes> shuntCompensator2 = Resource.shuntCompensatorBuilder()
+                .id("idShunt2")
+                .attributes(ShuntCompensatorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("shunt1")
+                        .model(ShuntCompensatorLinearModelAttributes.builder().bPerSection(1).gPerSection(2).maximumSectionCount(3).build())
+                        .p(100.)
+                        .build())
+                .build();
+        createIdentifiable(shuntCompensator2, "shunt-compensators");
+
+        deleteIdentifiables(List.of("idShunt2", "idShunt1"), "shunt-compensators");
+
+        Resource<DanglingLineAttributes> danglingLine1 = Resource.danglingLineBuilder()
+                .id("idDanglingLine1")
+                .attributes(DanglingLineAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("dl1")
+                        .build())
+                .build();
+        createIdentifiable(danglingLine1, "dangling-lines");
+
+        Resource<DanglingLineAttributes> danglingLine2 = Resource.danglingLineBuilder()
+                .id("idDanglingLine2")
+                .attributes(DanglingLineAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("dl1")
+                        .build())
+                .build();
+        createIdentifiable(danglingLine2, "dangling-lines");
+
+        deleteIdentifiables(List.of("idDanglingLine1", "idDanglingLine2"), "dangling-lines");
+
+        // grounds
+        Resource<GroundAttributes> ground1 = Resource.groundBuilder()
+                .id("idGround1")
+                .attributes(GroundAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("ground1")
+                        .build())
+                .build();
+        createIdentifiable(ground1, "grounds");
+
+        Resource<GroundAttributes> ground2 = Resource.groundBuilder()
+                .id("idGround2")
+                .attributes(GroundAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name("ground1")
+                        .build())
+                .build();
+        createIdentifiable(ground2, "grounds");
+
+        deleteIdentifiables(List.of("idGround2", "idGround1"), "grounds");
+
+        // tie-lines
+        Resource<TieLineAttributes> tieLine1 = Resource.tieLineBuilder()
+                .id("idTieLine1")
+                .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
+                        .build())
+                .build();
+        createIdentifiable(tieLine1, "tie-lines");
+
+        Resource<TieLineAttributes> tieLine2 = Resource.tieLineBuilder()
+                .id("idTieLine2")
+                .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
+                        .build())
+                .build();
+        createIdentifiable(tieLine2, "tie-lines");
+
+        deleteIdentifiables(List.of("idTieLine1", "idTieLine2"), "tie-lines");
+
+        // vsc converter stations
+        Resource<VscConverterStationAttributes> vsc1 = Resource.vscConverterStationBuilder()
+                .id("vsc1")
+                .attributes(VscConverterStationAttributes.builder().name("vsc1").build())
+                .build();
+        createIdentifiable(vsc1, "vsc-converter-stations");
+
+        Resource<VscConverterStationAttributes> vsc2 = Resource.vscConverterStationBuilder()
+                .id("vsc2")
+                .attributes(VscConverterStationAttributes.builder().name("vsc2").build())
+                .build();
+        createIdentifiable(vsc2, "vsc-converter-stations");
+
+        deleteIdentifiables(List.of("vsc1", "vsc2"), "vsc-converter-stations");
+
+        // lcc converter stations
+        Resource<LccConverterStationAttributes> lcc1 = Resource.lccConverterStationBuilder()
+                .id("lcc1")
+                .attributes(LccConverterStationAttributes.builder().name("lcc1").build())
+                .build();
+        createIdentifiable(lcc1, "lcc-converter-stations");
+
+        Resource<LccConverterStationAttributes> lcc2 = Resource.lccConverterStationBuilder()
+                .id("lcc2")
+                .attributes(LccConverterStationAttributes.builder().name("lcc2").build())
+                .build();
+        createIdentifiable(lcc2, "lcc-converter-stations");
+
+        deleteIdentifiables(List.of("lcc1", "lcc2"), "lcc-converter-stations");
+
+        //HVDC
+        Resource<HvdcLineAttributes> hvdc1 = Resource.hvdcLineBuilder()
+                .id("hvdc1")
+                .attributes(HvdcLineAttributes.builder().name("hvdc1").build())
+                .build();
+        createIdentifiable(hvdc1, "hvdc-lines");
+
+        Resource<HvdcLineAttributes> hvdc2 = Resource.hvdcLineBuilder()
+                .id("hvdc2")
+                .attributes(HvdcLineAttributes.builder().name("hvdc2").build())
+                .build();
+        createIdentifiable(hvdc2, "hvdc-lines");
+
+        deleteIdentifiables(List.of("hvdc1", "hvdc2"), "hvdc-lines");
+
+        // loads
+        Resource<LoadAttributes> load1 = Resource.loadBuilder()
+                .id("load1")
+                .attributes(LoadAttributes.builder().name("load1").build())
+                .build();
+        createIdentifiable(load1, "loads");
+
+        Resource<LoadAttributes> load2 = Resource.loadBuilder()
+                .id("load2")
+                .attributes(LoadAttributes.builder().name("load2").build())
+                .build();
+        createIdentifiable(load2, "loads");
+
+        deleteIdentifiables(List.of("load1", "load2"), "loads");
+
+        // static var compensators
+        Resource<StaticVarCompensatorAttributes> svc1 = Resource.staticVarCompensatorBuilder()
+                .id("svc1")
+                .attributes(StaticVarCompensatorAttributes.builder().name("svc1").build())
+                .build();
+        createIdentifiable(svc1, "static-var-compensators");
+
+        Resource<StaticVarCompensatorAttributes> svc2 = Resource.staticVarCompensatorBuilder()
+                .id("svc2")
+                .attributes(StaticVarCompensatorAttributes.builder().name("svc2").build())
+                .build();
+        createIdentifiable(svc2, "static-var-compensators");
+
+        deleteIdentifiables(List.of("svc1", "svc2"), "static-var-compensators");
+
+        // 2 windings transformers
+        Resource<TwoWindingsTransformerAttributes> twoWT1 = Resource.twoWindingsTransformerBuilder()
+                .id("TwoWT1")
+                .attributes(TwoWindingsTransformerAttributes.builder().name("TwoWT1").build())
+                .build();
+        createIdentifiable(twoWT1, "2-windings-transformers");
+
+        Resource<TwoWindingsTransformerAttributes> twoWT2 = Resource.twoWindingsTransformerBuilder()
+                .id("TwoWT2")
+                .attributes(TwoWindingsTransformerAttributes.builder().name("TwoWT2").build())
+                .build();
+        createIdentifiable(twoWT2, "2-windings-transformers");
+
+        deleteIdentifiables(List.of("TwoWT1", "TwoWT2"), "2-windings-transformers");
+
+        // 3 windings transformers
+        Resource<ThreeWindingsTransformerAttributes> threeWT1 = Resource.threeWindingsTransformerBuilder()
+                .id("ThreeWT1")
+                .attributes(ThreeWindingsTransformerAttributes.builder()
+                        .name("ThreeWT1")
+                        .leg1(LegAttributes.builder().voltageLevelId("baz").build())
+                        .leg2(LegAttributes.builder().voltageLevelId("baz").build())
+                        .leg3(LegAttributes.builder().voltageLevelId("baz").build())
+                        .build())
+                .build();
+        createIdentifiable(threeWT1, "3-windings-transformers");
+
+        Resource<ThreeWindingsTransformerAttributes> threeWT2 = Resource.threeWindingsTransformerBuilder()
+                .id("ThreeWT2")
+                .attributes(ThreeWindingsTransformerAttributes.builder()
+                        .name("ThreeWT2")
+                        .leg1(LegAttributes.builder().voltageLevelId("baz").build())
+                        .leg2(LegAttributes.builder().voltageLevelId("baz").build())
+                        .leg3(LegAttributes.builder().voltageLevelId("baz").build())
+                        .build())
+                .build();
+        createIdentifiable(threeWT2, "3-windings-transformers");
+
+        deleteIdentifiables(List.of("ThreeWT2", "ThreeWT1"), "3-windings-transformers");
+
+        // busbar sections
+        Resource<BusbarSectionAttributes> busBar1 = Resource.busbarSectionBuilder()
+                .id("busBar1")
+                .attributes(BusbarSectionAttributes.builder().name("busBar1").build())
+                .build();
+        createIdentifiable(busBar1, "busbar-sections");
+
+        Resource<BusbarSectionAttributes> busBar2 = Resource.busbarSectionBuilder()
+                .id("busBar2")
+                .attributes(BusbarSectionAttributes.builder().name("busBar2").build())
+                .build();
+        createIdentifiable(busBar2, "busbar-sections");
+
+        deleteIdentifiables(List.of("busBar2", "busBar1"), "busbar-sections");
+
+        // configured buses
+        Resource<ConfiguredBusAttributes> bus1 = Resource.configuredBusBuilder()
+                .id("bus1")
+                .attributes(ConfiguredBusAttributes.builder().name("bus1").build())
+                .build();
+        createIdentifiable(bus1, "configured-buses");
+
+        Resource<ConfiguredBusAttributes> bus2 = Resource.configuredBusBuilder()
+                .id("bus2")
+                .attributes(ConfiguredBusAttributes.builder().name("bus2").build())
+                .build();
+        createIdentifiable(bus2, "configured-buses");
+
+        deleteIdentifiables(List.of("bus1", "bus2"), "configured-buses");
     }
 
     private void createIdentifiable(Resource<? extends AbstractIdentifiableAttributes> resource, String identifiableType) throws Exception {
