@@ -2036,14 +2036,6 @@ public class NetworkStoreRepository {
         getLimits(equipment, type, side, groupId).setPermanentLimit(permanentLimit.getValue());
     }
 
-    private void deleteTemporaryLimits(UUID networkUuid, int variantNum, String equipmentId) {
-        deleteTemporaryLimits(networkUuid, variantNum, List.of(equipmentId));
-    }
-
-    private void deletePermanentLimits(UUID networkUuid, int variantNum, String equipmentId) {
-        deletePermanentLimits(networkUuid, variantNum, List.of(equipmentId));
-    }
-
     private void deleteTemporaryLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
@@ -2571,10 +2563,6 @@ public class NetworkStoreRepository {
         }
     }
 
-    private void deleteReactiveCapabilityCurvePoints(UUID networkUuid, int variantNum, String equipmentId) {
-        deleteReactiveCapabilityCurvePoints(networkUuid, variantNum, List.of(equipmentId));
-    }
-
     private void deleteReactiveCapabilityCurvePoints(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsVariantEquipmentINQuery(equipmentIds.size()))) {
@@ -2824,10 +2812,6 @@ public class NetworkStoreRepository {
             }
             tapChangerParent.getPhaseTapChangerAttributes().getSteps().add(tapChangerStep);
         }
-    }
-
-    private void deleteTapChangerSteps(UUID networkUuid, int variantNum, String equipmentId) {
-        deleteTapChangerSteps(networkUuid, variantNum, List.of(equipmentId));
     }
 
     private void deleteTapChangerSteps(UUID networkUuid, int variantNum, List<String> equipmentIds) {
