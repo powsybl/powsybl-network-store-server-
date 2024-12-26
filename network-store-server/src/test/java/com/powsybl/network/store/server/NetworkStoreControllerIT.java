@@ -320,9 +320,7 @@ class NetworkStoreControllerIT {
         deleteIdentifiableList(List.of("vl1", "vl2"), "voltage-levels");
 
         // switch delete
-        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/switches/b1")
-                .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk());
+        deleteIdentifiableList(List.of("bar"), "switches");
 
         Resource<SwitchAttributes> switch1 = Resource.switchBuilder()
                 .id("b1")
@@ -759,9 +757,7 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.p").value("310.0"))
                 .andExpect(jsonPath("data[0].attributes.q").value("120.0"));
 
-        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/batteries/battery1")
-                .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk());
+        deleteIdentifiableList(List.of("battery1"), "batteries");
 
         Resource<BatteryAttributes> battery1 = Resource.batteryBuilder()
                 .id("bat1")
@@ -1133,19 +1129,6 @@ class NetworkStoreControllerIT {
 
         deleteIdentifiableList(List.of("idGround2", "idGround1"), "grounds");
 
-        // Test removals
-        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/switches/b1")
-                .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk());
-
-        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/voltage-levels/baz")
-                .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk());
-
-        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/substations/bar")
-                .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk());
-
         // tie line creation, update and delete
         Resource<TieLineAttributes> tieLine = Resource.tieLineBuilder()
                 .id("idTieLine")
@@ -1171,16 +1154,12 @@ class NetworkStoreControllerIT {
                         .content(objectMapper.writeValueAsString(Collections.singleton(tieLine))))
                 .andExpect(status().isOk());
 
-        mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/tie-lines/idTieLine")
-                .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk());
-
         Resource<TieLineAttributes> tieLine1 = Resource.tieLineBuilder()
                 .id("idTieLine1")
                 .attributes(TieLineAttributes.builder().name("TieLine").fictitious(false).danglingLine1Id("half1").danglingLine2Id("half2")
                         .build())
                 .build();
-        createIdentifiable(tieLine, "tie-lines");
+        createIdentifiable(tieLine1, "tie-lines");
 
         Resource<TieLineAttributes> tieLine2 = Resource.tieLineBuilder()
                 .id("idTieLine2")
