@@ -233,10 +233,14 @@ class NetworkStoreRepositoryPartialVariantTest {
         OwnerInfo ownerInfoLine = new OwnerInfo(lineId, ResourceType.LINE, networkUuid, variantNum);
         OwnerInfo ownerInfoGen = new OwnerInfo(generatorId, ResourceType.GENERATOR, networkUuid, variantNum);
         OwnerInfo ownerInfoTwoWT = new OwnerInfo(twoWTId, ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, variantNum);
-        TableMapping tableMapping = mappings.getLineMappings();
 
         // Tap Changer Steps
         List<TapChangerStepAttributes> tapChangerSteps = networkStoreRepository.getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, twoWTId).get(ownerInfoTwoWT);
+        assertEquals(2, tapChangerSteps.size());
+        assertEquals(1.0, tapChangerSteps.get(0).getRho());
+        assertEquals(2.0, tapChangerSteps.get(1).getRho());
+
+        tapChangerSteps = networkStoreRepository.getTapChangerStepsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, List.of(twoWTId)).get(ownerInfoTwoWT);
         assertEquals(2, tapChangerSteps.size());
         assertEquals(1.0, tapChangerSteps.get(0).getRho());
         assertEquals(2.0, tapChangerSteps.get(1).getRho());
@@ -247,8 +251,18 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(100, temporaryLimits.get(0).getAcceptableDuration());
         assertEquals(200, temporaryLimits.get(1).getAcceptableDuration());
 
+        temporaryLimits = networkStoreRepository.getTemporaryLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, List.of(lineId)).get(ownerInfoLine);
+        assertEquals(2, temporaryLimits.size());
+        assertEquals(100, temporaryLimits.get(0).getAcceptableDuration());
+        assertEquals(200, temporaryLimits.get(1).getAcceptableDuration());
+
         // Permanent Limits
         List<PermanentLimitAttributes> permanentLimits = networkStoreRepository.getPermanentLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfoLine);
+        assertEquals(2, permanentLimits.size());
+        assertEquals(2.5, permanentLimits.get(0).getValue());
+        assertEquals(2.6, permanentLimits.get(1).getValue());
+
+        permanentLimits = networkStoreRepository.getPermanentLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, List.of(lineId)).get(ownerInfoLine);
         assertEquals(2, permanentLimits.size());
         assertEquals(2.5, permanentLimits.get(0).getValue());
         assertEquals(2.6, permanentLimits.get(1).getValue());
@@ -259,8 +273,17 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(-100.0, curvePoints.get(0).getMinQ());
         assertEquals(30.0, curvePoints.get(1).getMaxQ());
 
+        curvePoints = networkStoreRepository.getReactiveCapabilityCurvePointsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, List.of(generatorId)).get(ownerInfoGen);
+        assertEquals(2, curvePoints.size());
+        assertEquals(-100.0, curvePoints.get(0).getMinQ());
+        assertEquals(30.0, curvePoints.get(1).getMaxQ());
+
         // Regulating Points
         RegulatingPointAttributes regulatingPoint = networkStoreRepository.getRegulatingPoints(networkUuid, variantNum, ResourceType.GENERATOR).get(ownerInfoGen);
+        assertNotNull(regulatingPoint);
+        assertEquals("regulationMode", regulatingPoint.getRegulationMode());
+
+        regulatingPoint = networkStoreRepository.getRegulatingPointsWithInClause(networkUuid, variantNum, REGULATING_EQUIPMENT_ID, List.of(generatorId), ResourceType.GENERATOR).get(ownerInfoGen);
         assertNotNull(regulatingPoint);
         assertEquals("regulationMode", regulatingPoint.getRegulationMode());
 
@@ -279,10 +302,13 @@ class NetworkStoreRepositoryPartialVariantTest {
         OwnerInfo ownerInfoLine = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, variantNum);
         OwnerInfo ownerInfoGen = new OwnerInfo(generatorId, ResourceType.GENERATOR, NETWORK_UUID, variantNum);
         OwnerInfo ownerInfoTwoWT = new OwnerInfo(twoWTId, ResourceType.TWO_WINDINGS_TRANSFORMER, NETWORK_UUID, variantNum);
-        TableMapping tableMapping = mappings.getLineMappings();
 
         // Tap Changer Steps
         List<TapChangerStepAttributes> tapChangerSteps = networkStoreRepository.getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, twoWTId).get(ownerInfoTwoWT);
+        assertEquals(1, tapChangerSteps.size());
+        assertEquals(3.0, tapChangerSteps.get(0).getRho());
+
+        tapChangerSteps = networkStoreRepository.getTapChangerStepsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, List.of(twoWTId)).get(ownerInfoTwoWT);
         assertEquals(1, tapChangerSteps.size());
         assertEquals(3.0, tapChangerSteps.get(0).getRho());
 
@@ -291,8 +317,16 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(1, temporaryLimits.size());
         assertEquals(101, temporaryLimits.get(0).getAcceptableDuration());
 
+        temporaryLimits = networkStoreRepository.getTemporaryLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, List.of(lineId)).get(ownerInfoLine);
+        assertEquals(1, temporaryLimits.size());
+        assertEquals(101, temporaryLimits.get(0).getAcceptableDuration());
+
         // Permanent Limits
         List<PermanentLimitAttributes> permanentLimits = networkStoreRepository.getPermanentLimits(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfoLine);
+        assertEquals(1, permanentLimits.size());
+        assertEquals(2.8, permanentLimits.get(0).getValue());
+
+        permanentLimits = networkStoreRepository.getPermanentLimitsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, List.of(lineId)).get(ownerInfoLine);
         assertEquals(1, permanentLimits.size());
         assertEquals(2.8, permanentLimits.get(0).getValue());
 
@@ -301,8 +335,16 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals(1, curvePoints.size());
         assertEquals(-120.0, curvePoints.get(0).getMinQ());
 
+        curvePoints = networkStoreRepository.getReactiveCapabilityCurvePointsWithInClause(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, List.of(generatorId)).get(ownerInfoGen);
+        assertEquals(1, curvePoints.size());
+        assertEquals(-120.0, curvePoints.get(0).getMinQ());
+
         // Regulating Points
         RegulatingPointAttributes regulatingPoint = networkStoreRepository.getRegulatingPoints(networkUuid, variantNum, ResourceType.GENERATOR).get(ownerInfoGen);
+        assertNotNull(regulatingPoint);
+        assertEquals("regulationMode1", regulatingPoint.getRegulationMode());
+
+        regulatingPoint = networkStoreRepository.getRegulatingPointsWithInClause(networkUuid, variantNum, REGULATING_EQUIPMENT_ID, List.of(generatorId), ResourceType.GENERATOR).get(ownerInfoGen);
         assertNotNull(regulatingPoint);
         assertEquals("regulationMode1", regulatingPoint.getRegulationMode());
 
@@ -346,7 +388,6 @@ class NetworkStoreRepositoryPartialVariantTest {
         OwnerInfo ownerInfoLine = new OwnerInfo(lineId, ResourceType.LINE, networkUuid, variantNum);
         OwnerInfo ownerInfoGen = new OwnerInfo(generatorId, ResourceType.GENERATOR, networkUuid, variantNum);
         OwnerInfo ownerInfoTwoWT = new OwnerInfo(twoWTId, ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, variantNum);
-        TableMapping tableMapping = mappings.getLineMappings();
 
         // Tap Changer Steps
         assertNull(networkStoreRepository.getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, twoWTId).get(ownerInfoTwoWT));
