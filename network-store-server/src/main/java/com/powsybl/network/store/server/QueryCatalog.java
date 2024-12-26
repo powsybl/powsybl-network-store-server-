@@ -95,15 +95,7 @@ public final class QueryCatalog {
         return sql.toString();
     }
 
-    public static String buildDeleteIdentifiableQuery(String tableName) {
-        return "delete from " +
-                tableName +
-                " where " + NETWORK_UUID_COLUMN + " = ?" +
-                " and " + VARIANT_NUM_COLUMN + " = ?" +
-                " and " + ID_COLUMN + " = ?";
-    }
-
-    public static String buildDeleteIdentifiableListQuery(String tableName, int idCount) {
+    public static String buildDeleteIdentifiablesQuery(String tableName, int idCount) {
         return "delete from " + tableName + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +

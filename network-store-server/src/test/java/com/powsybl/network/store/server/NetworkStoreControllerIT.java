@@ -191,7 +191,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(sub2, "substations");
 
-        deleteIdentifiableList(List.of("sub1", "sub2"), "substations");
+        deleteIdentifiables(List.of("sub1", "sub2"), "substations");
 
         List<InternalConnectionAttributes> ics1 = new ArrayList<>();
         ics1.add(InternalConnectionAttributes.builder()
@@ -317,10 +317,10 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(vl2, "voltage-levels");
 
-        deleteIdentifiableList(List.of("vl1", "vl2"), "voltage-levels");
+        deleteIdentifiables(List.of("vl1", "vl2"), "voltage-levels");
 
         // switch delete
-        deleteIdentifiableList(List.of("bar"), "switches");
+        deleteIdentifiables(List.of("bar"), "switches");
 
         Resource<SwitchAttributes> switch1 = Resource.switchBuilder()
                 .id("b1")
@@ -349,7 +349,7 @@ class NetworkStoreControllerIT {
                         .build())
                 .build();
         createIdentifiable(switch2, "switches");
-        deleteIdentifiableList(List.of("b1", "b2"), "switches");
+        deleteIdentifiables(List.of("b1", "b2"), "switches");
 
         // switch creation and update
         Resource<SwitchAttributes> resBreaker = Resource.switchBuilder()
@@ -613,7 +613,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(line2, "lines");
 
-        deleteIdentifiableList(List.of("line1", "line2"), "lines");
+        deleteIdentifiables(List.of("line1", "line2"), "lines");
 
         // generator creation, update and delete
         RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
@@ -757,7 +757,7 @@ class NetworkStoreControllerIT {
                 .andExpect(jsonPath("data[0].attributes.p").value("310.0"))
                 .andExpect(jsonPath("data[0].attributes.q").value("120.0"));
 
-        deleteIdentifiableList(List.of("battery1"), "batteries");
+        deleteIdentifiables(List.of("battery1"), "batteries");
 
         Resource<BatteryAttributes> battery1 = Resource.batteryBuilder()
                 .id("bat1")
@@ -787,7 +787,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(battery2, "batteries");
 
-        deleteIdentifiableList(List.of("bat1", "bat2"), "batteries");
+        deleteIdentifiables(List.of("bat1", "bat2"), "batteries");
 
         // shunt compensator creation, update and delete
         Resource<ShuntCompensatorAttributes> shuntCompensator = Resource.shuntCompensatorBuilder()
@@ -868,7 +868,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(shuntCompensator2, "shunt-compensators");
 
-        deleteIdentifiableList(List.of("idShunt2", "idShunt1"), "shunt-compensators");
+        deleteIdentifiables(List.of("idShunt2", "idShunt1"), "shunt-compensators");
 
         // dangling line creation, update and delete
         Resource<DanglingLineAttributes> danglingLine = Resource.danglingLineBuilder()
@@ -1021,7 +1021,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(danglingLine2, "dangling-lines");
 
-        deleteIdentifiableList(List.of("idDanglingLine1", "idDanglingLine2"), "dangling-lines");
+        deleteIdentifiables(List.of("idDanglingLine1", "idDanglingLine2"), "dangling-lines");
 
         // ground creation, update and delete
         Resource<GroundAttributes> ground = Resource.groundBuilder()
@@ -1127,7 +1127,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(ground2, "grounds");
 
-        deleteIdentifiableList(List.of("idGround2", "idGround1"), "grounds");
+        deleteIdentifiables(List.of("idGround2", "idGround1"), "grounds");
 
         // tie line creation, update and delete
         Resource<TieLineAttributes> tieLine = Resource.tieLineBuilder()
@@ -1168,7 +1168,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(tieLine2, "tie-lines");
 
-        deleteIdentifiableList(List.of("idTieLine1", "idTieLine2"), "tie-lines");
+        deleteIdentifiables(List.of("idTieLine1", "idTieLine2"), "tie-lines");
 
         // test batch removal
         // VscConverterStation
@@ -1184,7 +1184,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(vsc2, "vsc-converter-stations");
 
-        deleteIdentifiableList(List.of("vsc1", "vsc2"), "vsc-converter-stations");
+        deleteIdentifiables(List.of("vsc1", "vsc2"), "vsc-converter-stations");
 
         // LccConverterStation
         Resource<LccConverterStationAttributes> lcc1 = Resource.lccConverterStationBuilder()
@@ -1199,7 +1199,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(lcc2, "lcc-converter-stations");
 
-        deleteIdentifiableList(List.of("lcc1", "lcc2"), "lcc-converter-stations");
+        deleteIdentifiables(List.of("lcc1", "lcc2"), "lcc-converter-stations");
 
         //HVDC
         Resource<HvdcLineAttributes> hvdc1 = Resource.hvdcLineBuilder()
@@ -1214,7 +1214,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(hvdc2, "hvdc-lines");
 
-        deleteIdentifiableList(List.of("hvdc1", "hvdc2"), "hvdc-lines");
+        deleteIdentifiables(List.of("hvdc1", "hvdc2"), "hvdc-lines");
 
         // load
         Resource<LoadAttributes> load1 = Resource.loadBuilder()
@@ -1229,7 +1229,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(load2, "loads");
 
-        deleteIdentifiableList(List.of("load1", "load2"), "loads");
+        deleteIdentifiables(List.of("load1", "load2"), "loads");
 
         // StaticVarCompensator
         Resource<StaticVarCompensatorAttributes> svc1 = Resource.staticVarCompensatorBuilder()
@@ -1244,7 +1244,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(svc2, "static-var-compensators");
 
-        deleteIdentifiableList(List.of("svc1", "svc2"), "static-var-compensators");
+        deleteIdentifiables(List.of("svc1", "svc2"), "static-var-compensators");
 
         // TwoWindingsTransformer
         Resource<TwoWindingsTransformerAttributes> twoWT1 = Resource.twoWindingsTransformerBuilder()
@@ -1259,7 +1259,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(twoWT2, "2-windings-transformers");
 
-        deleteIdentifiableList(List.of("TwoWT1", "TwoWT2"), "2-windings-transformers");
+        deleteIdentifiables(List.of("TwoWT1", "TwoWT2"), "2-windings-transformers");
 
         // ThreeWindingsTransformer
         Resource<ThreeWindingsTransformerAttributes> threeWT1 = Resource.threeWindingsTransformerBuilder()
@@ -1284,7 +1284,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(threeWT2, "3-windings-transformers");
 
-        deleteIdentifiableList(List.of("ThreeWT2", "ThreeWT1"), "3-windings-transformers");
+        deleteIdentifiables(List.of("ThreeWT2", "ThreeWT1"), "3-windings-transformers");
 
         // BusbarSection
         Resource<BusbarSectionAttributes> busBar1 = Resource.busbarSectionBuilder()
@@ -1299,7 +1299,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(busBar2, "busbar-sections");
 
-        deleteIdentifiableList(List.of("busBar2", "busBar1"), "busbar-sections");
+        deleteIdentifiables(List.of("busBar2", "busBar1"), "busbar-sections");
 
         // ConfiguredBus
         Resource<ConfiguredBusAttributes> bus1 = Resource.configuredBusBuilder()
@@ -1314,7 +1314,7 @@ class NetworkStoreControllerIT {
                 .build();
         createIdentifiable(bus2, "configured-buses");
 
-        deleteIdentifiableList(List.of("bus1", "bus2"), "configured-buses");
+        deleteIdentifiables(List.of("bus1", "bus2"), "configured-buses");
     }
 
     @Test
@@ -1632,7 +1632,7 @@ class NetworkStoreControllerIT {
                 .andExpect(status().isCreated());
     }
 
-    private void deleteIdentifiableList(List<String> ids, String identifiableType) throws Exception {
+    private void deleteIdentifiables(List<String> ids, String identifiableType) throws Exception {
         mvc.perform(delete("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/" + identifiableType)
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(ids)))
