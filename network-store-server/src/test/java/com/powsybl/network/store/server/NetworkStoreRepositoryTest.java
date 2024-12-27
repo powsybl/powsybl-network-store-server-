@@ -23,7 +23,6 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-//TODO: these tests depends on each other so I added a dirties context to avoid collisions
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class NetworkStoreRepositoryTest {
 
@@ -866,7 +865,6 @@ class NetworkStoreRepositoryTest {
                 .voltageLevelId("vl1")
                 .name(generatorId)
                 .regulatingPoint(RegulatingPointAttributes.builder()
-                        //TODO: add the full resource instead of components to update only
                         .localTerminal(TerminalRefAttributes.builder().connectableId(generatorId).build())
                         .regulatingEquipmentId(generatorId)
                         .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())
@@ -958,7 +956,6 @@ class NetworkStoreRepositoryTest {
                 .voltageLevelId("vl1")
                 .name(shuntCompensatorId)
                 .regulatingPoint(RegulatingPointAttributes.builder()
-                        //TODO: add the full resource instead of components to update only
                         .localTerminal(TerminalRefAttributes.builder().connectableId(shuntCompensatorId).build())
                         .regulatingEquipmentId(shuntCompensatorId)
                         .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())
@@ -1143,7 +1140,6 @@ class NetworkStoreRepositoryTest {
                 .voltageLevelId("vl1")
                 .name(vscId)
                 .regulatingPoint(RegulatingPointAttributes.builder()
-                        //TODO: add the full resource instead of components to update only
                         .localTerminal(TerminalRefAttributes.builder().connectableId(vscId).build())
                         .regulatingEquipmentId(vscId)
                         .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())

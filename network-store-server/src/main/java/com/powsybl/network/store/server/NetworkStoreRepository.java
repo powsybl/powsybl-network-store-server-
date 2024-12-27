@@ -1108,7 +1108,6 @@ public class NetworkStoreRepository {
 
         // Insert updated identifiables
         insertIdentifiables(networkUuid, resourcesUpdatedSv, tableMapping, connection);
-        LOGGER.info("Inserted {} identifiables with updated SV values", resourcesUpdatedSv.size());
     }
 
     private static <T extends IdentifiableAttributes, U extends Attributes> List<Resource<T>> updateSvResourcesFromFullVariant(BiConsumer<T, U> svAttributesUpdater, List<Resource<T>> resourcesToUpdate, Map<Integer, Map<String, Resource<U>>> updatedSvResourcesByVariant) {
@@ -1934,9 +1933,6 @@ public class NetworkStoreRepository {
     public void updateThreeWindingsTransformers(UUID networkUuid, List<Resource<ThreeWindingsTransformerAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getThreeWindingsTransformerMappings());
 
-        // To update the threewindingstransformer's temporary limits, we will first delete them, then create them again.
-        // This is done this way to prevent issues in case the temporary limit's primary key is to be
-        // modified because of the updated equipment's new values.
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
         updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.THREE_WINDINGS_TRANSFORMER);
         updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.THREE_WINDINGS_TRANSFORMER);
@@ -2003,9 +1999,6 @@ public class NetworkStoreRepository {
     public void updateLines(UUID networkUuid, List<Resource<LineAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getLineMappings());
 
-        // To update the line's temporary limits, we will first delete them, then create them again.
-        // This is done this way to prevent issues in case the temporary limit's primary key is to be
-        // modified because of the updated equipment's new values.
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
         updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.LINE);
         updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.LINE);
@@ -2823,6 +2816,22 @@ public class NetworkStoreRepository {
         }
     }
 
+    private Set<String> getRegulatingPointsIdentifiableIdsForVariant(Connection connection, UUID networkUuid, int variantNum) {
+        Set<String> identifiableIds = new HashSet<>();
+        try (var preparedStmt = connection.prepareStatement(buildRegulatingPointsIdsQuery())) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            try (var resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    identifiableIds.add(resultSet.getString(REGULATING_EQUIPMENT_ID));
+                }
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+        return identifiableIds;
+    }
+
     private Set<String> getTombstonedRegulatingPointsIds(Connection connection, UUID networkUuid, int variantNum) {
         Set<String> identifiableIds = new HashSet<>();
         try (var preparedStmt = connection.prepareStatement(buildGetTombstonedRegulatingPointsIdsQuery())) {
@@ -3138,14 +3147,14 @@ public class NetworkStoreRepository {
         }
     }
 
-    //TODO tests
-    private Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipments(UUID networkUuid, int variantNum, ResourceType type) {
+    protected Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipments(UUID networkUuid, int variantNum, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
-            return PartialVariantUtils.getExternalAttributes(
+            return PartialVariantUtils.getRegulatingEquipments(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
                     () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
+                    () -> getRegulatingPointsIdentifiableIdsForVariant(connection, networkUuid, variantNum),
                     variant -> getRegulatingEquipmentsForVariant(connection, networkUuid, variant, type, variantNum),
                     OwnerInfo::getEquipmentId);
         } catch (SQLException e) {
@@ -3165,18 +3174,18 @@ public class NetworkStoreRepository {
         }
     }
 
-    //TODO tests
     public Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipmentsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause, ResourceType type) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
         }
         try (var connection = dataSource.getConnection()) {
-            return PartialVariantUtils.getExternalAttributes(
+            return PartialVariantUtils.getRegulatingEquipments(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
                     () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
-                variant -> getRegulatingEquipmentsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, type, variantNum),
+                    () -> getRegulatingPointsIdentifiableIdsForVariant(connection, networkUuid, variantNum),
+                    variant -> getRegulatingEquipmentsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, type, variantNum),
                     OwnerInfo::getEquipmentId);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
@@ -3232,14 +3241,14 @@ public class NetworkStoreRepository {
         }
     }
 
-    //TODO add tests because I'm not sure it works with partial variants...
-    private Map<String, ResourceType> getRegulatingEquipmentsForIdentifiable(UUID networkUuid, int variantNum, String equipmentId, ResourceType type) {
+    protected Map<String, ResourceType> getRegulatingEquipmentsForIdentifiable(UUID networkUuid, int variantNum, String equipmentId, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
-            return PartialVariantUtils.getExternalAttributes(
+            return PartialVariantUtils.getRegulatingEquipments(
                     variantNum,
                     getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
                     () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
+                    () -> getRegulatingPointsIdentifiableIdsForVariant(connection, networkUuid, variantNum),
                     variant -> getRegulatingEquipmentsForIdentifiableForVariant(connection, networkUuid, variant, equipmentId, type),
                     Function.identity());
         } catch (SQLException e) {

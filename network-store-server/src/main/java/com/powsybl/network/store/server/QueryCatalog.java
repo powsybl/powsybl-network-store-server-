@@ -635,6 +635,10 @@ public final class QueryCatalog {
             REGULATING_EQUIPMENT_TYPE_COLUMN + " = ?";
     }
 
+    public static String buildRegulatingPointsIdsQuery() {
+        return "select " + REGULATING_EQUIPMENT_ID + " FROM " + REGULATING_POINT_TABLE + " WHERE " + NETWORK_UUID_COLUMN + " = ? AND " + VARIANT_NUM_COLUMN + " = ?";
+    }
+
     public static String buildRegulatingPointsWithInClauseQuery(String columnNameForInClause, int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);

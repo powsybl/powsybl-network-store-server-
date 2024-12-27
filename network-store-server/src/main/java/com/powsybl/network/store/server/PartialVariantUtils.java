@@ -30,7 +30,26 @@ public final class PartialVariantUtils {
             int variantNum,
             int srcVariantNum,
             Supplier<Set<String>> fetchTombstonedExternalAttributesIds,
-            Supplier<Set<String>> fetchTombstonedIds,
+            Supplier<Set<String>> fetchTombstonedIdentifiableIds,
+            IntFunction<Map<T, U>> fetchExternalAttributesInVariant,
+            Function<T, String> idExtractor) {
+        return getExternalAttributes(
+                variantNum,
+                srcVariantNum,
+                fetchTombstonedExternalAttributesIds,
+                fetchTombstonedIdentifiableIds,
+                null,
+                fetchExternalAttributesInVariant,
+                idExtractor
+        );
+    }
+
+    private static <T, U> Map<T, U> getExternalAttributes(
+            int variantNum,
+            int srcVariantNum,
+            Supplier<Set<String>> fetchTombstonedExternalAttributesIdentifiableIds,
+            Supplier<Set<String>> fetchTombstonedIdentifiableIds,
+            Supplier<Set<String>> fetchAdditionalIdentifiableIdsToExclude,
             IntFunction<Map<T, U>> fetchExternalAttributesInVariant,
             Function<T, String> idExtractor) {
         if (srcVariantNum == -1) {
@@ -41,10 +60,15 @@ public final class PartialVariantUtils {
         // Retrieve external attributes from the full variant first
         Map<T, U> externalAttributes = fetchExternalAttributesInVariant.apply(srcVariantNum);
 
-        // Remove external attributes associated to tombstoned resources and tombstoned external attributes
-        Set<String> tombstonedIds = fetchTombstonedIds.get();
-        Set<String> tombstonedExternalAttributesIds = fetchTombstonedExternalAttributesIds.get();
-        externalAttributes.keySet().removeIf(ownerInfo -> tombstonedIds.contains(idExtractor.apply(ownerInfo)) || tombstonedExternalAttributesIds.contains(idExtractor.apply(ownerInfo)));
+        // Remove external attributes associated to tombstoned resources, tombstoned external attributes and any other additional identifiable ids
+        Set<String> tombstonedIds = fetchTombstonedIdentifiableIds.get();
+        Set<String> tombstonedExternalAttributesIds = fetchTombstonedExternalAttributesIdentifiableIds.get();
+        Set<String> additionalIdentifiableIdsToExclude = fetchAdditionalIdentifiableIdsToExclude != null ? fetchAdditionalIdentifiableIdsToExclude.get() : Set.of();
+        externalAttributes.keySet().removeIf(ownerInfo ->
+                        tombstonedIds.contains(idExtractor.apply(ownerInfo)) ||
+                        tombstonedExternalAttributesIds.contains(idExtractor.apply(ownerInfo)) ||
+                        additionalIdentifiableIdsToExclude.contains(idExtractor.apply(ownerInfo))
+        );
 
         // Retrieve updated external attributes in partial variant
         Map<T, U> externalAttributesUpdatedInPartialVariant = fetchExternalAttributesInVariant.apply(variantNum);
@@ -55,14 +79,46 @@ public final class PartialVariantUtils {
         return externalAttributes;
     }
 
+    /*
+    Regulating equipments are derived from the regulating points table using a WHERE clause on the column `regulatedequipmenttype`.
+    Due to this filtering, the system that overrides OwnerInfo in the full variant with updated regulating points in the
+    partial variant does not behave as expected because of the additional WHERE clause.
+
+    For example, consider a generator in the full variant with local regulation (`regulatedequipmenttype = generator`).
+    If this is updated in the partiverifal variant to regulate a load (`regulatedequipmenttype = load`), calling `getRegulatingEquipments`
+    with `type = generator` for the partial variant will yield unexpected results. The system will retrieve the
+    regulation from the full variant (as it matches `regulatedequipmenttype = generator`).
+
+    To address this inconsistency, an additional fetch is performed to exclude any regulating points in the full variant
+    that have been updated in the partial variant. This ensures that the results reflect the changes made in the partial variant.
+    */
+    public static <T, U> Map<T, U> getRegulatingEquipments(
+            int variantNum,
+            int srcVariantNum,
+            Supplier<Set<String>> fetchTombstonedRegulatingPointsIds,
+            Supplier<Set<String>> fetchTombstonedIdentifiableIds,
+            Supplier<Set<String>> fetchUpdatedRegulatingPointIds,
+            IntFunction<Map<T, U>> fetchExternalAttributesInVariant,
+            Function<T, String> idExtractor) {
+        return getExternalAttributes(
+                variantNum,
+                srcVariantNum,
+                fetchTombstonedRegulatingPointsIds,
+                fetchTombstonedIdentifiableIds,
+                fetchUpdatedRegulatingPointIds,
+                fetchExternalAttributesInVariant,
+                idExtractor
+        );
+    }
+
     public static Set<OwnerInfo> getExternalAttributesToTombstone(
             Map<Integer, List<String>> externalAttributesResourcesIdsByVariant,
             IntFunction<Resource<NetworkAttributes>> fetchNetworkAttributes,
             TriFunction<Integer, Integer, List<String>, Set<OwnerInfo>> fetchExternalAttributesOwnerInfoInVariant,
             IntFunction<Set<String>> fetchTombstonedExternalAttributesIds,
-            Set<OwnerInfo> externalAttributesToTombstoneFromEquipment
+            Set<OwnerInfo> externalAttributesToTombstoneFromEquipments
     ) {
-        if (externalAttributesToTombstoneFromEquipment.isEmpty()) {
+        if (externalAttributesToTombstoneFromEquipments.isEmpty()) {
             return Set.of();
         }
 
@@ -82,7 +138,7 @@ public final class PartialVariantUtils {
             tombstonedExternalAttributes.addAll(fetchTombstonedExternalAttributesIds.apply(variantNum));
         }
         // Tombstone only external attributes existing in full variant and not already tombstoned
-        return externalAttributesToTombstoneFromEquipment.stream().filter(owner ->
+        return externalAttributesToTombstoneFromEquipments.stream().filter(owner ->
                 externalAttributesResourcesInFullVariant.contains(owner) &&
                 !tombstonedExternalAttributes.contains(owner.getEquipmentId()) &&
                 !fullVariant.contains(owner.getVariantNum())).collect(Collectors.toSet());
@@ -91,7 +147,7 @@ public final class PartialVariantUtils {
     public static <T> List<T> getIdentifiables(
             int variantNum,
             int srcVariantNum,
-            Supplier<Set<String>> fetchTombstonedIds,
+            Supplier<Set<String>> fetchTombstonedIdentifiableIds,
             IntFunction<List<T>> fetchIdentifiablesInVariant,
             Function<T, String> idExtractor,
             Supplier<List<String>> fetchUpdatedIdentifiblesIdsInVariant) {
@@ -114,7 +170,7 @@ public final class PartialVariantUtils {
                 .collect(Collectors.toSet());
 
         // Remove any resources that have been updated in the current variant or tombstoned
-        Set<String> tombstonedIds = fetchTombstonedIds.get();
+        Set<String> tombstonedIds = fetchTombstonedIdentifiableIds.get();
         identifiables.removeIf(resource ->
                 updatedIds.contains(idExtractor.apply(resource)) || tombstonedIds.contains(idExtractor.apply(resource))
         );
@@ -129,7 +185,7 @@ public final class PartialVariantUtils {
             String identifiableId,
             int variantNum,
             int srcVariantNum,
-            Supplier<Set<String>> fetchTombstonedIds,
+            Supplier<Set<String>> fetchTombstonedIdentifiableIds,
             IntFunction<Optional<Resource<T>>> fetchIdentifiableInVariant) {
         if (srcVariantNum == -1) {
             // If the variant is full, retrieve identifiables directly
@@ -137,7 +193,7 @@ public final class PartialVariantUtils {
         }
 
         // If the identifiable is tombstoned, return directly
-        Set<String> tombstonedIds = fetchTombstonedIds.get();
+        Set<String> tombstonedIds = fetchTombstonedIdentifiableIds.get();
         if (tombstonedIds.contains(identifiableId)) {
             return Optional.empty();
         }

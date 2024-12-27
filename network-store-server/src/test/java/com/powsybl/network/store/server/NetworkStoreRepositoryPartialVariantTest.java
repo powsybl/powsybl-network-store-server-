@@ -209,23 +209,25 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId1 = "line1";
         String genId1 = "gen1";
         String twoWTId1 = "twoWT1";
+        String loadId1 = "load1";
         String lineId2 = "line2";
         String genId2 = "gen2";
         String twoWTId2 = "twoWT2";
+        String loadId2 = "load2";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId1, genId1, twoWTId1);
+        createEquipmentsWithExternalAttributes(0, lineId1, genId1, twoWTId1, loadId1);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(1, lineId2, genId2, twoWTId2);
+        createEquipmentsWithExternalAttributes(1, lineId2, genId2, twoWTId2, loadId2);
         UUID targetNetworkUuid = UUID.fromString("0dd45074-009d-49b8-877f-8ae648a8e8b4");
 
         networkStoreRepository.cloneNetwork(targetNetworkUuid, NETWORK_UUID, List.of("variant0", "variant1"));
 
         // Check variant 0
-        assertEquals(List.of(genId1, twoWTId1, lineId1), getStoredIdentifiableIdsInVariant(targetNetworkUuid, 0));
+        assertEquals(List.of(genId1, loadId1, twoWTId1, lineId1), getStoredIdentifiableIdsInVariant(targetNetworkUuid, 0));
         verifyExternalAttributes(lineId1, genId1, twoWTId1, 0, targetNetworkUuid);
 
         // Check variant 1
-        assertEquals(List.of(genId2, twoWTId2, lineId2), getStoredIdentifiableIdsInVariant(targetNetworkUuid, 1));
+        assertEquals(List.of(genId2, loadId2, twoWTId2, lineId2), getStoredIdentifiableIdsInVariant(targetNetworkUuid, 1));
         verifyExternalAttributes(lineId2, genId2, twoWTId2, 1, targetNetworkUuid);
     }
 
@@ -281,11 +283,28 @@ class NetworkStoreRepositoryPartialVariantTest {
         // Regulating Points
         RegulatingPointAttributes regulatingPoint = networkStoreRepository.getRegulatingPoints(networkUuid, variantNum, ResourceType.GENERATOR).get(ownerInfoGen);
         assertNotNull(regulatingPoint);
-        assertEquals("regulationMode", regulatingPoint.getRegulationMode());
+        assertEquals(generatorId, regulatingPoint.getRegulatingEquipmentId());
+        assertEquals(generatorId, regulatingPoint.getRegulatingTerminal().getConnectableId());
+        assertEquals(generatorId, regulatingPoint.getLocalTerminal().getConnectableId());
+        Map<String, ResourceType> regulatingEquipments = networkStoreRepository.getRegulatingEquipments(networkUuid, variantNum, ResourceType.GENERATOR).get(ownerInfoGen);
+        assertEquals(1, regulatingEquipments.size());
+        assertTrue(regulatingEquipments.containsKey(generatorId));
+        assertEquals(ResourceType.GENERATOR, regulatingEquipments.get(generatorId));
 
         regulatingPoint = networkStoreRepository.getRegulatingPointsWithInClause(networkUuid, variantNum, REGULATING_EQUIPMENT_ID, List.of(generatorId), ResourceType.GENERATOR).get(ownerInfoGen);
         assertNotNull(regulatingPoint);
-        assertEquals("regulationMode", regulatingPoint.getRegulationMode());
+        assertEquals(generatorId, regulatingPoint.getRegulatingEquipmentId());
+        assertEquals(generatorId, regulatingPoint.getRegulatingTerminal().getConnectableId());
+        assertEquals(generatorId, regulatingPoint.getLocalTerminal().getConnectableId());
+        regulatingEquipments = networkStoreRepository.getRegulatingEquipmentsWithInClause(networkUuid, variantNum, "regulatingterminalconnectableid", List.of(generatorId), ResourceType.GENERATOR).get(ownerInfoGen);
+        assertEquals(1, regulatingEquipments.size());
+        assertTrue(regulatingEquipments.containsKey(generatorId));
+        assertEquals(ResourceType.GENERATOR, regulatingEquipments.get(generatorId));
+
+        regulatingEquipments = networkStoreRepository.getRegulatingEquipmentsForIdentifiable(networkUuid, variantNum, generatorId, ResourceType.GENERATOR);
+        assertEquals(1, regulatingEquipments.size());
+        assertTrue(regulatingEquipments.containsKey(generatorId));
+        assertEquals(ResourceType.GENERATOR, regulatingEquipments.get(generatorId));
 
         // Extensions
         Map<String, ExtensionAttributes> extensions = networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(networkUuid, variantNum, lineId);
@@ -298,10 +317,11 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertEquals("test12", operatingStatus.getOperatingStatus());
     }
 
-    private void verifyUpdatedExternalAttributes(String lineId, String generatorId, String twoWTId, int variantNum, UUID networkUuid) {
+    private void verifyUpdatedExternalAttributes(String lineId, String generatorId, String twoWTId, String loadId, int variantNum, UUID networkUuid) {
         OwnerInfo ownerInfoLine = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, variantNum);
         OwnerInfo ownerInfoGen = new OwnerInfo(generatorId, ResourceType.GENERATOR, NETWORK_UUID, variantNum);
         OwnerInfo ownerInfoTwoWT = new OwnerInfo(twoWTId, ResourceType.TWO_WINDINGS_TRANSFORMER, NETWORK_UUID, variantNum);
+        OwnerInfo ownerInfoLoad = new OwnerInfo(loadId, ResourceType.LOAD, NETWORK_UUID, variantNum);
 
         // Tap Changer Steps
         List<TapChangerStepAttributes> tapChangerSteps = networkStoreRepository.getTapChangerSteps(networkUuid, variantNum, EQUIPMENT_ID_COLUMN, twoWTId).get(ownerInfoTwoWT);
@@ -342,11 +362,33 @@ class NetworkStoreRepositoryPartialVariantTest {
         // Regulating Points
         RegulatingPointAttributes regulatingPoint = networkStoreRepository.getRegulatingPoints(networkUuid, variantNum, ResourceType.GENERATOR).get(ownerInfoGen);
         assertNotNull(regulatingPoint);
-        assertEquals("regulationMode1", regulatingPoint.getRegulationMode());
+        assertEquals(generatorId, regulatingPoint.getRegulatingEquipmentId());
+        assertEquals(generatorId, regulatingPoint.getLocalTerminal().getConnectableId());
+        assertEquals(loadId, regulatingPoint.getRegulatingTerminal().getConnectableId());
+        Map<OwnerInfo, Map<String, ResourceType>> regulatingEquipmentsGen = networkStoreRepository.getRegulatingEquipments(networkUuid, variantNum, ResourceType.GENERATOR);
+        assertTrue(regulatingEquipmentsGen.isEmpty());
+        Map<String, ResourceType> regulatingEquipmentsLoad = networkStoreRepository.getRegulatingEquipments(networkUuid, variantNum, ResourceType.LOAD).get(ownerInfoLoad);
+        assertEquals(1, regulatingEquipmentsLoad.size());
+        assertTrue(regulatingEquipmentsLoad.containsKey(generatorId));
+        assertEquals(ResourceType.GENERATOR, regulatingEquipmentsLoad.get(generatorId));
 
         regulatingPoint = networkStoreRepository.getRegulatingPointsWithInClause(networkUuid, variantNum, REGULATING_EQUIPMENT_ID, List.of(generatorId), ResourceType.GENERATOR).get(ownerInfoGen);
         assertNotNull(regulatingPoint);
-        assertEquals("regulationMode1", regulatingPoint.getRegulationMode());
+        assertEquals(generatorId, regulatingPoint.getRegulatingEquipmentId());
+        assertEquals(generatorId, regulatingPoint.getLocalTerminal().getConnectableId());
+        assertEquals(loadId, regulatingPoint.getRegulatingTerminal().getConnectableId());
+        regulatingEquipmentsGen = networkStoreRepository.getRegulatingEquipmentsWithInClause(networkUuid, variantNum, "regulatingterminalconnectableid", List.of(generatorId), ResourceType.GENERATOR);
+        assertTrue(regulatingEquipmentsGen.isEmpty());
+        regulatingEquipmentsLoad = networkStoreRepository.getRegulatingEquipmentsWithInClause(networkUuid, variantNum, "regulatingterminalconnectableid", List.of(loadId), ResourceType.LOAD).get(ownerInfoLoad);
+        assertEquals(1, regulatingEquipmentsLoad.size());
+        assertTrue(regulatingEquipmentsLoad.containsKey(generatorId));
+        assertEquals(ResourceType.GENERATOR, regulatingEquipmentsLoad.get(generatorId));
+
+        assertTrue(networkStoreRepository.getRegulatingEquipmentsForIdentifiable(networkUuid, variantNum, generatorId, ResourceType.GENERATOR).isEmpty());
+        regulatingEquipmentsLoad = networkStoreRepository.getRegulatingEquipmentsForIdentifiable(networkUuid, variantNum, loadId, ResourceType.LOAD);
+        assertEquals(1, regulatingEquipmentsLoad.size());
+        assertTrue(regulatingEquipmentsLoad.containsKey(generatorId));
+        assertEquals(ResourceType.GENERATOR, regulatingEquipmentsLoad.get(generatorId));
 
         // Extensions
         Map<String, ExtensionAttributes> extensions = networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(networkUuid, variantNum, lineId);
@@ -405,9 +447,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertNull(networkStoreRepository.getRegulatingPoints(networkUuid, variantNum, ResourceType.GENERATOR).get(ownerInfoGen));
     }
 
-    private void createEquipmentsWithExternalAttributes(int variantNum, String lineId, String generatorId, String twoWTId) {
+    private void createEquipmentsWithExternalAttributes(int variantNum, String lineId, String generatorId, String twoWTId, String loadId) {
         createLine(variantNum, lineId, "vl1", "vl2");
-        createGenerator(variantNum, generatorId, "vl1");
+        createGeneratorAndLoadWithRegulatingAttributes(variantNum, generatorId, loadId, "vl1");
         createTwoWindingTransformer(variantNum, twoWTId, "vl1", "vl2");
         createExternalAttributes(variantNum, lineId, generatorId, twoWTId);
     }
@@ -465,23 +507,30 @@ class NetworkStoreRepositoryPartialVariantTest {
                 .p(20.)
                 .build();
         networkStoreRepository.insertReactiveCapabilityCurvePoints(Map.of(ownerInfoGen, List.of(curvePointA, curvePointB)));
-        // Regulating points already inserted with generator
-        RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
-                .regulationMode("regulationMode")
-                .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
-                .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
-                .build();
-        networkStoreRepository.insertRegulatingPoints(Map.of(ownerInfoGen, regulatingPointAttributes));
         // Extensions
         Map<String, ExtensionAttributes> extensionAttributes = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(6.0).participate(true).participationFactor(1.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test12").build());
         createExtensions(Map.of(ownerInfoLine, extensionAttributes));
     }
 
-    private void updateExternalAttributes(int variantNum, String lineId, String generatorId, String twoWTId) {
+    private void updateExternalAttributes(int variantNum, String lineId, String generatorId, String twoWTId, String loadId) {
         // Equipements are updated too
         createLine(variantNum, lineId, "vl1", "vl2");
-        createGenerator(variantNum, generatorId, "vl1");
+        Resource<GeneratorAttributes> updatedGen = Resource.generatorBuilder()
+                .id(generatorId)
+                .variantNum(variantNum)
+                .attributes(GeneratorAttributes.builder()
+                        .voltageLevelId("vl1")
+                        .name(generatorId)
+                        .regulatingPoint(RegulatingPointAttributes.builder()
+                                .localTerminal(TerminalRefAttributes.builder().connectableId(generatorId).build())
+                                .regulatingEquipmentId(generatorId)
+                                .regulatingTerminal(TerminalRefAttributes.builder().connectableId(loadId).build())
+                                .regulatedResourceType(ResourceType.LOAD)
+                                .build())
+                        .build())
+                .build();
+        networkStoreRepository.updateGenerators(NETWORK_UUID, List.of(updatedGen));
         createTwoWindingTransformer(variantNum, twoWTId, "vl1", "vl2");
         // Tap changer steps
         OwnerInfo ownerInfoLine = new OwnerInfo(lineId, ResourceType.LINE, NETWORK_UUID, variantNum);
@@ -517,13 +566,6 @@ class NetworkStoreRepositoryPartialVariantTest {
                 .p(0.)
                 .build();
         networkStoreRepository.insertReactiveCapabilityCurvePoints(Map.of(ownerInfoGen, List.of(curvePointA)));
-        // Regulating points
-        RegulatingPointAttributes regulatingPointAttributes = RegulatingPointAttributes.builder()
-                .regulationMode("regulationMode1")
-                .regulatingTerminal(TerminalRefAttributes.builder().connectableId("idEq").side("ONE").build())
-                .localTerminal(TerminalRefAttributes.builder().connectableId("id").build())
-                .build();
-        networkStoreRepository.insertRegulatingPoints(Map.of(ownerInfoGen, regulatingPointAttributes));
         // Extensions
         Map<String, ExtensionAttributes> extensionAttributes = Map.of("activePowerControl", ActivePowerControlAttributes.builder().droop(6.5).participate(true).participationFactor(1.5).build(),
                 "operatingStatus", OperatingStatusAttributes.builder().operatingStatus("test123").build());
@@ -613,8 +655,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId1 = "line1";
         String genId1 = "gen1";
         String twoWTId1 = "twoWT1";
+        String loadId1 = "load1";
         createPartialNetwork(networkId, 1, "variant1", VariantMode.PARTIAL, 0);
-        createEquipmentsWithExternalAttributes(1, lineId1, genId1, twoWTId1);
+        createEquipmentsWithExternalAttributes(1, lineId1, genId1, twoWTId1, loadId1);
 
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant2", VariantMode.PARTIAL);
 
@@ -642,8 +685,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId1 = "line1";
         String genId1 = "gen1";
         String twoWTId1 = "twoWT1";
+        String loadId1 = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId1, genId1, twoWTId1);
+        createEquipmentsWithExternalAttributes(0, lineId1, genId1, twoWTId1, loadId1);
 
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
@@ -669,8 +713,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId1 = "line1";
         String genId1 = "gen1";
         String twoWTId1 = "twoWT1";
+        String loadId1 = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.FULL);
-        createEquipmentsWithExternalAttributes(1, lineId1, genId1, twoWTId1);
+        createEquipmentsWithExternalAttributes(1, lineId1, genId1, twoWTId1, loadId1);
 
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.FULL);
 
@@ -705,13 +750,15 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId1 = "line1";
         String genId1 = "gen1";
         String twoWTId1 = "twoWT1";
+        String loadId1 = "load1";
         String lineId2 = "line2";
         String genId2 = "gen2";
         String twoWTId2 = "twoWT2";
+        String loadId2 = "load2";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId1, genId1, twoWTId1);
+        createEquipmentsWithExternalAttributes(0, lineId1, genId1, twoWTId1, loadId1);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(1, lineId2, genId2, twoWTId2);
+        createEquipmentsWithExternalAttributes(1, lineId2, genId2, twoWTId2, loadId2);
 
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant2", VariantMode.FULL);
 
@@ -795,18 +842,30 @@ class NetworkStoreRepositoryPartialVariantTest {
         return line;
     }
 
-    private Resource<GeneratorAttributes> createGenerator(int variantNum, String generatorId, String voltageLevel) {
-        Resource<GeneratorAttributes> generator = Resource.generatorBuilder()
+    private void createGeneratorAndLoadWithRegulatingAttributes(int variantNum, String generatorId, String loadId, String voltageLevel) {
+        Resource<GeneratorAttributes> gen = Resource.generatorBuilder()
                 .id(generatorId)
                 .variantNum(variantNum)
                 .attributes(GeneratorAttributes.builder()
                         .voltageLevelId(voltageLevel)
+                        .name(generatorId)
+                        .regulatingPoint(RegulatingPointAttributes.builder()
+                                .localTerminal(TerminalRefAttributes.builder().connectableId(generatorId).build())
+                                .regulatedResourceType(ResourceType.GENERATOR)
+                                .regulatingEquipmentId(generatorId)
+                                .regulatingTerminal(TerminalRefAttributes.builder().connectableId(generatorId).build())
+                                .build())
                         .build())
                 .build();
-        networkStoreRepository.createGenerators(NETWORK_UUID, List.of(generator));
-        // Remove regulating points to start without external attributes for tests
-        networkStoreRepository.deleteRegulatingPoints(NETWORK_UUID, variantNum, List.of(generatorId), ResourceType.GENERATOR);
-        return generator;
+        networkStoreRepository.createGenerators(NETWORK_UUID, List.of(gen));
+        Resource<LoadAttributes> load1 = Resource.loadBuilder()
+                .id(loadId)
+                .variantNum(variantNum)
+                .attributes(LoadAttributes.builder()
+                        .voltageLevelId(voltageLevel)
+                        .build())
+                .build();
+        networkStoreRepository.createLoads(NETWORK_UUID, List.of(load1));
     }
 
     private Resource<TwoWindingsTransformerAttributes> createTwoWindingTransformer(int variantNum, String generatorId, String voltageLevel1, String voltageLevel2) {
@@ -1422,13 +1481,29 @@ class NetworkStoreRepositoryPartialVariantTest {
     void getExternalAttributesWithoutNetwork() {
         PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTapChangerStepsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, List.of("unknownId")));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTemporaryLimits(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTemporaryLimitsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, List.of("unknownId")));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getPermanentLimits(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getPermanentLimitsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, List.of("unknownId")));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingPoints(NETWORK_UUID, 0, ResourceType.LINE));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingPointsWithInClause(NETWORK_UUID, 0, REGULATING_EQUIPMENT_ID, List.of("unknownId"), ResourceType.LINE));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingEquipments(NETWORK_UUID, 0, ResourceType.LINE));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingEquipmentsWithInClause(NETWORK_UUID, 0, REGULATING_EQUIPMENT_ID, List.of("unknownId"), ResourceType.LINE));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingEquipmentsForIdentifiable(NETWORK_UUID, 0, "unknownId", ResourceType.LINE));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getReactiveCapabilityCurvePoints(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
+        assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getReactiveCapabilityCurvePointsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, List.of("unknownId")));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
     }
 
@@ -1438,8 +1513,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId = "line1";
         String genId = "gen1";
         String twoWTId = "twoWT1";
+        String loadId = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId);
+        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId, loadId);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         verifyExternalAttributes(lineId, genId, twoWTId, 1, NETWORK_UUID);
@@ -1451,9 +1527,10 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId = "line1";
         String genId = "gen1";
         String twoWTId = "twoWT1";
+        String loadId = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(1, lineId, genId, twoWTId);
+        createEquipmentsWithExternalAttributes(1, lineId, genId, twoWTId, loadId);
 
         verifyExternalAttributes(lineId, genId, twoWTId, 1, NETWORK_UUID);
     }
@@ -1464,12 +1541,13 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId = "line";
         String genId = "gen1";
         String twoWTId = "twoWT1";
+        String loadId = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId);
+        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId, loadId);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
-        updateExternalAttributes(1, lineId, genId, twoWTId);
+        updateExternalAttributes(1, lineId, genId, twoWTId, loadId);
 
-        verifyUpdatedExternalAttributes(lineId, genId, twoWTId, 1, NETWORK_UUID);
+        verifyUpdatedExternalAttributes(lineId, genId, twoWTId, loadId, 1, NETWORK_UUID);
     }
 
     @Test
@@ -1478,8 +1556,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId = "line";
         String genId = "gen1";
         String twoWTId = "twoWT1";
+        String loadId = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId);
+        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId, loadId);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
         createLine(1, lineId, "vl1", "vl2");
 
@@ -1492,9 +1571,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId = "line";
         String genId = "gen1";
         String twoWTId = "twoWT1";
+        String loadId = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createLine(0, lineId, "vl1", "vl2");
-        createExternalAttributes(0, lineId, genId, twoWTId);
+        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId, loadId);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         verifyExternalAttributes(lineId, genId, twoWTId, 1, NETWORK_UUID);
@@ -1519,8 +1598,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId = "line";
         String genId = "gen1";
         String twoWTId = "twoWT1";
+        String loadId = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId);
+        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId, loadId);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         BranchSvAttributes branchSvAttributes = BranchSvAttributes.builder()
@@ -1546,8 +1626,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId = "line";
         String genId = "gen1";
         String twoWTId = "twoWT1";
+        String loadId = "load1";
         createSourceNetwork(networkId, 2, "variant2", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(2, lineId, genId, twoWTId);
+        createEquipmentsWithExternalAttributes(2, lineId, genId, twoWTId, loadId);
 
         verifyExternalAttributes(lineId, genId, twoWTId, 2, NETWORK_UUID);
     }
@@ -1571,8 +1652,9 @@ class NetworkStoreRepositoryPartialVariantTest {
         String lineId = "line1";
         String genId = "gen1";
         String twoWTId = "twoWT1";
+        String loadId = "load1";
         createSourceNetwork(networkId, 0, "variant0", VariantMode.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId);
+        createEquipmentsWithExternalAttributes(0, lineId, genId, twoWTId, loadId);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", VariantMode.PARTIAL);
 
         verifyExternalAttributes(lineId, genId, twoWTId, 0, NETWORK_UUID);
