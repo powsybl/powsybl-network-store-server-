@@ -94,7 +94,7 @@ public class ExtensionHandler {
             String extensionName,
             int fullVariantNum,
             Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
-        if (fullVariantNum == -1) {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
             // If the variant is full, retrieve extensions for the specified variant directly
             return getExtensionAttributesForVariant(connection, networkId, variantNum, identifiableId, extensionName);
         }
@@ -150,7 +150,7 @@ public class ExtensionHandler {
             String extensionName,
             int fullVariantNum,
             Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
-        if (fullVariantNum == -1) {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
             // If the variant is full, retrieve extensions for the specified variant directly
             return getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, variantNum, resourceType, extensionName);
         }
@@ -205,7 +205,7 @@ public class ExtensionHandler {
             String identifiableId,
             int fullVariantNum,
             Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
-        if (fullVariantNum == -1) {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
             // If the variant is full, retrieve extensions for the specified variant directly
             return getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, variantNum, identifiableId);
         }
@@ -260,7 +260,7 @@ public class ExtensionHandler {
             ResourceType type,
             int fullVariantNum,
             Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
-        if (fullVariantNum == -1) {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
             // If the variant is full, retrieve extensions for the specified variant directly
             return getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, variantNum, type.toString());
         }

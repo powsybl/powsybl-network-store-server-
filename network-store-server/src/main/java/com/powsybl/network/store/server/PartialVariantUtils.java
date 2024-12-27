@@ -52,7 +52,7 @@ public final class PartialVariantUtils {
             Supplier<Set<String>> fetchAdditionalIdentifiableIdsToExclude,
             IntFunction<Map<T, U>> fetchExternalAttributesInVariant,
             Function<T, String> idExtractor) {
-        if (fullVariantNum == -1) {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
             // If the variant is full, retrieve external attributes directly
             return fetchExternalAttributesInVariant.apply(variantNum);
         }
@@ -113,7 +113,7 @@ public final class PartialVariantUtils {
 
     public static Set<OwnerInfo> getExternalAttributesToTombstone(
             Map<Integer, List<String>> externalAttributesResourcesIdsByVariant,
-            IntFunction<Resource<NetworkAttributes>> fetchNetworkAttributes,
+            IntFunction<NetworkAttributes> fetchNetworkAttributes,
             TriFunction<Integer, Integer, List<String>, Set<OwnerInfo>> fetchExternalAttributesOwnerInfoInVariant,
             IntFunction<Set<String>> fetchTombstonedExternalAttributesIds,
             Set<OwnerInfo> externalAttributesToTombstoneFromEquipments
@@ -129,9 +129,9 @@ public final class PartialVariantUtils {
         for (Map.Entry<Integer, List<String>> entry : externalAttributesResourcesIdsByVariant.entrySet()) {
             int variantNum = entry.getKey();
             List<String> resourcesIds = entry.getValue();
-            Resource<NetworkAttributes> networkAttributes = fetchNetworkAttributes.apply(variantNum);
-            int fullVariantNum = networkAttributes.getAttributes().getFullVariantNum();
-            if (fullVariantNum == -1) {
+            NetworkAttributes networkAttributes = fetchNetworkAttributes.apply(variantNum);
+            int fullVariantNum = networkAttributes.getFullVariantNum();
+            if (NetworkAttributes.isFullVariant(fullVariantNum)) {
                 fullVariant.add(variantNum);
             }
             externalAttributesResourcesInFullVariant.addAll(fetchExternalAttributesOwnerInfoInVariant.apply(fullVariantNum, variantNum, resourcesIds));
@@ -151,7 +151,7 @@ public final class PartialVariantUtils {
             IntFunction<List<T>> fetchIdentifiablesInVariant,
             Function<T, String> idExtractor,
             Supplier<List<String>> fetchUpdatedIdentifiblesIdsInVariant) {
-        if (fullVariantNum == -1) {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
             // If the variant is full, retrieve identifiables directly
             return fetchIdentifiablesInVariant.apply(variantNum);
         }
@@ -187,7 +187,7 @@ public final class PartialVariantUtils {
             int fullVariantNum,
             Supplier<Set<String>> fetchTombstonedIdentifiableIds,
             IntFunction<Optional<Resource<T>>> fetchIdentifiableInVariant) {
-        if (fullVariantNum == -1) {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
             // If the variant is full, retrieve identifiables directly
             return fetchIdentifiableInVariant.apply(variantNum);
         }
