@@ -26,7 +26,7 @@ import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.network.store.iidm.impl.ConfiguredBusImpl;
 import com.powsybl.network.store.iidm.impl.NetworkFactoryImpl;
 import com.powsybl.network.store.iidm.impl.NetworkImpl;
-import com.powsybl.network.store.model.VariantMode;
+import com.powsybl.network.store.model.CloneStrategy;
 import com.powsybl.network.store.server.NetworkStoreApplication;
 import com.powsybl.ucte.converter.UcteImporter;
 import org.apache.commons.collections4.IterableUtils;
@@ -3728,7 +3728,7 @@ class NetworkStoreIT {
         // For an empty cache and buffer this should be the same as network.getVariantManager().cloneVariant()
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant to variant "v2" while nothing has been cached or modified
-            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v2", VariantMode.FULL);
+            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v2", CloneStrategy.FULL);
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.getNetwork(networkUuid);
@@ -3756,7 +3756,7 @@ class NetworkStoreIT {
 
             // clone initial variant after flush
             service.flush(network);
-            service.cloneVariant(networkUuid, "v2", "v3", VariantMode.FULL);
+            service.cloneVariant(networkUuid, "v2", "v3", CloneStrategy.FULL);
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.getNetwork(networkUuid);
@@ -3773,7 +3773,7 @@ class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant over existing
             PowsyblException ex = assertThrows(PowsyblException.class,
-                    () -> service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3", VariantMode.FULL));
+                    () -> service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3", CloneStrategy.FULL));
             assertTrue(ex.getMessage().contains("already exists"));
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -3790,7 +3790,7 @@ class NetworkStoreIT {
         // Using NetworkStoreService.cloneVariant, testing maybeOverwrite
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant over existing with mayOverwrite=true
-            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3", true, VariantMode.FULL);
+            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3", true, CloneStrategy.FULL);
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.getNetwork(networkUuid);
@@ -3807,7 +3807,7 @@ class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant over existing with mayOverwrite=true
             PowsyblException ex = assertThrows(PowsyblException.class,
-                    () -> service.cloneVariant(networkUuid, "v2", INITIAL_VARIANT_ID, true, VariantMode.FULL));
+                    () -> service.cloneVariant(networkUuid, "v2", INITIAL_VARIANT_ID, true, CloneStrategy.FULL));
             assertTrue(ex.getMessage().contains("forbidden"));
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {

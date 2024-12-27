@@ -145,8 +145,8 @@ public class NetworkStoreController {
                                              @Parameter(description = "Source variant number", required = true) @PathVariable("sourceVariantNum") int sourceVariantNum,
                                              @Parameter(description = "Target variant number", required = true) @PathVariable("targetVariantNum") int targetVariantNum,
                                              @Parameter(description = "Target variant id", required = true) @RequestParam(required = false) String targetVariantId,
-                                             @Parameter(description = "Variant mode", required = true) @RequestParam(required = false) String variantMode) {
-        repository.cloneNetworkVariant(networkId, sourceVariantNum, targetVariantNum, targetVariantId, variantMode != null ? VariantMode.valueOf(variantMode) : VariantMode.PARTIAL);
+                                             @Parameter(description = "Variant mode", required = true) @RequestParam(required = false) String cloneStrategy) {
+        repository.cloneNetworkVariant(networkId, sourceVariantNum, targetVariantNum, targetVariantId, cloneStrategy != null ? CloneStrategy.valueOf(cloneStrategy) : CloneStrategy.PARTIAL);
         return ResponseEntity.ok().build();
     }
 
@@ -171,8 +171,8 @@ public class NetworkStoreController {
                                              @Parameter(description = "Source variant Id", required = true) @PathVariable("sourceVariantId") String sourceVariantId,
                                              @Parameter(description = "Target variant Id", required = true) @PathVariable("targetVariantId") String targetVariantId,
                                              @Parameter(description = "mayOverwrite", required = false) @RequestParam(required = false) boolean mayOverwrite,
-                                             @Parameter(description = "Variant mode", required = true) @RequestParam(required = false) String variantMode) {
-        repository.cloneNetwork(networkId, sourceVariantId, targetVariantId, mayOverwrite, variantMode != null ? VariantMode.valueOf(variantMode) : VariantMode.PARTIAL);
+                                             @Parameter(description = "Variant mode", required = true) @RequestParam(required = false) String cloneStrategy) {
+        repository.cloneNetwork(networkId, sourceVariantId, targetVariantId, mayOverwrite, cloneStrategy != null ? CloneStrategy.valueOf(cloneStrategy) : CloneStrategy.PARTIAL);
         return ResponseEntity.ok().build();
     }
 

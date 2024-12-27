@@ -92,9 +92,9 @@ public class ExtensionHandler {
             int variantNum,
             String identifiableId,
             String extensionName,
-            int srcVariantNum,
+            int fullVariantNum,
             Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
-        if (srcVariantNum == -1) {
+        if (fullVariantNum == -1) {
             // If the variant is full, retrieve extensions for the specified variant directly
             return getExtensionAttributesForVariant(connection, networkId, variantNum, identifiableId, extensionName);
         }
@@ -115,7 +115,7 @@ public class ExtensionHandler {
         }
 
         // If not present, retrieve extension in full variant
-        return getExtensionAttributesForVariant(connection, networkId, srcVariantNum, identifiableId, extensionName);
+        return getExtensionAttributesForVariant(connection, networkId, fullVariantNum, identifiableId, extensionName);
     }
 
     public Optional<ExtensionAttributes> getExtensionAttributesForVariant(Connection connection, UUID networkUuid, int variantNum, String identifiableId, String extensionName) {
@@ -148,15 +148,15 @@ public class ExtensionHandler {
             int variantNum,
             String resourceType,
             String extensionName,
-            int srcVariantNum,
+            int fullVariantNum,
             Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
-        if (srcVariantNum == -1) {
+        if (fullVariantNum == -1) {
             // If the variant is full, retrieve extensions for the specified variant directly
             return getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, variantNum, resourceType, extensionName);
         }
 
         // Retrieve extensions in full variant
-        Map<String, ExtensionAttributes> extensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, srcVariantNum, resourceType, extensionName);
+        Map<String, ExtensionAttributes> extensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, fullVariantNum, resourceType, extensionName);
 
         // Remove tombstoned identifiables
         Set<String> tombstonedIds = tombstonedIdsSupplier.get();
@@ -203,9 +203,9 @@ public class ExtensionHandler {
             UUID networkId,
             int variantNum,
             String identifiableId,
-            int srcVariantNum,
+            int fullVariantNum,
             Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
-        if (srcVariantNum == -1) {
+        if (fullVariantNum == -1) {
             // If the variant is full, retrieve extensions for the specified variant directly
             return getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, variantNum, identifiableId);
         }
@@ -217,7 +217,7 @@ public class ExtensionHandler {
         }
 
         // Retrieve extensions from full variant
-        Map<String, ExtensionAttributes> extensionsAttributesByIdentifiableId = getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, srcVariantNum, identifiableId);
+        Map<String, ExtensionAttributes> extensionsAttributesByIdentifiableId = getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, fullVariantNum, identifiableId);
 
         // Remove tombstoned extensions
         Map<String, Set<String>> tombstonedExtensions = getTombstonedExtensions(connection, networkId, variantNum);
@@ -258,15 +258,15 @@ public class ExtensionHandler {
             Connection connection, UUID networkId,
             int variantNum,
             ResourceType type,
-            int srcVariantNum,
+            int fullVariantNum,
             Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
-        if (srcVariantNum == -1) {
+        if (fullVariantNum == -1) {
             // If the variant is full, retrieve extensions for the specified variant directly
             return getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, variantNum, type.toString());
         }
 
         // Retrieve extensions from full variant
-        Map<String, Map<String, ExtensionAttributes>> extensionsAttributesByResourceType = getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, srcVariantNum, type.toString());
+        Map<String, Map<String, ExtensionAttributes>> extensionsAttributesByResourceType = getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, fullVariantNum, type.toString());
 
         // Remove tombstoned identifiables
         Set<String> tombstonedIds = tombstonedIdsSupplier.get();

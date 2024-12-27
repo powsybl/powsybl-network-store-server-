@@ -106,15 +106,13 @@ public class NetworkStoreRepository {
                 try (ResultSet resultSet = preparedStmt.executeQuery()) {
                     List<VariantInfos> variantsInfos = new ArrayList<>();
                     while (resultSet.next()) {
-                        variantsInfos.add(new VariantInfos(resultSet.getString(1), resultSet.getInt(2), mapper.readValue(resultSet.getString(3), VariantMode.class), resultSet.getInt(4)));
+                        variantsInfos.add(new VariantInfos(resultSet.getString(1), resultSet.getInt(2)));
                     }
                     return variantsInfos;
                 }
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
@@ -159,7 +157,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             ids.addAll(PartialVariantUtils.getIdentifiables(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getIdentifiablesIdsForVariant(connection, networkUuid, variant),
                     Function.identity(),
@@ -526,8 +524,7 @@ public class NetworkStoreRepository {
                 sourceNetworkAttribute.getAttributes().setExtensionAttributes(Collections.emptyMap());
                 sourceNetworkAttribute.setVariantNum(VariantUtils.findFistAvailableVariantNum(newNetworkVariants));
 
-                newNetworkVariants.add(new VariantInfos(sourceNetworkAttribute.getAttributes().getVariantId(), sourceNetworkAttribute.getVariantNum(),
-                        sourceNetworkAttribute.getAttributes().getVariantMode(), sourceNetworkAttribute.getAttributes().getSrcVariantNum()));
+                newNetworkVariants.add(new VariantInfos(sourceNetworkAttribute.getAttributes().getVariantId(), sourceNetworkAttribute.getVariantNum()));
                 variantsNotFound.remove(sourceNetworkAttribute.getAttributes().getVariantId());
 
                 createNetworks(connection, List.of(sourceNetworkAttribute));
@@ -541,25 +538,25 @@ public class NetworkStoreRepository {
         LOGGER.info("Network clone done in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId, VariantMode variantMode) {
+    public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId, CloneStrategy cloneStrategy) {
         String nonNullTargetVariantId = targetVariantId == null ? "variant-" + UUID.randomUUID() : targetVariantId;
-        LOGGER.info("Cloning network {} variant {} to variant {} ({} clone)", uuid, sourceVariantNum, targetVariantNum, variantMode);
+        LOGGER.info("Cloning network {} variant {} to variant {} ({} clone)", uuid, sourceVariantNum, targetVariantNum, cloneStrategy);
         var stopwatch = Stopwatch.createStarted();
 
         try (var connection = dataSource.getConnection()) {
             Resource<NetworkAttributes> srcNetwork = getNetworkAttributes(connection, uuid, sourceVariantNum);
-            boolean cloneVariant = variantMode == VariantMode.FULL || variantMode == VariantMode.PARTIAL && srcNetwork.getAttributes().getSrcVariantNum() != -1;
-            int srcVariantNum = -1;
-            if (variantMode == VariantMode.PARTIAL) {
-                srcVariantNum = srcNetwork.getAttributes().getSrcVariantNum() != -1
-                        ? srcNetwork.getAttributes().getSrcVariantNum()
+            boolean cloneVariant = cloneStrategy == CloneStrategy.FULL || cloneStrategy == CloneStrategy.PARTIAL && srcNetwork.getAttributes().getFullVariantNum() != -1;
+            int fullVariantNum = -1;
+            if (cloneStrategy == CloneStrategy.PARTIAL) {
+                fullVariantNum = srcNetwork.getAttributes().getFullVariantNum() != -1
+                        ? srcNetwork.getAttributes().getFullVariantNum()
                         : sourceVariantNum;
             }
             try (var preparedStmt = connection.prepareStatement(buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
-                preparedStmt.setString(3, mapper.writeValueAsString(variantMode));
-                preparedStmt.setInt(4, srcVariantNum);
+                preparedStmt.setString(3, mapper.writeValueAsString(cloneStrategy));
+                preparedStmt.setInt(4, fullVariantNum);
                 preparedStmt.setObject(5, uuid);
                 preparedStmt.setInt(6, sourceVariantNum);
                 preparedStmt.execute();
@@ -711,7 +708,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    public void cloneNetwork(UUID networkUuid, String sourceVariantId, String targetVariantId, boolean mayOverwrite, VariantMode variantMode) {
+    public void cloneNetwork(UUID networkUuid, String sourceVariantId, String targetVariantId, boolean mayOverwrite, CloneStrategy cloneStrategy) {
         List<VariantInfos> variantsInfos = getVariantsInfos(networkUuid);
         Optional<VariantInfos> targetVariant = VariantUtils.getVariant(targetVariantId, variantsInfos);
         if (targetVariant.isPresent()) {
@@ -726,7 +723,7 @@ public class NetworkStoreRepository {
         }
         int sourceVariantNum = VariantUtils.getVariantNum(sourceVariantId, variantsInfos);
         int targetVariantNum = VariantUtils.findFistAvailableVariantNum(variantsInfos);
-        cloneNetworkVariant(networkUuid, sourceVariantNum, targetVariantNum, targetVariantId, variantMode);
+        cloneNetworkVariant(networkUuid, sourceVariantNum, targetVariantNum, targetVariantId, cloneStrategy);
     }
 
     public <T extends IdentifiableAttributes> void createIdentifiables(UUID networkUuid, List<Resource<T>> resources,
@@ -770,7 +767,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getOptionalIdentifiable(
                     equipmentId,
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getIdentifiableForVariant(connection, networkUuid, variant, equipmentId, tableMapping, variantNum));
         } catch (SQLException e) {
@@ -949,7 +946,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getIdentifiables(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getIdentifiablesInContainerForVariant(connection, networkUuid, variant, containerId, containerColumns, tableMapping, variantNum),
                     Resource::getId,
@@ -1126,8 +1123,8 @@ public class NetworkStoreRepository {
             int variantNum = entry.getKey();
             List<String> equipmentIds = new ArrayList<>(entry.getValue().keySet());
             Resource<NetworkAttributes> network = getNetworkAttributes(connection, networkUuid, variantNum);
-            int srcVariantNum = network.getAttributes().getSrcVariantNum();
-            fullVariantResources.addAll(getIdentifiablesWithInClauseForVariant(connection, networkUuid, srcVariantNum, tableMapping, equipmentIds, variantNum));
+            int fullVariantNum = network.getAttributes().getFullVariantNum();
+            fullVariantResources.addAll(getIdentifiablesWithInClauseForVariant(connection, networkUuid, fullVariantNum, tableMapping, equipmentIds, variantNum));
         }
         return fullVariantResources;
     }
@@ -1184,8 +1181,8 @@ public class NetworkStoreRepository {
                 preparedStmt.executeUpdate();
             }
             Resource<NetworkAttributes> network = getNetworkAttributes(connection, networkUuid, variantNum);
-            int srcVariantNum = network.getAttributes().getSrcVariantNum();
-            if (srcVariantNum != -1) {
+            int fullVariantNum = network.getAttributes().getFullVariantNum();
+            if (fullVariantNum != -1) {
                 try (var preparedStmt = connection.prepareStatement(buildInsertTombstonedIdentifiablesQuery())) {
                     preparedStmt.setObject(1, networkUuid);
                     preparedStmt.setInt(2, variantNum);
@@ -1298,7 +1295,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getIdentifiables(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getIdentifiablesForVariant(connection, networkUuid, variant, tableMapping, variantNum),
                     Resource::getId,
@@ -1411,7 +1408,7 @@ public class NetworkStoreRepository {
             Set<OwnerInfo> tombstonedReactiveCapabilityCurvePoints = PartialVariantUtils.getExternalAttributesToTombstone(
                     resourcesByVariant,
                     variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                    (srcVariantNum, variantNum, ids) -> getReactiveCapabilityCurvePointsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
+                    (fullVariantNum, variantNum, ids) -> getReactiveCapabilityCurvePointsWithInClauseForVariant(connection, networkUuid, fullVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
                     variantNum -> getTombstonedReactiveCapabilityCurvePointsIds(connection, networkUuid, variantNum),
                     getExternalAttributesListToTombstoneFromEquipment(networkUuid, reactiveCapabilityCurvePointsToInsert, resources)
             );
@@ -1843,7 +1840,7 @@ public class NetworkStoreRepository {
             Set<OwnerInfo> tombstonedTapChangerSteps = PartialVariantUtils.getExternalAttributesToTombstone(
                     resourcesByVariant,
                     variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                    (srcVariantNum, variantNum, ids) -> getTapChangerStepsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
+                    (fullVariantNum, variantNum, ids) -> getTapChangerStepsWithInClauseForVariant(connection, networkUuid, fullVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
                     variantNum -> getTombstonedTapChangerStepsIds(connection, networkUuid, variantNum),
                     getExternalAttributesListToTombstoneFromEquipment(networkUuid, tapChangerStepsToInsert, resources)
             );
@@ -2020,7 +2017,7 @@ public class NetworkStoreRepository {
             Set<OwnerInfo> tombstonedTemporaryLimits = PartialVariantUtils.getExternalAttributesToTombstone(
                     resourcesByVariant,
                     variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                    (srcVariantNum, variantNum, ids) -> getTemporaryLimitsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
+                    (fullVariantNum, variantNum, ids) -> getTemporaryLimitsWithInClauseForVariant(connection, networkUuid, fullVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
                     variantNum -> getTombstonedTemporaryLimitsIds(connection, networkUuid, variantNum),
                     getTemporaryLimitsToTombstoneFromEquipment(networkUuid, limitsInfos, resources)
             );
@@ -2088,7 +2085,7 @@ public class NetworkStoreRepository {
             Set<OwnerInfo> tombstonedPermanentLimits = PartialVariantUtils.getExternalAttributesToTombstone(
                         resourcesByVariant,
                         variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                        (srcVariantNum, variantNum, ids) -> getPermanentLimitsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
+                        (fullVariantNum, variantNum, ids) -> getPermanentLimitsWithInClauseForVariant(connection, networkUuid, fullVariantNum, EQUIPMENT_ID_COLUMN, ids, variantNum).keySet(),
                         variantNum -> getTombstonedPermanentLimitsIds(connection, networkUuid, variantNum),
                         getPermanentLimitsToTombstoneFromEquipment(networkUuid, limitsInfos, resources)
                 );
@@ -2293,7 +2290,7 @@ public class NetworkStoreRepository {
             return PartialVariantUtils.getOptionalIdentifiable(
                     id,
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getIdentifiableForVariant(connection, networkUuid, variant, id, variantNum));
         } catch (SQLException e) {
@@ -2342,7 +2339,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedTemporaryLimitsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getTemporaryLimitsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, variantNum),
@@ -2373,7 +2370,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedPermanentLimitsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getPermanentLimitsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, variantNum),
@@ -2430,7 +2427,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedTemporaryLimitsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getTemporaryLimitsForVariant(connection, networkUuid, variant, columnNameForWhereClause, valueForWhereClause, variantNum),
@@ -2456,7 +2453,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedPermanentLimitsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getPermanentLimitsForVariant(connection, networkUuid, variant, columnNameForWhereClause, valueForWhereClause, variantNum),
@@ -2797,7 +2794,7 @@ public class NetworkStoreRepository {
             Set<OwnerInfo> tombstonedRegulatingPoints = PartialVariantUtils.getExternalAttributesToTombstone(
                     resourcesByVariant,
                     variantNum -> getNetworkAttributes(connection, networkUuid, variantNum),
-                    (srcVariantNum, variantNum, ids) -> getRegulatingPointsWithInClauseForVariant(connection, networkUuid, srcVariantNum, EQUIPMENT_ID_COLUMN, ids, resourceType, variantNum).keySet(),
+                    (fullVariantNum, variantNum, ids) -> getRegulatingPointsWithInClauseForVariant(connection, networkUuid, fullVariantNum, EQUIPMENT_ID_COLUMN, ids, resourceType, variantNum).keySet(),
                     variantNum -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     getRegulatingPointsToTombstoneFromEquipment(networkUuid, regulatingPointToInsert, resources)
             );
@@ -2867,7 +2864,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getRegulatingPointsForVariant(connection, networkUuid, variant, type, variantNum),
@@ -2896,7 +2893,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getRegulatingPointsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, type, variantNum),
@@ -2972,7 +2969,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedReactiveCapabilityCurvePointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getReactiveCapabilityCurvePointsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, variantNum),
@@ -3003,7 +3000,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedReactiveCapabilityCurvePointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getReactiveCapabilityCurvePointsForVariant(connection, networkUuid, variant, columnNameForWhereClause, valueForWhereClause, variantNum),
@@ -3151,7 +3148,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getRegulatingEquipments(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     () -> getRegulatingPointsIdentifiableIdsForVariant(connection, networkUuid, variantNum),
@@ -3181,7 +3178,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getRegulatingEquipments(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     () -> getRegulatingPointsIdentifiableIdsForVariant(connection, networkUuid, variantNum),
@@ -3245,7 +3242,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getRegulatingEquipments(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedRegulatingPointsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     () -> getRegulatingPointsIdentifiableIdsForVariant(connection, networkUuid, variantNum),
@@ -3389,7 +3386,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedTapChangerStepsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                 variant -> getTapChangerStepsWithInClauseForVariant(connection, networkUuid, variant, columnNameForWhereClause, valuesForInClause, variantNum),
@@ -3419,7 +3416,7 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getExternalAttributes(
                     variantNum,
-                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getSrcVariantNum(),
+                    getNetworkAttributes(connection, networkUuid, variantNum).getAttributes().getFullVariantNum(),
                     () -> getTombstonedTapChangerStepsIds(connection, networkUuid, variantNum),
                     () -> getTombstonedIdentifiableIds(connection, networkUuid, variantNum),
                     variant -> getTapChangerStepsForVariant(connection, networkUuid, variant, columnNameForWhereClause, valueForWhereClause, variantNum),
@@ -3726,14 +3723,14 @@ public class NetworkStoreRepository {
 
     public Optional<ExtensionAttributes> getExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
         try (var connection = dataSource.getConnection()) {
-            int srcVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum();
+            int fullVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getFullVariantNum();
             return extensionHandler.getExtensionAttributes(
                     connection,
                     networkId,
                     variantNum,
                     identifiableId,
                     extensionName,
-                    srcVariantNum,
+                    fullVariantNum,
                     () -> getTombstonedIdentifiableIds(connection, networkId, variantNum));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
@@ -3742,14 +3739,14 @@ public class NetworkStoreRepository {
 
     public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionName(UUID networkId, int variantNum, ResourceType type, String extensionName) {
         try (var connection = dataSource.getConnection()) {
-            int srcVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum();
+            int fullVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getFullVariantNum();
             return extensionHandler.getAllExtensionsAttributesByResourceTypeAndExtensionName(
                     connection,
                     networkId,
                     variantNum,
                     type.toString(),
                     extensionName,
-                    srcVariantNum,
+                    fullVariantNum,
                     () -> getTombstonedIdentifiableIds(connection, networkId, variantNum));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
@@ -3758,13 +3755,13 @@ public class NetworkStoreRepository {
 
     public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableId(UUID networkId, int variantNum, String identifiableId) {
         try (var connection = dataSource.getConnection()) {
-            int srcVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum();
+            int fullVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getFullVariantNum();
             return extensionHandler.getAllExtensionsAttributesByIdentifiableId(
                     connection,
                     networkId,
                     variantNum,
                     identifiableId,
-                    srcVariantNum,
+                    fullVariantNum,
                     () -> getTombstonedIdentifiableIds(connection, networkId, variantNum));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
@@ -3773,13 +3770,13 @@ public class NetworkStoreRepository {
 
     public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceType(UUID networkId, int variantNum, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
-            int srcVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum();
+            int fullVariantNum = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getFullVariantNum();
             return extensionHandler.getAllExtensionsAttributesByResourceType(
                     connection,
                     networkId,
                     variantNum,
                     type,
-                    srcVariantNum,
+                    fullVariantNum,
                     () -> getTombstonedIdentifiableIds(connection, networkId, variantNum));
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
@@ -3788,7 +3785,7 @@ public class NetworkStoreRepository {
 
     public void removeExtensionAttributes(UUID networkId, int variantNum, String identifiableId, String extensionName) {
         try (var connection = dataSource.getConnection()) {
-            boolean isPartial = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getSrcVariantNum() != -1;
+            boolean isPartial = getNetworkAttributes(connection, networkId, variantNum).getAttributes().getFullVariantNum() != -1;
             extensionHandler.deleteAndTombstoneExtensions(connection, networkId, variantNum, Map.of(identifiableId, Set.of(extensionName)), isPartial);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);

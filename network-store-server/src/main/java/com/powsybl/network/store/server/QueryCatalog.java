@@ -26,8 +26,8 @@ public final class QueryCatalog {
     static final String UUID_COLUMN = "uuid";
     static final String NETWORK_UUID_COLUMN = "networkUuid";
     static final String VARIANT_NUM_COLUMN = "variantNum";
-    static final String SRC_VARIANT_NUM_COLUMN = "srcVariantNum";
-    static final String VARIANT_MODE_COLUMN = "variantMode";
+    static final String SRC_VARIANT_NUM_COLUMN = "fullVariantNum";
+    static final String VARIANT_MODE_COLUMN = "cloneStrategy";
     static final String ID_COLUMN = "id";
     static final String VOLTAGE_LEVEL_ID_COLUMN = "voltageLevelId";
     static final String VOLTAGE_LEVEL_ID_1_COLUMN = "voltageLevelId1";
