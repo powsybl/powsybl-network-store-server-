@@ -1324,18 +1324,18 @@ public class NetworkStoreRepository {
     public void updateGenerators(UUID networkUuid, List<Resource<GeneratorAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getGeneratorMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        updateReactiveCapabilityCurvePoints(networkUuid, resources, ResourceType.GENERATOR);
+        updateReactiveCapabilityCurvePoints(networkUuid, resources);
         updateRegulatingPoints(networkUuid, resources, ResourceType.GENERATOR);
     }
 
-    public <T extends IdentifiableAttributes & ReactiveLimitHolder> void updateReactiveCapabilityCurvePoints(UUID networkUuid, List<Resource<T>> resources, ResourceType resourceType) {
+    public <T extends IdentifiableAttributes & ReactiveLimitHolder> void updateReactiveCapabilityCurvePoints(UUID networkUuid, List<Resource<T>> resources) {
         deleteReactiveCapabilityCurvePoints(networkUuid, resources);
         Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePointsToInsert = getReactiveCapabilityCurvePointsFromEquipments(networkUuid, resources);
         insertReactiveCapabilityCurvePoints(reactiveCapabilityCurvePointsToInsert);
-        insertTombstonedReactiveCapabilityCurvePoints(networkUuid, reactiveCapabilityCurvePointsToInsert, resources, resourceType);
+        insertTombstonedReactiveCapabilityCurvePoints(networkUuid, reactiveCapabilityCurvePointsToInsert, resources);
     }
 
-    private <T extends IdentifiableAttributes & ReactiveLimitHolder> void insertTombstonedReactiveCapabilityCurvePoints(UUID networkUuid, Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePointsToInsert, List<Resource<T>> resources, ResourceType resourceType) {
+    private <T extends IdentifiableAttributes & ReactiveLimitHolder> void insertTombstonedReactiveCapabilityCurvePoints(UUID networkUuid, Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> reactiveCapabilityCurvePointsToInsert, List<Resource<T>> resources) {
         try (var connection = dataSource.getConnection()) {
             Map<Integer, List<String>> resourcesByVariant = resources.stream()
                     .collect(Collectors.groupingBy(
@@ -1429,7 +1429,7 @@ public class NetworkStoreRepository {
     public void updateBatteries(UUID networkUuid, List<Resource<BatteryAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getBatteryMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        updateReactiveCapabilityCurvePoints(networkUuid, resources, ResourceType.BATTERY);
+        updateReactiveCapabilityCurvePoints(networkUuid, resources);
     }
 
     public void updateBatteriesSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {
@@ -1560,7 +1560,7 @@ public class NetworkStoreRepository {
     public void updateVscConverterStations(UUID networkUuid, List<Resource<VscConverterStationAttributes>> resources) {
         updateIdentifiables(networkUuid, resources, mappings.getVscConverterStationMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
-        updateReactiveCapabilityCurvePoints(networkUuid, resources, ResourceType.VSC_CONVERTER_STATION);
+        updateReactiveCapabilityCurvePoints(networkUuid, resources);
         updateRegulatingPoints(networkUuid, resources, ResourceType.VSC_CONVERTER_STATION);
     }
 
@@ -1755,19 +1755,19 @@ public class NetworkStoreRepository {
         updateIdentifiables(networkUuid, resources, mappings.getTwoWindingsTransformerMappings());
 
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
-        updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.TWO_WINDINGS_TRANSFORMER);
-        updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.TWO_WINDINGS_TRANSFORMER);
-        updateTapChangerSteps(networkUuid, resources, ResourceType.TWO_WINDINGS_TRANSFORMER);
+        updateTemporaryLimits(networkUuid, resources, limitsInfos);
+        updatePermanentLimits(networkUuid, resources, limitsInfos);
+        updateTapChangerSteps(networkUuid, resources);
     }
 
-    public <T extends IdentifiableAttributes> void updateTapChangerSteps(UUID networkUuid, List<Resource<T>> resources, ResourceType resourceType) {
+    public <T extends IdentifiableAttributes> void updateTapChangerSteps(UUID networkUuid, List<Resource<T>> resources) {
         deleteTapChangerSteps(networkUuid, resources);
         Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerStepsToInsert = getTapChangerStepsFromEquipment(networkUuid, resources);
         insertTapChangerSteps(tapChangerStepsToInsert);
-        insertTombstonedTapChangerSteps(networkUuid, tapChangerStepsToInsert, resources, resourceType);
+        insertTombstonedTapChangerSteps(networkUuid, tapChangerStepsToInsert, resources);
     }
 
-    private <T extends IdentifiableAttributes> void insertTombstonedTapChangerSteps(UUID networkUuid, Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerStepsToInsert, List<Resource<T>> resources, ResourceType resourceType) {
+    private <T extends IdentifiableAttributes> void insertTombstonedTapChangerSteps(UUID networkUuid, Map<OwnerInfo, List<TapChangerStepAttributes>> tapChangerStepsToInsert, List<Resource<T>> resources) {
         try (var connection = dataSource.getConnection()) {
             Map<Integer, List<String>> resourcesByVariant = resources.stream()
                     .collect(Collectors.groupingBy(
@@ -1868,9 +1868,9 @@ public class NetworkStoreRepository {
         updateIdentifiables(networkUuid, resources, mappings.getThreeWindingsTransformerMappings());
 
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
-        updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.THREE_WINDINGS_TRANSFORMER);
-        updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.THREE_WINDINGS_TRANSFORMER);
-        updateTapChangerSteps(networkUuid, resources, ResourceType.THREE_WINDINGS_TRANSFORMER);
+        updateTemporaryLimits(networkUuid, resources, limitsInfos);
+        updatePermanentLimits(networkUuid, resources, limitsInfos);
+        updateTapChangerSteps(networkUuid, resources);
     }
 
     public void updateThreeWindingsTransformersSv(UUID networkUuid, List<Resource<ThreeWindingsTransformerSvAttributes>> resources) {
@@ -1934,17 +1934,17 @@ public class NetworkStoreRepository {
         updateIdentifiables(networkUuid, resources, mappings.getLineMappings());
 
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
-        updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.LINE);
-        updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.LINE);
+        updateTemporaryLimits(networkUuid, resources, limitsInfos);
+        updatePermanentLimits(networkUuid, resources, limitsInfos);
     }
 
-    public <T extends IdentifiableAttributes> void updateTemporaryLimits(UUID networkUuid, List<Resource<T>> resources, Map<OwnerInfo, LimitsInfos> limitsInfos, ResourceType resourceType) {
+    public <T extends IdentifiableAttributes> void updateTemporaryLimits(UUID networkUuid, List<Resource<T>> resources, Map<OwnerInfo, LimitsInfos> limitsInfos) {
         deleteTemporaryLimits(networkUuid, resources);
         insertTemporaryLimits(limitsInfos);
-        insertTombstonedTemporaryLimits(networkUuid, limitsInfos, resources, resourceType);
+        insertTombstonedTemporaryLimits(networkUuid, limitsInfos, resources);
     }
 
-    private <T extends IdentifiableAttributes> void insertTombstonedTemporaryLimits(UUID networkUuid, Map<OwnerInfo, LimitsInfos> limitsInfos, List<Resource<T>> resources, ResourceType resourceType) {
+    private <T extends IdentifiableAttributes> void insertTombstonedTemporaryLimits(UUID networkUuid, Map<OwnerInfo, LimitsInfos> limitsInfos, List<Resource<T>> resources) {
         try (var connection = dataSource.getConnection()) {
             Map<Integer, List<String>> resourcesByVariant = resources.stream()
                     .collect(Collectors.groupingBy(
@@ -2006,13 +2006,13 @@ public class NetworkStoreRepository {
         return externalAttributesToTombstoneFromEquipment;
     }
 
-    public <T extends IdentifiableAttributes> void updatePermanentLimits(UUID networkUuid, List<Resource<T>> resources, Map<OwnerInfo, LimitsInfos> limitsInfos, ResourceType resourceType) {
+    public <T extends IdentifiableAttributes> void updatePermanentLimits(UUID networkUuid, List<Resource<T>> resources, Map<OwnerInfo, LimitsInfos> limitsInfos) {
         deletePermanentLimits(networkUuid, resources);
         insertPermanentLimits(limitsInfos);
-        insertTombstonedPermanentLimits(networkUuid, limitsInfos, resources, resourceType);
+        insertTombstonedPermanentLimits(networkUuid, limitsInfos, resources);
     }
 
-    private <T extends IdentifiableAttributes> void insertTombstonedPermanentLimits(UUID networkUuid, Map<OwnerInfo, LimitsInfos> limitsInfos, List<Resource<T>> resources, ResourceType resourceType) {
+    private <T extends IdentifiableAttributes> void insertTombstonedPermanentLimits(UUID networkUuid, Map<OwnerInfo, LimitsInfos> limitsInfos, List<Resource<T>> resources) {
         try (var connection = dataSource.getConnection()) {
             Map<Integer, List<String>> resourcesByVariant = resources.stream()
                     .collect(Collectors.groupingBy(
@@ -2118,8 +2118,8 @@ public class NetworkStoreRepository {
         updateIdentifiables(networkUuid, resources, mappings.getDanglingLineMappings(), VOLTAGE_LEVEL_ID_COLUMN);
 
         Map<OwnerInfo, LimitsInfos> limitsInfos = getLimitsInfosFromEquipments(networkUuid, resources);
-        updateTemporaryLimits(networkUuid, resources, limitsInfos, ResourceType.DANGLING_LINE);
-        updatePermanentLimits(networkUuid, resources, limitsInfos, ResourceType.TWO_WINDINGS_TRANSFORMER);
+        updateTemporaryLimits(networkUuid, resources, limitsInfos);
+        updatePermanentLimits(networkUuid, resources, limitsInfos);
     }
 
     public void updateDanglingLinesSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources) {

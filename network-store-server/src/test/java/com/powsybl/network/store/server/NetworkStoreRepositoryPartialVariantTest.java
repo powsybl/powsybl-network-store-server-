@@ -574,10 +574,10 @@ class NetworkStoreRepositoryPartialVariantTest {
         Resource<GeneratorAttributes> generator = new Resource<>(ResourceType.GENERATOR, generatorId, variantNum, null, new GeneratorAttributes());
         Resource<TwoWindingsTransformerAttributes> twoWT = new Resource<>(ResourceType.TWO_WINDINGS_TRANSFORMER, twoWTId, variantNum, null, new TwoWindingsTransformerAttributes());
         Resource<LineAttributes> line = new Resource<>(ResourceType.LINE, lineId, variantNum, null, new LineAttributes());
-        networkStoreRepository.updateTapChangerSteps(NETWORK_UUID, List.of(twoWT), ResourceType.TWO_WINDINGS_TRANSFORMER);
-        networkStoreRepository.updateTemporaryLimits(NETWORK_UUID, List.of(line), networkStoreRepository.getLimitsInfosFromEquipments(NETWORK_UUID, List.of(line)), ResourceType.LINE);
-        networkStoreRepository.updatePermanentLimits(NETWORK_UUID, List.of(line), networkStoreRepository.getLimitsInfosFromEquipments(NETWORK_UUID, List.of(line)), ResourceType.LINE);
-        networkStoreRepository.updateReactiveCapabilityCurvePoints(NETWORK_UUID, List.of(generator), ResourceType.GENERATOR);
+        networkStoreRepository.updateTapChangerSteps(NETWORK_UUID, List.of(twoWT));
+        networkStoreRepository.updateTemporaryLimits(NETWORK_UUID, List.of(line), networkStoreRepository.getLimitsInfosFromEquipments(NETWORK_UUID, List.of(line)));
+        networkStoreRepository.updatePermanentLimits(NETWORK_UUID, List.of(line), networkStoreRepository.getLimitsInfosFromEquipments(NETWORK_UUID, List.of(line)));
+        networkStoreRepository.updateReactiveCapabilityCurvePoints(NETWORK_UUID, List.of(generator));
         // Regulating points can't be tombstoned for now so they're not tested
     }
 
@@ -1479,29 +1479,30 @@ class NetworkStoreRepositoryPartialVariantTest {
     void getExternalAttributesWithoutNetwork() {
         PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
-        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTapChangerStepsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, List.of("unknownId")));
+        List<String> unknownId = List.of("unknownId");
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTapChangerStepsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, unknownId));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTemporaryLimits(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
-        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTemporaryLimitsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, List.of("unknownId")));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getTemporaryLimitsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, unknownId));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getPermanentLimits(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
-        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getPermanentLimitsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, List.of("unknownId")));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getPermanentLimitsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, unknownId));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingPoints(NETWORK_UUID, 0, ResourceType.LINE));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
-        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingPointsWithInClause(NETWORK_UUID, 0, REGULATING_EQUIPMENT_ID, List.of("unknownId"), ResourceType.LINE));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingPointsWithInClause(NETWORK_UUID, 0, REGULATING_EQUIPMENT_ID, unknownId, ResourceType.LINE));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingEquipments(NETWORK_UUID, 0, ResourceType.LINE));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
-        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingEquipmentsWithInClause(NETWORK_UUID, 0, REGULATING_EQUIPMENT_ID, List.of("unknownId"), ResourceType.LINE));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingEquipmentsWithInClause(NETWORK_UUID, 0, REGULATING_EQUIPMENT_ID, unknownId, ResourceType.LINE));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getRegulatingEquipmentsForIdentifiable(NETWORK_UUID, 0, "unknownId", ResourceType.LINE));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
         exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getReactiveCapabilityCurvePoints(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, "unknownId"));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
-        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getReactiveCapabilityCurvePointsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, List.of("unknownId")));
+        exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.getReactiveCapabilityCurvePointsWithInClause(NETWORK_UUID, 0, EQUIPMENT_ID_COLUMN, unknownId));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
     }
 
@@ -1939,11 +1940,6 @@ class NetworkStoreRepositoryPartialVariantTest {
         assertDoesNotThrow(() -> networkStoreRepository.createIdentifiables(NETWORK_UUID, List.of(), mappings.getLoadMappings()));
     }
 
-    //TODO: getRegulatingEquipmentsForIdentifiable()
-
-    //TODO: does it work well for other something like
-    //TODO: getExtension activepowercontrol => not exist in partial but exist in source, should not retrieve it in source because partial was updated => need to check that!
-    //TODO: this is a bit similar to in voltagelevelcontainer... ! even getIdentifiable ? or is it ok?
     //TODO: needed?
     private List<String> getStoredIdentifiableIdsInVariant(UUID networkUuid, int variantNum) {
         try (var connection = dataSource.getConnection()) {
