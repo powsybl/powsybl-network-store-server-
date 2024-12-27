@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
@@ -540,28 +541,28 @@ public class NetworkStoreRepository {
 
     public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId, CloneStrategy cloneStrategy) {
         String nonNullTargetVariantId = targetVariantId == null ? "variant-" + UUID.randomUUID() : targetVariantId;
-        LOGGER.info("Cloning network {} variant {} to variant {} ({} clone)", uuid, sourceVariantNum, targetVariantNum, cloneStrategy);
+        CloneStrategy nonNullCloneStrategy = cloneStrategy == null ? CloneStrategy.PARTIAL : cloneStrategy;
+        LOGGER.info("Cloning network {} variant {} to variant {} ({} clone)", uuid, sourceVariantNum, targetVariantNum, nonNullCloneStrategy);
         var stopwatch = Stopwatch.createStarted();
 
         try (var connection = dataSource.getConnection()) {
-            NetworkAttributes srcNetwork = getNetworkAttributes(connection, uuid, sourceVariantNum);
-            boolean cloneVariant = cloneStrategy == CloneStrategy.FULL || cloneStrategy == CloneStrategy.PARTIAL && srcNetwork.getFullVariantNum() != -1;
-            int fullVariantNum = -1;
-            if (cloneStrategy == CloneStrategy.PARTIAL) {
-                fullVariantNum = srcNetwork.getFullVariantNum() != -1
-                        ? srcNetwork.getFullVariantNum()
-                        : sourceVariantNum;
+            NetworkAttributes sourceNetwork = getNetworkAttributes(connection, uuid, sourceVariantNum);
+            int fullVariantNum = sourceNetwork.getFullVariantNum();
+            // Override fullVariantNum when it's a clone from full to partial variant
+            if (nonNullCloneStrategy == CloneStrategy.PARTIAL && sourceNetwork.isFullVariant()) {
+                fullVariantNum = sourceVariantNum;
             }
             try (var preparedStmt = connection.prepareStatement(buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
-                preparedStmt.setString(3, mapper.writeValueAsString(cloneStrategy));
+                preparedStmt.setString(3, mapper.writeValueAsString(nonNullCloneStrategy));
                 preparedStmt.setInt(4, fullVariantNum);
                 preparedStmt.setObject(5, uuid);
                 preparedStmt.setInt(6, sourceVariantNum);
                 preparedStmt.execute();
             }
-            cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum, cloneVariant);
+            boolean cloneNetworkElements = nonNullCloneStrategy == CloneStrategy.FULL || nonNullCloneStrategy == CloneStrategy.PARTIAL && !sourceNetwork.isFullVariant();
+            cloneNetworkElements(connection, uuid, uuid, sourceVariantNum, targetVariantNum, cloneNetworkElements);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         } catch (IOException e) {
@@ -572,140 +573,76 @@ public class NetworkStoreRepository {
         LOGGER.info("Network variant clone done in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    private void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum, boolean isFullClone) throws SQLException {
-        if (isFullClone) {
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            int totalIdentifiablesCloned = 0;
-            for (String tableName : ELEMENT_TABLES) {
-                try (var preparedStmt = connection.prepareStatement(buildCloneIdentifiablesQuery(tableName, mappings.getTableMapping(tableName.toLowerCase()).getColumnsMapping().keySet()))) {
-                    preparedStmt.setInt(1, targetVariantNum);
-                    preparedStmt.setObject(2, targetUuid);
-                    preparedStmt.setObject(3, uuid);
-                    preparedStmt.setInt(4, sourceVariantNum);
-                    totalIdentifiablesCloned += preparedStmt.executeUpdate();
-                }
-            }
-            LOGGER.info("Cloned {} identifiables in {}ms", totalIdentifiablesCloned, stopwatch.elapsed(TimeUnit.MILLISECONDS));
-            stopwatch.reset().start();
-            int totalExternalAttributesCloned = 0;
-            // Copy of the temporary limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(buildCloneTemporaryLimitsQuery())) {
-                preparedStmt.setString(1, targetUuid.toString());
-                preparedStmt.setInt(2, targetVariantNum);
-                preparedStmt.setString(3, uuid.toString());
-                preparedStmt.setInt(4, sourceVariantNum);
-                totalExternalAttributesCloned += preparedStmt.executeUpdate();
-            }
+    private void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum, boolean cloneNetworkElements) throws SQLException {
+        if (cloneNetworkElements) {
+            cloneIdentifiables(connection, uuid, targetUuid, sourceVariantNum, targetVariantNum);
+            cloneExternalAttributes(connection, uuid, targetUuid, sourceVariantNum, targetVariantNum);
+        }
+        cloneTombstoned(connection, uuid, targetUuid, sourceVariantNum, targetVariantNum);
+    }
 
-            // Copy of the permanent limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(buildClonePermanentLimitsQuery())) {
-                preparedStmt.setString(1, targetUuid.toString());
-                preparedStmt.setInt(2, targetVariantNum);
-                preparedStmt.setString(3, uuid.toString());
-                preparedStmt.setInt(4, sourceVariantNum);
-                totalExternalAttributesCloned += preparedStmt.executeUpdate();
-            }
+    private void cloneExternalAttributes(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        List<Supplier<String>> externalAttributesQueries = List.of(
+                QueryCatalog::buildCloneTemporaryLimitsQuery,
+                QueryCatalog::buildClonePermanentLimitsQuery,
+                QueryCatalog::buildCloneReactiveCapabilityCurvePointsQuery,
+                QueryCatalog::buildCloneRegulatingPointsQuery,
+                QueryCatalog::buildCloneTapChangerStepQuery,
+                QueryExtensionCatalog::buildCloneExtensionsQuery
+        );
 
-            // Copy of the reactive capability curve points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(buildCloneReactiveCapabilityCurvePointsQuery())) {
-                preparedStmt.setString(1, targetUuid.toString());
-                preparedStmt.setInt(2, targetVariantNum);
-                preparedStmt.setString(3, uuid.toString());
-                preparedStmt.setInt(4, sourceVariantNum);
-                totalExternalAttributesCloned += preparedStmt.executeUpdate();
-            }
-            // Copy of the regulating points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(buildCloneRegulatingPointsQuery())) {
+        int totalExternalAttributesCloned = 0;
+        for (Supplier<String> query : externalAttributesQueries) {
+            try (var preparedStmt = connection.prepareStatement(query.get())) {
                 preparedStmt.setObject(1, targetUuid);
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
                 preparedStmt.setInt(4, sourceVariantNum);
                 totalExternalAttributesCloned += preparedStmt.executeUpdate();
             }
+        }
+        LOGGER.info("Cloned {} external attributes in {}ms", totalExternalAttributesCloned, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
 
-            // Copy of the Tap Changer steps (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(buildCloneTapChangerStepQuery())) {
+    private void cloneTombstoned(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        List<Supplier<String>> tombstonedQueries = List.of(
+                QueryCatalog::buildCloneTombstonedIdentifiablesQuery,
+                QueryCatalog::buildCloneTombstonedTemporaryLimitsQuery,
+                QueryCatalog::buildCloneTombstonedPermanentLimitsQuery,
+                QueryCatalog::buildCloneTombstonedReactiveCapabilityCurvePointsQuery,
+                QueryCatalog::buildCloneTombstonedRegulatingPointsQuery,
+                QueryCatalog::buildCloneTombstonedTapChangerStepsQuery,
+                QueryExtensionCatalog::buildCloneTombstonedExtensionsQuery
+        );
+
+        int totalTombstonedCloned = 0;
+        for (Supplier<String> query : tombstonedQueries) {
+            try (var preparedStmt = connection.prepareStatement(query.get())) {
                 preparedStmt.setObject(1, targetUuid);
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
                 preparedStmt.setInt(4, sourceVariantNum);
-                totalExternalAttributesCloned += preparedStmt.executeUpdate();
+                totalTombstonedCloned += preparedStmt.executeUpdate();
             }
+        }
+        LOGGER.info("Cloned {} tombstoned in {}ms", totalTombstonedCloned, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
 
-            // Copy of the Extensions (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneExtensionsQuery())) {
-                preparedStmt.setObject(1, targetUuid);
-                preparedStmt.setInt(2, targetVariantNum);
+    private void cloneIdentifiables(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        int totalIdentifiablesCloned = 0;
+        for (String tableName : ELEMENT_TABLES) {
+            try (var preparedStmt = connection.prepareStatement(buildCloneIdentifiablesQuery(tableName, mappings.getTableMapping(tableName.toLowerCase()).getColumnsMapping().keySet()))) {
+                preparedStmt.setInt(1, targetVariantNum);
+                preparedStmt.setObject(2, targetUuid);
                 preparedStmt.setObject(3, uuid);
                 preparedStmt.setInt(4, sourceVariantNum);
-                totalExternalAttributesCloned += preparedStmt.executeUpdate();
+                totalIdentifiablesCloned += preparedStmt.executeUpdate();
             }
-            stopwatch.stop();
-            LOGGER.info("Cloned {} external attributes in {}ms", totalExternalAttributesCloned, stopwatch.elapsed(TimeUnit.MILLISECONDS));
         }
-
-        // Copy of tombstoned equipments
-        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedIdentifiablesQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
-        // Copy of tombstoned temporary limits
-        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedTemporaryLimitsQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
-        // Copy of tombstoned permanent limits
-        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedPermanentLimitsQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
-        // Copy of tombstoned reactive capability curve points
-        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedReactiveCapabilityCurvePointsQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
-        // Copy of tombstoned regulating points
-        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedRegulatingPointsQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
-        // Copy of tombstoned tap changer steps
-        try (var preparedStmt = connection.prepareStatement(buildCloneTombstonedTapChangerStepsQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
-
-        // Copy of tombstoned extensions
-        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildCloneTombstonedExtensionsQuery())) {
-            preparedStmt.setObject(1, targetUuid);
-            preparedStmt.setInt(2, targetVariantNum);
-            preparedStmt.setObject(3, uuid);
-            preparedStmt.setInt(4, sourceVariantNum);
-            preparedStmt.execute();
-        }
+        LOGGER.info("Cloned {} identifiables in {}ms", totalIdentifiablesCloned, stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     public void cloneNetwork(UUID networkUuid, String sourceVariantId, String targetVariantId, boolean mayOverwrite, CloneStrategy cloneStrategy) {
