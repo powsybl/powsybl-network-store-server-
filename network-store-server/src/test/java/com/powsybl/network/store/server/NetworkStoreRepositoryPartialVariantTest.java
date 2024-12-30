@@ -16,7 +16,6 @@ import com.powsybl.network.store.server.dto.LimitsInfos;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import com.powsybl.network.store.server.dto.PermanentLimitAttributes;
 import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -721,47 +720,15 @@ class NetworkStoreRepositoryPartialVariantTest {
     }
 
     @Test
-    @Disabled("To implement")
-    void clonePartialVariantInFullMode() {
+    void clonePartialVariantInFullModeShouldThrow() {
         String networkId = "network1";
         String loadId1 = "load1";
         String lineId1 = "line1";
-        String loadId2 = "load2";
-        String lineId2 = "line2";
         createSourceNetwork(networkId, 0, "variant0", CloneStrategy.PARTIAL);
         createLineAndLoad(0, loadId1, lineId1, "vl1", "vl2");
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", CloneStrategy.PARTIAL);
-        createLineAndLoad(1, loadId2, lineId2, "vl1", "vl2");
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 0, loadId1, LOAD_TABLE);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, lineId1, LINE_TABLE);
-
-        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant2", CloneStrategy.FULL);
-
-        assertEquals(List.of(loadId2, lineId2), getStoredIdentifiableIdsInVariant(NETWORK_UUID, 2));
-        assertTrue(getTombstonedIdentifiableIdsInVariant(NETWORK_UUID, 2).isEmpty());
-    }
-
-    @Test
-    @Disabled("To implement")
-    void clonePartialVariantInFullModeWithExternalAttributes() {
-        String networkId = "network1";
-        String lineId1 = "line1";
-        String genId1 = "gen1";
-        String twoWTId1 = "twoWT1";
-        String loadId1 = "load1";
-        String lineId2 = "line2";
-        String genId2 = "gen2";
-        String twoWTId2 = "twoWT2";
-        String loadId2 = "load2";
-        createSourceNetwork(networkId, 0, "variant0", CloneStrategy.PARTIAL);
-        createEquipmentsWithExternalAttributes(0, lineId1, genId1, twoWTId1, loadId1);
-        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", CloneStrategy.PARTIAL);
-        createEquipmentsWithExternalAttributes(1, lineId2, genId2, twoWTId2, loadId2);
-
-        networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant2", CloneStrategy.FULL);
-
-        verifyExternalAttributes(lineId1, genId1, twoWTId1, 2, NETWORK_UUID);
-        verifyExternalAttributes(lineId2, genId2, twoWTId2, 2, NETWORK_UUID);
+        Exception exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant2", CloneStrategy.FULL));
+        assertEquals("Not implemented", exception.getMessage());
     }
 
     @Test

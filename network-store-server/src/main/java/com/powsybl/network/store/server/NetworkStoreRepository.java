@@ -450,14 +450,18 @@ public class NetworkStoreRepository {
         try (var connection = dataSource.getConnection()) {
             NetworkAttributes sourceNetwork = getNetworkAttributes(connection, uuid, sourceVariantNum);
             int fullVariantNum = sourceNetwork.getFullVariantNum();
-            // Override fullVariantNum when it's a clone from full to partial variant
             if (nonNullCloneStrategy == CloneStrategy.PARTIAL && sourceNetwork.isFullVariant()) {
+                // Override fullVariantNum when it's a clone from full to partial variant
                 fullVariantNum = sourceVariantNum;
+            } else if (nonNullCloneStrategy == CloneStrategy.FULL && !sourceNetwork.isFullVariant()) {
+                // Clone partial to full variant is not implemented yet
+                throw new PowsyblException("Not implemented");
             }
             try (var preparedStmt = connection.prepareStatement(buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
-                preparedStmt.setString(3, mapper.writeValueAsString(nonNullCloneStrategy));
+                // For a new network (cloned or created), we always set the clone strategy to PARTIAL
+                preparedStmt.setString(3, mapper.writeValueAsString(CloneStrategy.PARTIAL));
                 preparedStmt.setInt(4, fullVariantNum);
                 preparedStmt.setObject(5, uuid);
                 preparedStmt.setInt(6, sourceVariantNum);
