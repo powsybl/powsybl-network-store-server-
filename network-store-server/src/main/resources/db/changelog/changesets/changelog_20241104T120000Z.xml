@@ -8,15 +8,21 @@
             <column name="fullvariantnum" type="INTEGER"/>
         </addColumn>
     </changeSet>
+    <!-- Set data type of networkuuid column to UUID for some external attributes for consistency -->
     <changeSet author="bouhoursant" id="2986331049290-2">
+        <modifyDataType tableName="reactivecapabilitycurvepoint" columnName="networkuuid" newDataType="UUID"/>
+        <modifyDataType tableName="temporarylimit" columnName="networkuuid" newDataType="UUID"/>
+        <modifyDataType tableName="permanentlimit" columnName="networkuuid" newDataType="UUID"/>
+    </changeSet>
+    <changeSet author="bouhoursant" id="2986331049290-3">
         <createTable tableName="tombstonedidentifiable">
-            <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -26,16 +32,16 @@
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedidentifiable_pkey" tableName="tombstonedidentifiable"/>
         <createTable tableName="tombstonedextension">
-            <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmentid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -45,13 +51,13 @@
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid, name" constraintName="tombstonedextension_pkey" tableName="tombstonedextension"/>
         <createTable tableName="tombstonedpermanentlimit">
-            <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -61,13 +67,13 @@
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedpermanentlimit_pkey" tableName="tombstonedpermanentlimit"/>
         <createTable tableName="tombstonedreactivecapabilitycurvepoint">
-            <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -77,13 +83,13 @@
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedreactivecapabilitycurvepoint_pkey" tableName="tombstonedreactivecapabilitycurvepoint"/>
         <createTable tableName="tombstonedregulatingpoint">
-            <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -93,13 +99,13 @@
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedregulatingpoint_pkey" tableName="tombstonedregulatingpoint"/>
         <createTable tableName="tombstonedtapchangerstep">
-            <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -109,13 +115,13 @@
         </createIndex>
         <addPrimaryKey columnNames="networkuuid, variantnum, equipmentid" constraintName="tombstonedtapchangerstep_pkey" tableName="tombstonedtapchangerstep"/>
         <createTable tableName="tombstonedtemporarylimit">
-            <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <column name="variantnum" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="equipmentid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>

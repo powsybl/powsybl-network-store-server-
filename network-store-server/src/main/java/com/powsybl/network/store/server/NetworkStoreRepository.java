@@ -320,7 +320,7 @@ public class NetworkStoreRepository {
         }
         // Delete tombstoned identifiables
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedIdentifiablesQuery())) {
-            preparedStmt.setObject(1, uuid.toString());
+            preparedStmt.setObject(1, uuid);
             preparedStmt.executeUpdate();
         }
     }
@@ -2202,7 +2202,7 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
         try (var preparedStmt = connection.prepareStatement(buildTemporaryLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()))) {
-            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < valuesForInClause.size(); i++) {
                 preparedStmt.setString(3 + i, valuesForInClause.get(i));
@@ -2233,7 +2233,7 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
         try (var preparedStmt = connection.prepareStatement(buildPermanentLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()))) {
-            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < valuesForInClause.size(); i++) {
                 preparedStmt.setString(3 + i, valuesForInClause.get(i));
@@ -2287,7 +2287,7 @@ public class NetworkStoreRepository {
 
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimitsForVariant(Connection connection, UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int variantNumOverride) {
         try (var preparedStmt = connection.prepareStatement(buildTemporaryLimitQuery(columnNameForWhereClause))) {
-            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
 
@@ -2313,7 +2313,7 @@ public class NetworkStoreRepository {
 
     public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsForVariant(Connection connection, UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int variantNumOverride) {
         try (var preparedStmt = connection.prepareStatement(buildPermanentLimitQuery(columnNameForWhereClause))) {
-            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
 
@@ -2520,7 +2520,7 @@ public class NetworkStoreRepository {
     private void deleteTemporaryLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(buildDeleteTemporaryLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
-                preparedStmt.setString(1, networkUuid.toString());
+                preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 for (int i = 0; i < equipmentIds.size(); i++) {
                     preparedStmt.setString(3 + i, equipmentIds.get(i));
@@ -2535,7 +2535,7 @@ public class NetworkStoreRepository {
     private void deletePermanentLimits(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(buildDeletePermanentLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
-                preparedStmt.setString(1, networkUuid.toString());
+                preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 for (int i = 0; i < equipmentIds.size(); i++) {
                     preparedStmt.setString(3 + i, equipmentIds.get(i));
@@ -2832,7 +2832,7 @@ public class NetworkStoreRepository {
             return Collections.emptyMap();
         }
         try (var preparedStmt = connection.prepareStatement(buildReactiveCapabilityCurvePointWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()))) {
-            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             for (int i = 0; i < valuesForInClause.size(); i++) {
                 preparedStmt.setString(3 + i, valuesForInClause.get(i));
@@ -2860,7 +2860,7 @@ public class NetworkStoreRepository {
 
     public Map<OwnerInfo, List<ReactiveCapabilityCurvePointAttributes>> getReactiveCapabilityCurvePointsForVariant(Connection connection, UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause, int variantNumOverride) {
         try (var preparedStmt = connection.prepareStatement(buildReactiveCapabilityCurvePointQuery(columnNameForWhereClause))) {
-            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, valueForWhereClause);
 
@@ -3202,7 +3202,7 @@ public class NetworkStoreRepository {
     private void deleteReactiveCapabilityCurvePoints(UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsVariantEquipmentINQuery(equipmentIds.size()))) {
-                preparedStmt.setString(1, networkUuid.toString());
+                preparedStmt.setObject(1, networkUuid);
                 preparedStmt.setInt(2, variantNum);
                 for (int i = 0; i < equipmentIds.size(); i++) {
                     preparedStmt.setString(3 + i, equipmentIds.get(i));
