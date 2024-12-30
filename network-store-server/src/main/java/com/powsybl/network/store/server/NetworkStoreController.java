@@ -144,9 +144,8 @@ public class NetworkStoreController {
     public ResponseEntity<Void> cloneNetworkVariant(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                              @Parameter(description = "Source variant number", required = true) @PathVariable("sourceVariantNum") int sourceVariantNum,
                                              @Parameter(description = "Target variant number", required = true) @PathVariable("targetVariantNum") int targetVariantNum,
-                                             @Parameter(description = "Target variant id") @RequestParam(required = false) String targetVariantId,
-                                             @Parameter(description = "Clone strategy") @RequestParam(required = false) CloneStrategy cloneStrategy) {
-        repository.cloneNetworkVariant(networkId, sourceVariantNum, targetVariantNum, targetVariantId, cloneStrategy);
+                                             @Parameter(description = "Target variant id") @RequestParam(required = false) String targetVariantId) {
+        repository.cloneNetworkVariant(networkId, sourceVariantNum, targetVariantNum, targetVariantId, null);
         return ResponseEntity.ok().build();
     }
 

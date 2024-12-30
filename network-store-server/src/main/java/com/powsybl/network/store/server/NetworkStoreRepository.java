@@ -443,20 +443,13 @@ public class NetworkStoreRepository {
 
     public void cloneNetworkVariant(UUID uuid, int sourceVariantNum, int targetVariantNum, String targetVariantId, CloneStrategy cloneStrategy) {
         String nonNullTargetVariantId = targetVariantId == null ? "variant-" + UUID.randomUUID() : targetVariantId;
-        CloneStrategy nonNullCloneStrategy = cloneStrategy == null ? CloneStrategy.PARTIAL : cloneStrategy;
-        LOGGER.info("Cloning network {} variant {} to variant {} ({} clone)", uuid, sourceVariantNum, targetVariantNum, nonNullCloneStrategy);
         var stopwatch = Stopwatch.createStarted();
 
         try (var connection = dataSource.getConnection()) {
             NetworkAttributes sourceNetwork = getNetworkAttributes(connection, uuid, sourceVariantNum);
-            int fullVariantNum = sourceNetwork.getFullVariantNum();
-            if (nonNullCloneStrategy == CloneStrategy.PARTIAL && sourceNetwork.isFullVariant()) {
-                // Override fullVariantNum when it's a clone from full to partial variant
-                fullVariantNum = sourceVariantNum;
-            } else if (nonNullCloneStrategy == CloneStrategy.FULL && !sourceNetwork.isFullVariant()) {
-                // Clone partial to full variant is not implemented yet
-                throw new PowsyblException("Not implemented");
-            }
+            CloneStrategy nonNullCloneStrategy = cloneStrategy == null ? sourceNetwork.getCloneStrategy() : cloneStrategy;
+            LOGGER.info("Cloning network {} variant {} to variant {} ({} clone)", uuid, sourceVariantNum, targetVariantNum, nonNullCloneStrategy);
+            int fullVariantNum = getFullVariantNum(sourceVariantNum, sourceNetwork, nonNullCloneStrategy);
             try (var preparedStmt = connection.prepareStatement(buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
@@ -477,6 +470,18 @@ public class NetworkStoreRepository {
 
         stopwatch.stop();
         LOGGER.info("Network variant clone done in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    private static int getFullVariantNum(int sourceVariantNum, NetworkAttributes sourceNetwork, CloneStrategy cloneStrategy) {
+        int fullVariantNum = sourceNetwork.getFullVariantNum();
+        if (cloneStrategy == CloneStrategy.PARTIAL && sourceNetwork.isFullVariant()) {
+            // Override fullVariantNum when it's a clone from full to partial variant
+            fullVariantNum = sourceVariantNum;
+        } else if (cloneStrategy == CloneStrategy.FULL && !sourceNetwork.isFullVariant()) {
+            // Clone partial to full variant is not implemented yet
+            throw new PowsyblException("Not implemented");
+        }
+        return fullVariantNum;
     }
 
     private void cloneNetworkElements(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum, boolean cloneNetworkElements) throws SQLException {
