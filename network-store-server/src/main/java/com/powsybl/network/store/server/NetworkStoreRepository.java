@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.powsybl.network.store.server.Mappings.*;
@@ -173,7 +172,7 @@ public class NetworkStoreRepository {
         return ids;
     }
 
-    public static List<String> getIdentifiablesIdsForVariant(Connection connection, UUID networkUuid, int variantNum) {
+    static List<String> getIdentifiablesIdsForVariant(Connection connection, UUID networkUuid, int variantNum) {
         List<String> ids = new ArrayList<>();
         for (String table : ELEMENT_TABLES) {
             ids.addAll(getIdentifiablesIdsForVariantFromTable(connection, networkUuid, variantNum, table));
@@ -297,95 +296,56 @@ public class NetworkStoreRepository {
 
     public void deleteNetwork(UUID uuid) {
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteNetworkQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.execute();
-            }
-            for (String table : ELEMENT_TABLES) {
-                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiablesQuery(table))) {
-                    preparedStmt.setObject(1, uuid);
-                    preparedStmt.execute();
-                }
-            }
-            // Delete of tombstoned identifiables
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedIdentifiablesQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the temporary limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of tombstoned temporary limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedTemporaryLimitsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete permanent limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete tombstoned permanent limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedPermanentLimitsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the reactive capability curve points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete tombstoned reactive capability curve points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedReactiveCapabilityCurvePointsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the regulating points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete tombstoned regulating points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedRegulatingPointsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the tap changer steps (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete tombstoned tap changer steps (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedTapChangerStepsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the extensions (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete tombstoned extensions (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteTombstonedExtensionsQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.executeUpdate();
-            }
+            deleteNetwork(uuid, connection);
+            deleteIdentifiables(uuid, connection);
+            deleteExternalAttributes(uuid, connection);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
+        }
+    }
+
+    private static void deleteNetwork(UUID uuid, Connection connection) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteNetworkQuery())) {
+            preparedStmt.setObject(1, uuid);
+            preparedStmt.executeUpdate();
+        }
+    }
+
+    private static void deleteIdentifiables(UUID uuid, Connection connection) throws SQLException {
+        for (String table : ELEMENT_TABLES) {
+            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiablesQuery(table))) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.executeUpdate();
+            }
+        }
+        // Delete tombstoned identifiables
+        try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedIdentifiablesQuery())) {
+            preparedStmt.setObject(1, uuid.toString());
+            preparedStmt.executeUpdate();
+        }
+    }
+
+    private static void deleteExternalAttributes(UUID uuid, Connection connection) throws SQLException {
+        List<String> deleteExternalAttributesQueries = List.of(
+                QueryCatalog.buildDeleteTemporaryLimitsQuery(),
+                QueryCatalog.buildDeleteTombstonedTemporaryLimitsQuery(),
+                QueryCatalog.buildDeletePermanentLimitsQuery(),
+                QueryCatalog.buildDeleteTombstonedPermanentLimitsQuery(),
+                QueryCatalog.buildDeleteReactiveCapabilityCurvePointsQuery(),
+                QueryCatalog.buildDeleteTombstonedReactiveCapabilityCurvePointsQuery(),
+                QueryCatalog.buildDeleteRegulatingPointsQuery(),
+                QueryCatalog.buildDeleteTombstonedRegulatingPointsQuery(),
+                QueryCatalog.buildDeleteTapChangerStepQuery(),
+                QueryCatalog.buildDeleteTombstonedTapChangerStepsQuery(),
+                QueryExtensionCatalog.buildDeleteExtensionsQuery(),
+                QueryExtensionCatalog.buildDeleteTombstonedExtensionsQuery()
+        );
+
+        for (String query : deleteExternalAttributesQueries) {
+            try (var preparedStmt = connection.prepareStatement(query)) {
+                preparedStmt.setObject(1, uuid);
+                preparedStmt.executeUpdate();
+            }
         }
     }
 
@@ -397,110 +357,52 @@ public class NetworkStoreRepository {
             throw new IllegalArgumentException("Cannot delete initial variant");
         }
         try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteNetworkVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.execute();
-            }
-            for (String table : ELEMENT_TABLES) {
-                try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteIdentifiablesVariantQuery(table))) {
-                    preparedStmt.setObject(1, uuid);
-                    preparedStmt.setInt(2, variantNum);
-                    preparedStmt.execute();
-                }
-            }
-            // Delete of tombstoned identifiables
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedIdentifiablesVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the temporary limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTemporaryLimitsVariantQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the tombstoned temporary limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedTemporaryLimitsVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete permanent limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeletePermanentLimitsVariantQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete tombstoned permanent limits (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedPermanentLimitsVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the reactive capability curve points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteReactiveCapabilityCurvePointsVariantQuery())) {
-                preparedStmt.setObject(1, uuid.toString());
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the tombstoned reactive capability curve points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedReactiveCapabilityCurvePointsVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the regulating points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteRegulatingPointsVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the tomsbtoned regulating points (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedRegulatingPointsVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the Tap Changer steps (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTapChangerStepVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the tombstoned Tap Changer steps (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildDeleteTombstonedTapChangerStepsVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the extensions (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
-
-            // Delete of the tombstoned extensions (which are not Identifiables objects)
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteTombstonedExtensionsVariantQuery())) {
-                preparedStmt.setObject(1, uuid);
-                preparedStmt.setInt(2, variantNum);
-                preparedStmt.executeUpdate();
-            }
+            deleteNetworkVariant(uuid, variantNum, connection);
+            deleteIdentifiablesVariant(uuid, variantNum, connection);
+            deleteExternalAttributesVariant(uuid, variantNum, connection);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
+        }
+    }
+
+    private static void deleteExternalAttributesVariant(UUID uuid, int variantNum, Connection connection) throws SQLException {
+        List<String> deleteExternalAttributesVariantQueries = List.of(
+                QueryCatalog.buildDeleteTemporaryLimitsVariantQuery(),
+                QueryCatalog.buildDeleteTombstonedTemporaryLimitsVariantQuery(),
+                QueryCatalog.buildDeletePermanentLimitsVariantQuery(),
+                QueryCatalog.buildDeleteTombstonedPermanentLimitsVariantQuery(),
+                QueryCatalog.buildDeleteReactiveCapabilityCurvePointsVariantQuery(),
+                QueryCatalog.buildDeleteTombstonedReactiveCapabilityCurvePointsVariantQuery(),
+                QueryCatalog.buildDeleteRegulatingPointsVariantQuery(),
+                QueryCatalog.buildDeleteTombstonedRegulatingPointsVariantQuery(),
+                QueryCatalog.buildDeleteTapChangerStepVariantQuery(),
+                QueryCatalog.buildDeleteTombstonedTapChangerStepsVariantQuery(),
+                QueryExtensionCatalog.buildDeleteExtensionsVariantQuery(),
+                QueryExtensionCatalog.buildDeleteTombstonedExtensionsVariantQuery()
+        );
+
+        for (String query : deleteExternalAttributesVariantQueries) {
+            executeDeleteVariantQuery(uuid, variantNum, connection, query);
+        }
+    }
+
+    private static void deleteIdentifiablesVariant(UUID uuid, int variantNum, Connection connection) throws SQLException {
+        for (String table : ELEMENT_TABLES) {
+            executeDeleteVariantQuery(uuid, variantNum, connection, QueryCatalog.buildDeleteIdentifiablesVariantQuery(table));
+        }
+        // Delete of tombstoned identifiables
+        executeDeleteVariantQuery(uuid, variantNum, connection, QueryCatalog.buildDeleteTombstonedIdentifiablesVariantQuery());
+    }
+
+    private static void deleteNetworkVariant(UUID uuid, int variantNum, Connection connection) throws SQLException {
+        executeDeleteVariantQuery(uuid, variantNum, connection, QueryCatalog.buildDeleteNetworkVariantQuery());
+    }
+
+    private static void executeDeleteVariantQuery(UUID uuid, int variantNum, Connection connection, String query) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(query)) {
+            preparedStmt.setObject(1, uuid);
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.executeUpdate();
         }
     }
 
@@ -583,18 +485,18 @@ public class NetworkStoreRepository {
 
     private void cloneExternalAttributes(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        List<Supplier<String>> externalAttributesQueries = List.of(
-                QueryCatalog::buildCloneTemporaryLimitsQuery,
-                QueryCatalog::buildClonePermanentLimitsQuery,
-                QueryCatalog::buildCloneReactiveCapabilityCurvePointsQuery,
-                QueryCatalog::buildCloneRegulatingPointsQuery,
-                QueryCatalog::buildCloneTapChangerStepQuery,
-                QueryExtensionCatalog::buildCloneExtensionsQuery
+        List<String> externalAttributesQueries = List.of(
+                QueryCatalog.buildCloneTemporaryLimitsQuery(),
+                QueryCatalog.buildClonePermanentLimitsQuery(),
+                QueryCatalog.buildCloneReactiveCapabilityCurvePointsQuery(),
+                QueryCatalog.buildCloneRegulatingPointsQuery(),
+                QueryCatalog.buildCloneTapChangerStepQuery(),
+                QueryExtensionCatalog.buildCloneExtensionsQuery()
         );
 
         int totalExternalAttributesCloned = 0;
-        for (Supplier<String> query : externalAttributesQueries) {
-            try (var preparedStmt = connection.prepareStatement(query.get())) {
+        for (String query : externalAttributesQueries) {
+            try (var preparedStmt = connection.prepareStatement(query)) {
                 preparedStmt.setObject(1, targetUuid);
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
@@ -607,19 +509,19 @@ public class NetworkStoreRepository {
 
     private void cloneTombstoned(Connection connection, UUID uuid, UUID targetUuid, int sourceVariantNum, int targetVariantNum) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        List<Supplier<String>> tombstonedQueries = List.of(
-                QueryCatalog::buildCloneTombstonedIdentifiablesQuery,
-                QueryCatalog::buildCloneTombstonedTemporaryLimitsQuery,
-                QueryCatalog::buildCloneTombstonedPermanentLimitsQuery,
-                QueryCatalog::buildCloneTombstonedReactiveCapabilityCurvePointsQuery,
-                QueryCatalog::buildCloneTombstonedRegulatingPointsQuery,
-                QueryCatalog::buildCloneTombstonedTapChangerStepsQuery,
-                QueryExtensionCatalog::buildCloneTombstonedExtensionsQuery
+        List<String> tombstonedQueries = List.of(
+                QueryCatalog.buildCloneTombstonedIdentifiablesQuery(),
+                QueryCatalog.buildCloneTombstonedTemporaryLimitsQuery(),
+                QueryCatalog.buildCloneTombstonedPermanentLimitsQuery(),
+                QueryCatalog.buildCloneTombstonedReactiveCapabilityCurvePointsQuery(),
+                QueryCatalog.buildCloneTombstonedRegulatingPointsQuery(),
+                QueryCatalog.buildCloneTombstonedTapChangerStepsQuery(),
+                QueryExtensionCatalog.buildCloneTombstonedExtensionsQuery()
         );
 
         int totalTombstonedCloned = 0;
-        for (Supplier<String> query : tombstonedQueries) {
-            try (var preparedStmt = connection.prepareStatement(query.get())) {
+        for (String query : tombstonedQueries) {
+            try (var preparedStmt = connection.prepareStatement(query)) {
                 preparedStmt.setObject(1, targetUuid);
                 preparedStmt.setInt(2, targetVariantNum);
                 preparedStmt.setObject(3, uuid);
@@ -847,7 +749,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    protected <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesForVariant(Connection connection, UUID networkUuid, int variantNum,
+    <T extends IdentifiableAttributes> List<Resource<T>> getIdentifiablesForVariant(Connection connection, UUID networkUuid, int variantNum,
                                                                                               TableMapping tableMapping, int variantNumOverride) {
         List<Resource<T>> identifiables;
         try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildGetIdentifiablesQuery(tableMapping.getTable(), tableMapping.getColumnsMapping().keySet()))) {
@@ -2855,7 +2757,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    protected void deleteRegulatingPoints(UUID networkUuid, int variantNum, List<String> equipmentIds, ResourceType type) {
+    private void deleteRegulatingPoints(UUID networkUuid, int variantNum, List<String> equipmentIds, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(buildDeleteRegulatingPointsVariantEquipmentINQuery(equipmentIds.size()))) {
                 preparedStmt.setObject(1, networkUuid);
@@ -3081,7 +2983,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    protected Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipments(UUID networkUuid, int variantNum, ResourceType type) {
+    public Map<OwnerInfo, Map<String, ResourceType>> getRegulatingEquipments(UUID networkUuid, int variantNum, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getRegulatingEquipments(
                     variantNum,
@@ -3175,7 +3077,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    protected Map<String, ResourceType> getRegulatingEquipmentsForIdentifiable(UUID networkUuid, int variantNum, String equipmentId, ResourceType type) {
+    public Map<String, ResourceType> getRegulatingEquipmentsForIdentifiable(UUID networkUuid, int variantNum, String equipmentId, ResourceType type) {
         try (var connection = dataSource.getConnection()) {
             return PartialVariantUtils.getRegulatingEquipments(
                     variantNum,
@@ -3583,7 +3485,7 @@ public class NetworkStoreRepository {
         }
     }
 
-    protected <T extends IdentifiableAttributes>
+    private <T extends IdentifiableAttributes>
         void deleteTapChangerSteps(UUID networkUuid, List<Resource<T>> resources) {
         Map<Integer, List<String>> resourceIdsByVariant = new HashMap<>();
         for (Resource<T> resource : resources) {
