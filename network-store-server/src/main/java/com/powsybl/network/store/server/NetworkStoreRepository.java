@@ -881,7 +881,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateInjectionsSv(UUID networkUuid, List<Resource<InjectionSvAttributes>> resources, String tableName, TableMapping tableMapping) {
-        updateStateVariables(
+        updateIdentifiablesSv(
                 networkUuid,
                 resources,
                 tableMapping,
@@ -891,7 +891,7 @@ public class NetworkStoreRepository {
         );
     }
 
-    private <T extends IdentifiableAttributes, U extends Attributes> void updateStateVariables(
+    private <T extends IdentifiableAttributes, U extends Attributes> void updateIdentifiablesSv(
             UUID networkUuid,
             List<Resource<U>> updatedSvResources,
             TableMapping tableMapping,
@@ -979,7 +979,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateBranchesSv(UUID networkUuid, List<Resource<BranchSvAttributes>> resources, String tableName, TableMapping tableMapping) {
-        updateStateVariables(
+        updateIdentifiablesSv(
                 networkUuid,
                 resources,
                 tableMapping,
@@ -1088,7 +1088,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateVoltageLevelsSv(UUID networkUuid, List<Resource<VoltageLevelSvAttributes>> resources) {
-        updateStateVariables(
+        updateIdentifiablesSv(
                 networkUuid,
                 resources,
                 mappings.getVoltageLevelMappings(),
@@ -1786,7 +1786,7 @@ public class NetworkStoreRepository {
     }
 
     public void updateThreeWindingsTransformersSv(UUID networkUuid, List<Resource<ThreeWindingsTransformerSvAttributes>> resources) {
-        updateStateVariables(
+        updateIdentifiablesSv(
                 networkUuid,
                 resources,
                 mappings.getThreeWindingsTransformerMappings(),
