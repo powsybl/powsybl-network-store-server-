@@ -8,13 +8,20 @@
             <column name="fullvariantnum" type="INTEGER"/>
         </addColumn>
     </changeSet>
-    <!-- Set data type of networkuuid column to UUID for some external attributes for consistency -->
+    <!-- Set initial values for clonestrategy and fullvariantnum -->
     <changeSet author="bouhoursant" id="2986331049290-2">
+        <update tableName="network">
+            <column name="clonestrategy" value="&quot;PARTIAL&quot;"/>
+            <column name="fullvariantnum" valueNumeric="-1"/>
+        </update>
+    </changeSet>
+    <!-- Set data type of networkuuid column to UUID for some external attributes for consistency -->
+    <changeSet author="bouhoursant" id="2986331049290-3">
         <modifyDataType tableName="reactivecapabilitycurvepoint" columnName="networkuuid" newDataType="UUID"/>
         <modifyDataType tableName="temporarylimit" columnName="networkuuid" newDataType="UUID"/>
         <modifyDataType tableName="permanentlimit" columnName="networkuuid" newDataType="UUID"/>
     </changeSet>
-    <changeSet author="bouhoursant" id="2986331049290-3">
+    <changeSet author="bouhoursant" id="2986331049290-4">
         <createTable tableName="tombstonedidentifiable">
             <column name="networkuuid" type="UUID">
                 <constraints nullable="false"/>
