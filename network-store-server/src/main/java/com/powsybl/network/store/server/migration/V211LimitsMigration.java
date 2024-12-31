@@ -36,7 +36,7 @@ public class V211LimitsMigration implements CustomSqlChange {
             ResultSet networkUuids = stmt.executeQuery();
             while (networkUuids.next()) {
                 UUID networkUuid = UUID.fromString(networkUuids.getString(1));
-                repository.migrateV211Limits(networkUuid );
+                repository.migrateV211Limits(networkUuid);
             }
         } catch (SQLException | DatabaseException e) {
             LOGGER.error(e.getMessage(), e);
