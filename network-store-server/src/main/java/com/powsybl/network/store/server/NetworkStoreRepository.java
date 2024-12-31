@@ -431,6 +431,7 @@ public class NetworkStoreRepository {
                 variantsNotFound.remove(sourceNetworkAttribute.getAttributes().getVariantId());
 
                 createNetworks(connection, List.of(sourceNetworkAttribute));
+                // When cloning all variant of a network to another network, we clone all the identifiables, external attributes and tombstoned
                 cloneNetworkElements(connection, sourceNetworkUuid, targetNetworkUuid, sourceNetworkAttribute.getVariantNum(), variantInfos.getNum(), true);
             }
         });
