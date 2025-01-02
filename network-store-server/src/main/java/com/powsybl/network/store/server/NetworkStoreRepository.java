@@ -454,8 +454,8 @@ public class NetworkStoreRepository {
             try (var preparedStmt = connection.prepareStatement(buildCloneNetworksQuery(mappings.getNetworkMappings().getColumnsMapping().keySet()))) {
                 preparedStmt.setInt(1, targetVariantNum);
                 preparedStmt.setString(2, nonNullTargetVariantId);
-                // For a new network (cloned or created), we always set the clone strategy to PARTIAL
-                preparedStmt.setString(3, mapper.writeValueAsString(CloneStrategy.PARTIAL));
+                // For a new network (cloned or created), we reset the clone strategy to default
+                preparedStmt.setString(3, mapper.writeValueAsString(NetworkAttributes.DEFAULT_CLONE_STRATEGY));
                 preparedStmt.setInt(4, fullVariantNum);
                 preparedStmt.setObject(5, uuid);
                 preparedStmt.setInt(6, sourceVariantNum);
