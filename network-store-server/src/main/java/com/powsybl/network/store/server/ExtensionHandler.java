@@ -99,6 +99,12 @@ public class ExtensionHandler {
             return getExtensionAttributesForVariant(connection, networkId, variantNum, identifiableId, extensionName);
         }
 
+        // Retrieve extension in partial variant
+        Optional<ExtensionAttributes> partialVariantExtensionAttributes = getExtensionAttributesForVariant(connection, networkId, variantNum, identifiableId, extensionName);
+        if (partialVariantExtensionAttributes.isPresent()) {
+            return partialVariantExtensionAttributes;
+        }
+
         // Return empty if it's a tombstoned extension or identifiable
         Map<String, Set<String>> tombstonedExtensions = getTombstonedExtensions(connection, networkId, variantNum);
         boolean isTombstonedExtension = tombstonedExtensions.containsKey(identifiableId) && tombstonedExtensions.get(identifiableId).contains(extensionName);
@@ -108,13 +114,7 @@ public class ExtensionHandler {
             return Optional.empty();
         }
 
-        // Retrieve extension in partial variant
-        Optional<ExtensionAttributes> extensionAttributes = getExtensionAttributesForVariant(connection, networkId, variantNum, identifiableId, extensionName);
-        if (extensionAttributes.isPresent()) {
-            return extensionAttributes;
-        }
-
-        // If not present, retrieve extension in full variant
+        // Retrieve extension from the full variant
         return getExtensionAttributesForVariant(connection, networkId, fullVariantNum, identifiableId, extensionName);
     }
 
@@ -158,19 +158,18 @@ public class ExtensionHandler {
         // Retrieve extensions in full variant
         Map<String, ExtensionAttributes> extensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, fullVariantNum, resourceType, extensionName);
 
-        // Remove tombstoned identifiables
+        // Remove tombstoned identifiables and tombstoned extensions
         Set<String> tombstonedIds = tombstonedIdsSupplier.get();
-        extensionsAttributesByResourceTypeAndExtensionName.keySet().removeIf(tombstonedIds::contains);
-
-        // Remove tombstoned extensions
         Map<String, Set<String>> tombstonedExtensions = getTombstonedExtensions(connection, networkId, variantNum);
-        extensionsAttributesByResourceTypeAndExtensionName.entrySet().removeIf(entry -> tombstonedExtensions.getOrDefault(entry.getKey(), Set.of()).contains(extensionName));
+        extensionsAttributesByResourceTypeAndExtensionName.entrySet().removeIf(entry ->
+                        tombstonedIds.contains(entry.getKey()) ||
+                        tombstonedExtensions.getOrDefault(entry.getKey(), Set.of()).contains(extensionName));
 
-        // Retrieve updated extensions in partial variant
-        Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, variantNum, resourceType, extensionName);
+        // Retrieve extensions in partial variant
+        Map<String, ExtensionAttributes> partialVariantExtensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, variantNum, resourceType, extensionName);
 
         // Combine extensions from full and partial variants
-        extensionsAttributesByResourceTypeAndExtensionName.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
+        extensionsAttributesByResourceTypeAndExtensionName.putAll(partialVariantExtensionsAttributesByResourceTypeAndExtensionName);
         return extensionsAttributesByResourceTypeAndExtensionName;
     }
 
@@ -223,11 +222,11 @@ public class ExtensionHandler {
         Map<String, Set<String>> tombstonedExtensions = getTombstonedExtensions(connection, networkId, variantNum);
         extensionsAttributesByIdentifiableId.entrySet().removeIf(entry -> tombstonedExtensions.getOrDefault(identifiableId, Set.of()).contains(entry.getKey()));
 
-        // Retrieve updated extensions in partial variant
-        Map<String, ExtensionAttributes> updatedExtensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, variantNum, identifiableId);
+        // Retrieve extensions in partial variant
+        Map<String, ExtensionAttributes> partialVariantExtensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, variantNum, identifiableId);
 
         // Combine extensions from full and partial variants
-        extensionsAttributesByIdentifiableId.putAll(updatedExtensionsAttributesByResourceTypeAndExtensionName);
+        extensionsAttributesByIdentifiableId.putAll(partialVariantExtensionsAttributesByResourceTypeAndExtensionName);
         return extensionsAttributesByIdentifiableId;
     }
 
@@ -283,11 +282,11 @@ public class ExtensionHandler {
         // Remove entries with no remaining extensions after removing tombstoned extensions
         extensionsAttributesByResourceType.entrySet().removeIf(entry -> entry.getValue().isEmpty());
 
-        // Retrieve updated extensions in partial variant
-        Map<String, Map<String, ExtensionAttributes>> updatedExtensionsAttributesByResourceType = getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, variantNum, type.toString());
+        // Retrieve extensions in partial variant
+        Map<String, Map<String, ExtensionAttributes>> partialVariantExtensionsAttributesByResourceType = getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, variantNum, type.toString());
 
         // Combine extensions from full and partial variants
-        updatedExtensionsAttributesByResourceType.forEach((identifiableId, updatedExtensions) ->
+        partialVariantExtensionsAttributesByResourceType.forEach((identifiableId, updatedExtensions) ->
                 extensionsAttributesByResourceType.merge(identifiableId, updatedExtensions, (existingExtensions, newExtensions) -> {
                     // Merge each extension within the nested maps
                     newExtensions.forEach((extensionName, newExtensionAttributes) ->

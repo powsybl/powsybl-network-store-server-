@@ -514,6 +514,9 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         assertTrue(getIdentifiableIdsForVariant(NETWORK_UUID, 1).isEmpty());
         assertEquals(Set.of(lineId1), getTombstonedIdentifiableIds(NETWORK_UUID, 1));
         // Variant 2 (recreated line1 with different attributes)
+        assertEquals(Optional.of(lineVariant2), networkStoreRepository.getLine(NETWORK_UUID, 2, lineId1));
+        assertEquals(List.of(), networkStoreRepository.getVoltageLevelLines(NETWORK_UUID, 2, "vl1"));
+        assertEquals(List.of(lineVariant2), networkStoreRepository.getVoltageLevelLines(NETWORK_UUID, 2, "vl2"));
         assertEquals(List.of(lineVariant2), networkStoreRepository.getLines(NETWORK_UUID, 2));
         assertEquals(List.of(lineVariant2), getIdentifiablesForVariant(NETWORK_UUID, 2, mappings.getLineMappings()));
         assertEquals(List.of(lineId1), getIdentifiableIdsForVariant(NETWORK_UUID, 2));

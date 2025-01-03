@@ -646,6 +646,16 @@ class NetworkStoreRepositoryPartialVariantExternalAttributesTest {
         assertNull(networkStoreRepository.getTemporaryLimits(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfoLine));
         assertNull(networkStoreRepository.getPermanentLimits(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfoLine));
         assertNull(networkStoreRepository.getReactiveCapabilityCurvePoints(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, genId).get(ownerInfoGen));
+        // Set again a tombstone to verify that it does not throw
+        updateExternalAttributesWithTombstone(1, lineId, genId, twoWTId);
+        assertNull(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, twoWTId).get(ownerInfoTwoWT));
+        assertNull(networkStoreRepository.getTemporaryLimits(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfoLine));
+        assertNull(networkStoreRepository.getPermanentLimits(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfoLine));
+        assertNull(networkStoreRepository.getReactiveCapabilityCurvePoints(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, genId).get(ownerInfoGen));
+        // Recreate the external attributes and verify that the tombstone is ignored
+        updateExternalAttributes(1, lineId, genId, twoWTId, loadId);
+        verifyUpdatedExternalAttributes(lineId, genId, twoWTId, loadId, 1, NETWORK_UUID);
+        // Set again a tombstone after recreating the external attributes
         updateExternalAttributesWithTombstone(1, lineId, genId, twoWTId);
         assertNull(networkStoreRepository.getTapChangerSteps(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, twoWTId).get(ownerInfoTwoWT));
         assertNull(networkStoreRepository.getTemporaryLimits(NETWORK_UUID, 1, EQUIPMENT_ID_COLUMN, lineId).get(ownerInfoLine));
@@ -986,10 +996,20 @@ class NetworkStoreRepositoryPartialVariantExternalAttributesTest {
         extensionAttributesMap = Map.of(ActivePowerControl.NAME, buildActivePowerControlAttributes(8.4));
         insertExtensions(Map.of(ownerInfo2, extensionAttributesMap));
 
-        // Variant 1 (removed line1)
+        // Variant 1 (removed ActivePowerControl extensions)
+        Assertions.assertEquals(Optional.empty(), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId, ActivePowerControl.NAME));
+        Assertions.assertEquals(Optional.of(buildOperatingStatusAttributes("status1")), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId, OperatingStatus.NAME));
+        Assertions.assertEquals(Map.of(lineId, Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status1"))), networkStoreRepository.getAllExtensionsAttributesByResourceType(NETWORK_UUID, 1, ResourceType.LINE));
+        Assertions.assertEquals(Map.of(), networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 1, ResourceType.LINE, ActivePowerControl.NAME));
+        Assertions.assertEquals(Map.of(lineId, buildOperatingStatusAttributes("status1")), networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 1, ResourceType.LINE, OperatingStatus.NAME));
         Assertions.assertEquals(Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status1")), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId));
         Assertions.assertEquals(Map.of(lineId, Set.of(ActivePowerControl.NAME)), getTombstonedExtensions(NETWORK_UUID, 1));
-        // Variant 2 (recreated line1 with different attributes)
+        // Variant 2 (recreated ActivePowerControl with different attributes)
+        Assertions.assertEquals(Optional.of(buildActivePowerControlAttributes(8.4)), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 2, lineId, ActivePowerControl.NAME));
+        Assertions.assertEquals(Optional.of(buildOperatingStatusAttributes("status1")), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 2, lineId, OperatingStatus.NAME));
+        Assertions.assertEquals(Map.of(lineId, Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status1"), ActivePowerControl.NAME, buildActivePowerControlAttributes(8.4))), networkStoreRepository.getAllExtensionsAttributesByResourceType(NETWORK_UUID, 2, ResourceType.LINE));
+        Assertions.assertEquals(Map.of(lineId, buildActivePowerControlAttributes(8.4)), networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 2, ResourceType.LINE, ActivePowerControl.NAME));
+        Assertions.assertEquals(Map.of(lineId, buildOperatingStatusAttributes("status1")), networkStoreRepository.getAllExtensionsAttributesByResourceTypeAndExtensionName(NETWORK_UUID, 2, ResourceType.LINE, OperatingStatus.NAME));
         Assertions.assertEquals(Map.of(OperatingStatus.NAME, buildOperatingStatusAttributes("status1"), ActivePowerControl.NAME, buildActivePowerControlAttributes(8.4)), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 2, lineId));
         Assertions.assertEquals(Map.of(lineId, Set.of(ActivePowerControl.NAME)), getTombstonedExtensions(NETWORK_UUID, 2));
     }
