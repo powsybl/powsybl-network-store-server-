@@ -2375,7 +2375,7 @@ public class NetworkStoreRepository {
         elements.forEach(element -> {
             PhaseTapChangerAttributes phaseTapChangerAttributes = element.getAttributes().getPhaseTapChangerAttributes();
             RatioTapChangerAttributes ratioTapChangerAttributes = element.getAttributes().getRatioTapChangerAttributes();
-            setRegulatingPointforTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
+            setRegulatingPointForTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
                 RegulatingTapChangerType.RATIO_TAP_CHANGER, RegulatingTapChangerType.PHASE_TAP_CHANGER,
                 twtTapChangerRegulatingPointAttributes, element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, variantNum);
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(
@@ -2391,7 +2391,7 @@ public class NetworkStoreRepository {
         twoWindingTransformers.forEach(element -> {
             PhaseTapChangerAttributes phaseTapChangerAttributes = element.getAttributes().getPhaseTapChangerAttributes();
             RatioTapChangerAttributes ratioTapChangerAttributes = element.getAttributes().getRatioTapChangerAttributes();
-            setRegulatingPointforTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
+            setRegulatingPointForTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
                 RegulatingTapChangerType.RATIO_TAP_CHANGER, RegulatingTapChangerType.PHASE_TAP_CHANGER,
                 twtRegulatingPointAttributes, element.getId(), ResourceType.TWO_WINDINGS_TRANSFORMER, networkUuid, variantNum);
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(
@@ -2406,7 +2406,7 @@ public class NetworkStoreRepository {
             for (ThreeSides side : ThreeSides.values()) {
                 PhaseTapChangerAttributes phaseTapChangerAttributes = element.getAttributes().getLeg(side.getNum()).getPhaseTapChangerAttributes();
                 RatioTapChangerAttributes ratioTapChangerAttributes = element.getAttributes().getLeg(side.getNum()).getRatioTapChangerAttributes();
-                setRegulatingPointforTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
+                setRegulatingPointForTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
                     RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.RATIO_TAP_CHANGER),
                     RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.PHASE_TAP_CHANGER),
                     twtRegulatingPointAttributes, element.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER, networkUuid, variantNum);
@@ -2422,7 +2422,7 @@ public class NetworkStoreRepository {
             for (ThreeSides side : ThreeSides.values()) {
                 PhaseTapChangerAttributes phaseTapChangerAttributes = element.getAttributes().getLeg(side.getNum()).getPhaseTapChangerAttributes();
                 RatioTapChangerAttributes ratioTapChangerAttributes = element.getAttributes().getLeg(side.getNum()).getRatioTapChangerAttributes();
-                setRegulatingPointforTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
+                setRegulatingPointForTapChanger(ratioTapChangerAttributes, phaseTapChangerAttributes,
                     RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.RATIO_TAP_CHANGER),
                     RegulatingTapChangerType.getThreeWindingsTransformerTapChangerType(side, RegulatingTapChangerType.PHASE_TAP_CHANGER),
                     twtRegulatingPointAttributes, element.getId(), ResourceType.THREE_WINDINGS_TRANSFORMER, networkUuid, variantNum);
@@ -2430,10 +2430,10 @@ public class NetworkStoreRepository {
         });
     }
 
-    private void setRegulatingPointforTapChanger(RatioTapChangerAttributes ratioTapChangerAttributes, PhaseTapChangerAttributes phaseTapChangerAttributes,
-                                              RegulatingTapChangerType ratioRegulatingTapChangerType, RegulatingTapChangerType phaseRegulatingTapChangerType,
-                                              Map<RegulatingOwnerInfo, RegulatingPointAttributes> map, String twtId, ResourceType resourceType,
-                                              UUID networkUuid, int variantNum) {
+    private void setRegulatingPointForTapChanger(RatioTapChangerAttributes ratioTapChangerAttributes, PhaseTapChangerAttributes phaseTapChangerAttributes,
+                                                 RegulatingTapChangerType ratioRegulatingTapChangerType, RegulatingTapChangerType phaseRegulatingTapChangerType,
+                                                 Map<RegulatingOwnerInfo, RegulatingPointAttributes> map, String twtId, ResourceType resourceType,
+                                                 UUID networkUuid, int variantNum) {
         if (ratioTapChangerAttributes != null) {
             RegulatingOwnerInfo ratioTapChangerRegulatingOwnerInfo = new RegulatingOwnerInfo(
                 twtId, resourceType,
@@ -2557,11 +2557,12 @@ public class NetworkStoreRepository {
                 owner.setEquipmentType(type);
                 String regulatingTapChangerType = resultSet.getString(4);
                 // regulatingTapChangerType can not be null because it is part of primary key of table RegulatingPoint
-                // it will be an empty string for injection
-                owner.setRegulatingTapChangerType(!Objects.equals(regulatingTapChangerType, "") ? RegulatingTapChangerType.valueOf(regulatingTapChangerType) : null);
+                // it will be NO_TAP_CHANGER for injection
+                owner.setRegulatingTapChangerType(RegulatingTapChangerType.valueOf(regulatingTapChangerType));
                 regulatingPointAttributes.setRegulatingEquipmentId(regulatingEquipmentId);
                 regulatingPointAttributes.setRegulationMode(resultSet.getString(5));
                 regulatingPointAttributes.setRegulatingResourceType(type);
+                regulatingPointAttributes.setRegulatingTapChangerType(RegulatingTapChangerType.valueOf(regulatingTapChangerType));
                 Optional<String> localConnectableId = Optional.ofNullable(resultSet.getString(6));
                 if (localConnectableId.isPresent()) {
                     regulatingPointAttributes.setLocalTerminal(new TerminalRefAttributes(localConnectableId.get(), resultSet.getString(7)));
@@ -2622,12 +2623,7 @@ public class NetworkStoreRepository {
                 owner.setVariantNum(resultSet.getInt(2));
                 owner.setEquipmentType(type);
                 String regulatingTapChangerType = resultSet.getString(6);
-                RegulatingEquipmentIdentifier identifier;
-                if (regulatingTapChangerType != null && !regulatingTapChangerType.isEmpty()) {
-                    identifier = new RegulatingEquipmentIdentifier(regulatingEquipmentId, regulatingEquipmentType, RegulatingTapChangerType.valueOf(regulatingTapChangerType));
-                } else {
-                    identifier = new RegulatingEquipmentIdentifier(regulatingEquipmentId, regulatingEquipmentType);
-                }
+                RegulatingEquipmentIdentifier identifier = new RegulatingEquipmentIdentifier(regulatingEquipmentId, regulatingEquipmentType, RegulatingTapChangerType.valueOf(regulatingTapChangerType));
                 if (map.containsKey(owner)) {
                     map.get(owner).add(identifier);
                 } else {
@@ -2665,12 +2661,7 @@ public class NetworkStoreRepository {
                 String regulatingEquipmentId = resultSet.getString(1);
                 ResourceType regulatingEquipmentType = ResourceType.valueOf(resultSet.getString(2));
                 String regulatingTapChangerType = resultSet.getString(3);
-                RegulatingEquipmentIdentifier identifier;
-                if (regulatingTapChangerType != null && !regulatingTapChangerType.isEmpty()) {
-                    identifier = new RegulatingEquipmentIdentifier(regulatingEquipmentId, regulatingEquipmentType, RegulatingTapChangerType.valueOf(regulatingTapChangerType));
-                } else {
-                    identifier = new RegulatingEquipmentIdentifier(regulatingEquipmentId, regulatingEquipmentType);
-                }
+                RegulatingEquipmentIdentifier identifier = new RegulatingEquipmentIdentifier(regulatingEquipmentId, regulatingEquipmentType, RegulatingTapChangerType.valueOf(regulatingTapChangerType));
                 regulatingEquipements.add(identifier);
             }
             return regulatingEquipements;
