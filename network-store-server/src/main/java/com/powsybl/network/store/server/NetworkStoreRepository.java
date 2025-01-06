@@ -2098,7 +2098,7 @@ public class NetworkStoreRepository {
     public void insertRegulatingPoints(Map<OwnerInfo, RegulatingPointAttributes> regulatingPoints) {
         try (var connection = dataSource.getConnection()) {
             try (var preparedStmt = connection.prepareStatement(QueryCatalog.buildInsertRegulatingPointsQuery())) {
-                List<Object> values = new ArrayList<>(10);
+                List<Object> values = new ArrayList<>(11);
                 List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> list = new ArrayList<>(regulatingPoints.entrySet());
                 for (List<Map.Entry<OwnerInfo, RegulatingPointAttributes>> subUnit : Lists.partition(list, BATCH_SIZE)) {
                     for (Map.Entry<OwnerInfo, RegulatingPointAttributes> attributes : subUnit) {
@@ -2124,12 +2124,15 @@ public class NetworkStoreRepository {
                             values.add(attributes.getValue().getRegulatedResourceType() != null
                                 ? attributes.getValue().getRegulatedResourceType().toString()
                                 : null);
+                            values.add(attributes.getValue().getRegulating() != null
+                                ? attributes.getValue().getRegulating() : null);
                         } else {
                             values.add(null);
                             values.add(attributes.getKey().getEquipmentId());
                             for (int i = 0; i < 4; i++) {
                                 values.add(null);
                             }
+                            values.add(false);
                         }
                         bindValues(preparedStmt, values, mapper);
                         preparedStmt.addBatch();
@@ -2157,6 +2160,7 @@ public class NetworkStoreRepository {
                             values.add(regulatingTerminal != null ? regulatingTerminal.getConnectableId() : null);
                             values.add(regulatingTerminal != null ? regulatingTerminal.getSide() : null);
                             values.add(attributes.getValue().getRegulatedResourceType() != null ? attributes.getValue().getRegulatedResourceType().toString() : null);
+                            values.add(attributes.getValue().getRegulating());
                             // where values
                             values.add(attributes.getKey().getNetworkUuid());
                             values.add(attributes.getKey().getVariantNum());
@@ -2401,6 +2405,7 @@ public class NetworkStoreRepository {
                 if (regulatingConnectableId.isPresent()) {
                     regulatingPointAttributes.setRegulatingTerminal(new TerminalRefAttributes(resultSet.getString(7), resultSet.getString(8)));
                 }
+                regulatingPointAttributes.setRegulating(resultSet.getBoolean(9));
                 map.put(owner, regulatingPointAttributes);
             }
             return map;
