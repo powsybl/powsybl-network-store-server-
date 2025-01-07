@@ -62,7 +62,7 @@
             ../../../network-store-integration-test/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
 
-        <sonar.coverage.exclusions>**/migrations/**/*</sonar.coverage.exclusions>
+        <sonar.coverage.exclusions>**/**/migrations/**/*</sonar.coverage.exclusions>
     </properties>
 
     <modules>
