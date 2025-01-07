@@ -74,10 +74,6 @@ public class NetworkStoreRepository {
 
     private static final String SUBSTATION_ID = "substationid";
 
-    public Connection getConnection() throws SQLException {
-        return dataSource.getConnection();
-    }
-
     // network
 
     /**
