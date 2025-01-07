@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 /**
- * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
+ * @author Etienne Homer <etienne.homer at rte-france.com>
  */
 @RestController
 @RequestMapping(value = "/" + NetworkStoreApi.VERSION + "/migration")
@@ -32,8 +32,8 @@ public class MigrationController {
 
     @PostMapping(value = "/{networkId}")
     @Operation(summary = "Migrate limits of a network")
-    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully migrated limits"))
-    public ResponseEntity<Void> migrateLimits(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId) {
+    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully migrated limits from V2.11.0 to new model"))
+    public ResponseEntity<Void> migrateV211Limits(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId) {
         repository.migrateV211Limits(networkId);
         return ResponseEntity.ok().build();
     }
