@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, RTE (http://www.rte-france.com)
+ * Copyright (c) 2024, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -30,7 +30,7 @@ public class MigrationController {
     @Autowired
     private NetworkStoreRepository repository;
 
-    @PostMapping(value = "/{networkId}")
+    @PutMapping(value = "/{networkId}")
     @Operation(summary = "Migrate limits of a network")
     @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully migrated limits from V2.11.0 to new model"))
     public ResponseEntity<Void> migrateV211Limits(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId) {

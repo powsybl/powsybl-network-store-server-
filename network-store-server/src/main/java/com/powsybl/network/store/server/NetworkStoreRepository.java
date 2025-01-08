@@ -26,6 +26,7 @@ import com.powsybl.network.store.server.json.PermanentLimitSqlData;
 import com.powsybl.network.store.server.json.TemporaryLimitSqlData;
 import com.powsybl.network.store.server.migration.V211LimitsQueryCatalog;
 import com.powsybl.ws.commons.LogUtils;
+import lombok.Getter;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -62,6 +63,7 @@ public class NetworkStoreRepository {
         this.extensionHandler = extensionHandler;
     }
 
+    @Getter
     private final DataSource dataSource;
 
     private final ObjectMapper mapper;
@@ -1777,25 +1779,6 @@ public class NetworkStoreRepository {
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
-    public Map<OwnerInfo, List<TemporaryLimitAttributes>> getV211TemporaryLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
-        if (valuesForInClause.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211TemporaryLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
-            preparedStmt.setString(1, networkUuid.toString());
-            preparedStmt.setInt(2, variantNum);
-            for (int i = 0; i < valuesForInClause.size(); i++) {
-                preparedStmt.setString(3 + i, valuesForInClause.get(i));
-            }
-
-            return innerGetV211TemporaryLimits(preparedStmt);
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
-    }
-
     public Map<OwnerInfo, List<PermanentLimitAttributes>> getPermanentLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
@@ -1809,25 +1792,6 @@ public class NetworkStoreRepository {
             }
 
             return innerGetPermanentLimits(preparedStmt);
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
-    }
-
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
-    public Map<OwnerInfo, List<PermanentLimitAttributes>> getV211PermanentLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
-        if (valuesForInClause.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211PermanentLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
-            preparedStmt.setString(1, networkUuid.toString());
-            preparedStmt.setInt(2, variantNum);
-            for (int i = 0; i < valuesForInClause.size(); i++) {
-                preparedStmt.setString(3 + i, valuesForInClause.get(i));
-            }
-
-            return innerGetV211PermanentLimits(preparedStmt);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -1865,22 +1829,6 @@ public class NetworkStoreRepository {
         return limitsInfos;
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
-    public Map<OwnerInfo, List<TemporaryLimitAttributes>> getV211TemporaryLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
-        try (var connection = dataSource.getConnection()) {
-
-            // get from old table
-            var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211TemporaryLimitQuery(columnNameForWhereClause));
-            preparedStmt.setString(1, networkUuid.toString());
-            preparedStmt.setInt(2, variantNum);
-            preparedStmt.setString(3, valueForWhereClause);
-
-            return innerGetV211TemporaryLimits(preparedStmt);
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
-    }
-
     public Map<OwnerInfo, List<TemporaryLimitAttributes>> getTemporaryLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (var connection = dataSource.getConnection()) {
             // get from new table
@@ -1890,20 +1838,6 @@ public class NetworkStoreRepository {
             preparedStmt.setString(3, valueForWhereClause);
 
             return innerGetTemporaryLimits(preparedStmt);
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
-        }
-    }
-
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
-    public Map<OwnerInfo, List<PermanentLimitAttributes>> getV211PermanentLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211PermanentLimitQuery(columnNameForWhereClause));
-            preparedStmt.setString(1, networkUuid.toString());
-            preparedStmt.setInt(2, variantNum);
-            preparedStmt.setString(3, valueForWhereClause);
-
-            return innerGetV211PermanentLimits(preparedStmt);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
@@ -3006,6 +2940,74 @@ public class NetworkStoreRepository {
     // Methods to migrate V2.11 limits — do not use them in operational code
 
     //To be deprecated when limits are fully migrated — should be after v2.13 deployment
+    public Map<OwnerInfo, List<PermanentLimitAttributes>> getV211PermanentLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+        if (valuesForInClause.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211PermanentLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setInt(2, variantNum);
+            for (int i = 0; i < valuesForInClause.size(); i++) {
+                preparedStmt.setString(3 + i, valuesForInClause.get(i));
+            }
+
+            return innerGetV211PermanentLimits(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
+    public Map<OwnerInfo, List<TemporaryLimitAttributes>> getV211TemporaryLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+        try (var connection = dataSource.getConnection()) {
+
+            // get from old table
+            var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211TemporaryLimitQuery(columnNameForWhereClause));
+            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setString(3, valueForWhereClause);
+
+            return innerGetV211TemporaryLimits(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
+    public Map<OwnerInfo, List<PermanentLimitAttributes>> getV211PermanentLimits(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211PermanentLimitQuery(columnNameForWhereClause));
+            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setInt(2, variantNum);
+            preparedStmt.setString(3, valueForWhereClause);
+
+            return innerGetV211PermanentLimits(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
+    public Map<OwnerInfo, List<TemporaryLimitAttributes>> getV211TemporaryLimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
+        if (valuesForInClause.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        try (var connection = dataSource.getConnection()) {
+            var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211TemporaryLimitWithInClauseQuery(columnNameForWhereClause, valuesForInClause.size()));
+            preparedStmt.setString(1, networkUuid.toString());
+            preparedStmt.setInt(2, variantNum);
+            for (int i = 0; i < valuesForInClause.size(); i++) {
+                preparedStmt.setString(3 + i, valuesForInClause.get(i));
+            }
+
+            return innerGetV211TemporaryLimits(preparedStmt);
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
+    }
+
+    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public void migrateV211Limits(UUID networkId) {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -3014,6 +3016,7 @@ public class NetworkStoreRepository {
             migrateV211Limits(networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.LINE.toString());
             migrateV211Limits(networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.TWO_WINDINGS_TRANSFORMER.toString());
             migrateV211Limits(networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.THREE_WINDINGS_TRANSFORMER.toString());
+            migrateV211Limits(networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.DANGLING_LINE.toString());
         });
 
         stopwatch.stop();

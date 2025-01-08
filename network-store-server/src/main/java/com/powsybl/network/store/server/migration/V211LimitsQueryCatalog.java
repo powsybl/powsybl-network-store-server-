@@ -1,13 +1,20 @@
+/**
+ * Copyright (c) 2024, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.powsybl.network.store.server.migration;
 
+import static com.powsybl.network.store.server.QueryCatalog.*;
+
+/**
+ * @author Etienne Homer <etienne.homer at rte-france.com>
+ */
 //Class to be removed when limits are fully migrated - should be after v2.13 deployment
 public final class V211LimitsQueryCatalog {
     public static final String MINIMAL_VALUE_REQUIREMENT_ERROR = "Function should not be called without at least one value.";
 
-    static final String NETWORK_UUID_COLUMN = "networkUuid";
-    static final String VARIANT_NUM_COLUMN = "variantNum";
-    public static final String EQUIPMENT_TYPE_COLUMN = "equipmentType";
-    public static final String EQUIPMENT_ID_COLUMN = "equipmentId";
     static final String V211_TEMPORARY_LIMITS = "temporarylimit";
     static final String V211_PERMANENT_LIMITS = "permanentlimit";
 
