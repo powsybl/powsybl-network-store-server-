@@ -23,7 +23,7 @@ import java.util.UUID;
 public class RegulatingOwnerInfo {
 
     public RegulatingOwnerInfo(String equipmentId, ResourceType equipmentType, UUID networkUuid, int variantNum) {
-        this(equipmentId, equipmentType, RegulatingTapChangerType.NO_TAP_CHANGER, networkUuid, variantNum);
+        this(equipmentId, equipmentType, RegulatingTapChangerType.NONE, networkUuid, variantNum);
     }
 
     private String equipmentId;

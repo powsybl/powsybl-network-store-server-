@@ -2342,7 +2342,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<RegulatingEquipmentIdentifier>> regulatingEquipments = getRegulatingEquipmentsWithInClause(networkUuid, variantNum, "regulatingterminalconnectableid", elementIds, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
-            RegulatingOwnerInfo regulatingOwnerInfo = new RegulatingOwnerInfo(element.getId(), type, RegulatingTapChangerType.NO_TAP_CHANGER, networkUuid, variantNum);
+            RegulatingOwnerInfo regulatingOwnerInfo = new RegulatingOwnerInfo(element.getId(), type, RegulatingTapChangerType.NONE, networkUuid, variantNum);
             element.getAttributes().setRegulatingPoint(
                 regulatingPointAttributes.get(regulatingOwnerInfo));
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
@@ -2356,7 +2356,7 @@ public class NetworkStoreRepository {
         Map<OwnerInfo, List<RegulatingEquipmentIdentifier>> regulatingEquipments = getRegulatingEquipments(networkUuid, variantNum, type);
         elements.forEach(element -> {
             OwnerInfo ownerInfo = new OwnerInfo(element.getId(), type, networkUuid, variantNum);
-            RegulatingOwnerInfo regulatingOwnerInfo = new RegulatingOwnerInfo(element.getId(), type, RegulatingTapChangerType.NO_TAP_CHANGER, networkUuid, variantNum);
+            RegulatingOwnerInfo regulatingOwnerInfo = new RegulatingOwnerInfo(element.getId(), type, RegulatingTapChangerType.NONE, networkUuid, variantNum);
             element.getAttributes().setRegulatingPoint(
                 regulatingPointAttributes.get(regulatingOwnerInfo));
             element.getAttributes().setRegulatingEquipments(regulatingEquipments.get(ownerInfo));
@@ -2480,7 +2480,7 @@ public class NetworkStoreRepository {
                 RegulatingOwnerInfo info = new RegulatingOwnerInfo(
                     resource.getId(),
                     resource.getType(),
-                    RegulatingTapChangerType.NO_TAP_CHANGER,
+                    RegulatingTapChangerType.NONE,
                     networkUuid,
                     resource.getVariantNum()
                 );
@@ -2557,7 +2557,7 @@ public class NetworkStoreRepository {
                 owner.setEquipmentType(type);
                 String regulatingTapChangerType = resultSet.getString(4);
                 // regulatingTapChangerType can not be null because it is part of primary key of table RegulatingPoint
-                // it will be NO_TAP_CHANGER for injection
+                // it will be NONE for injection
                 owner.setRegulatingTapChangerType(RegulatingTapChangerType.valueOf(regulatingTapChangerType));
                 regulatingPointAttributes.setRegulatingEquipmentId(regulatingEquipmentId);
                 regulatingPointAttributes.setRegulationMode(resultSet.getString(5));

@@ -9,7 +9,7 @@
             <column name="regulatingtapchangertype" type="VARCHAR"/>
         </addColumn>
         <update tableName="regulatingpoint">
-            <column name="regulatingtapchangertype" value="NO_TAP_CHANGER"/>
+            <column name="regulatingtapchangertype" value="NONE"/>
         </update>
         <addNotNullConstraint tableName="regulatingpoint" columnName="regulatingtapchangertype"/>
     </changeSet>
