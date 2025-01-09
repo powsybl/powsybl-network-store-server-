@@ -77,8 +77,42 @@ class V211LimitsMigrationTest {
         create2WTLine();
         create3WTLine();
 
+        LimitsInfos limits = createLimitSet();
+
+        insertV211Limits("l1", ResourceType.LINE, limits);
+        insertV211Limits("dl1", ResourceType.DANGLING_LINE, limits);
+        insertV211Limits("2wt", ResourceType.TWO_WINDINGS_TRANSFORMER, limits);
+        insertV211Limits("3wt", ResourceType.THREE_WINDINGS_TRANSFORMER, limits);
+
+        mvc.perform(MockMvcRequestBuilders.put("/" + VERSION + "/migration/" + NETWORK_UUID)
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        assertEquals(0, countRowsByEquipmentId("l1", "temporarylimit"));
+        assertEquals(0, countRowsByEquipmentId("dl1", "temporarylimit"));
+        assertEquals(0, countRowsByEquipmentId("2wt", "temporarylimit"));
+        assertEquals(0, countRowsByEquipmentId("3wt", "temporarylimit"));
+
+        assertEquals(0, countRowsByEquipmentId("l1", "permanentlimit"));
+        assertEquals(0, countRowsByEquipmentId("dl1", "permanentlimit"));
+        assertEquals(0, countRowsByEquipmentId("2wt", "permanentlimit"));
+        assertEquals(0, countRowsByEquipmentId("3wt", "permanentlimit"));
+
+        assertEquals(1, countRowsByEquipmentId("l1", "newtemporarylimits"));
+        assertEquals(1, countRowsByEquipmentId("dl1", "newtemporarylimits"));
+        assertEquals(1, countRowsByEquipmentId("2wt", "newtemporarylimits"));
+        assertEquals(1, countRowsByEquipmentId("3wt", "newtemporarylimits"));
+
+        assertEquals(1, countRowsByEquipmentId("l1", "newpermanentlimits"));
+        assertEquals(1, countRowsByEquipmentId("dl1", "newpermanentlimits"));
+        assertEquals(1, countRowsByEquipmentId("2wt", "newpermanentlimits"));
+        assertEquals(1, countRowsByEquipmentId("3wt", "newpermanentlimits"));
+    }
+
+    private LimitsInfos createLimitSet() {
         LimitsInfos limits = new LimitsInfos();
-        List<TemporaryLimitAttributes> temporaryLimitsA = new ArrayList<>();
+        List<TemporaryLimitAttributes> temporaryLimits = new ArrayList<>();
+
         TemporaryLimitAttributes templimitAOkSide1a = TemporaryLimitAttributes.builder()
                 .side(1)
                 .acceptableDuration(100)
@@ -99,10 +133,10 @@ class V211LimitsMigrationTest {
                 .limitType(LimitType.CURRENT)
                 .operationalLimitsGroupId("group1")
                 .build();
-        temporaryLimitsA.add(templimitAOkSide1a);
-        temporaryLimitsA.add(templimitAOkSide2a);
-        temporaryLimitsA.add(templimitAOkSide2b);
-        limits.setTemporaryLimits(temporaryLimitsA);
+        temporaryLimits.add(templimitAOkSide1a);
+        temporaryLimits.add(templimitAOkSide2a);
+        temporaryLimits.add(templimitAOkSide2b);
+        limits.setTemporaryLimits(temporaryLimits);
 
         PermanentLimitAttributes permanentLimitAttributes = PermanentLimitAttributes.builder()
                 .side(1)
@@ -112,21 +146,7 @@ class V211LimitsMigrationTest {
                 .build();
         limits.setPermanentLimits(List.of(permanentLimitAttributes));
 
-        insertV211Limits("l1", ResourceType.LINE, limits);
-        insertV211Limits("dl1", ResourceType.DANGLING_LINE, limits);
-        insertV211Limits("2wt", ResourceType.TWO_WINDINGS_TRANSFORMER, limits);
-        insertV211Limits("3wt", ResourceType.THREE_WINDINGS_TRANSFORMER, limits);
-
-        mvc.perform(MockMvcRequestBuilders.put("/" + VERSION + "/migration/" + NETWORK_UUID)
-                        .contentType(APPLICATION_JSON))
-                .andExpect(status().isOk());
-
-        assertEquals(0, countV211PermanentLimits("l1"));
-        assertEquals(0, countV211PermanentLimits("dl1"));
-        assertEquals(0, countV211PermanentLimits("2wt"));
-        assertEquals(0, countV211PermanentLimits("3wt"));
-
-        //TODO: check limits in new table
+        return limits;
     }
 
     private void insertV211Limits(String equipmentId, ResourceType resourceType, LimitsInfos limits) {
@@ -223,9 +243,9 @@ class V211LimitsMigrationTest {
                 " values (?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
-    public int countV211PermanentLimits(String equipmentId) {
+    public int countRowsByEquipmentId(String equipmentId, String tableName) {
         try (var connection = networkStoreRepository.getDataSource().getConnection()) {
-            try (var preparedStmt = connection.prepareStatement("select count(*) from temporarylimit where " + EQUIPMENT_ID_COLUMN + " = ?")) {
+            try (var preparedStmt = connection.prepareStatement("select count(*) from " + tableName + " where " + EQUIPMENT_ID_COLUMN + " = ?")) {
                 preparedStmt.setString(1, equipmentId);
                 try (ResultSet resultSet = preparedStmt.executeQuery()) {
                     resultSet.next();

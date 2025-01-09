@@ -11,7 +11,7 @@ import static com.powsybl.network.store.server.QueryCatalog.*;
 /**
  * @author Etienne Homer <etienne.homer at rte-france.com>
  */
-//Class to be removed when limits are fully migrated - should be after v2.13 deployment
+//Class to be deprecated when limits are fully migrated - should be after v2.13 deployment
 public final class V211LimitsQueryCatalog {
     public static final String MINIMAL_VALUE_REQUIREMENT_ERROR = "Function should not be called without at least one value.";
 
