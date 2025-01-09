@@ -73,6 +73,14 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- imports -->
+            <dependency>
+                <groupId>com.powsybl</groupId>
+                <artifactId>powsybl-ws-dependencies</artifactId>
+                <version>${powsybl-ws-dependencies.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.powsybl</groupId>
                 <artifactId>powsybl-network-store-client</artifactId>
@@ -90,14 +98,6 @@
                 <groupId>com.powsybl</groupId>
                 <artifactId>powsybl-network-store-model</artifactId>
                 <version>${powsybl-network-store.version}</version>
-            </dependency>
-            <!-- imports -->
-            <dependency>
-                <groupId>com.powsybl</groupId>
-                <artifactId>powsybl-ws-dependencies</artifactId>
-                <version>${powsybl-ws-dependencies.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
             </dependency>
 
             <!-- project specific dependencies -->
