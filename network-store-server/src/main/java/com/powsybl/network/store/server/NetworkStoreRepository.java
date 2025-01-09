@@ -3024,7 +3024,7 @@ public class NetworkStoreRepository {
     }
 
     //To be deprecated when limits are fully migrated — should be after v2.13 deployment
-    public void insertNewLimitsAndDeleteV211Ones(UUID networkUuid, int variantNum, Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> oldPermanentLimits) {
+    public boolean insertNewLimitsAndDeleteV211Ones(UUID networkUuid, int variantNum, Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> oldPermanentLimits) {
         if (!oldPermanentLimits.keySet().isEmpty()) {
             insertPermanentLimitsAttributes(oldPermanentLimits);
             deleteV211PermanentLimits(networkUuid, variantNum, oldPermanentLimits.keySet().stream().map(OwnerInfo::getEquipmentId).toList());
@@ -3033,6 +3033,7 @@ public class NetworkStoreRepository {
             insertTemporaryLimitsAttributes(oldTemporaryLimits);
             deleteV211TemporaryLimits(networkUuid, variantNum, oldTemporaryLimits.keySet().stream().map(OwnerInfo::getEquipmentId).toList());
         }
+        return !oldPermanentLimits.keySet().isEmpty() || !oldTemporaryLimits.keySet().isEmpty();
     }
 
     //To be deprecated when limits are fully migrated — should be after v2.13 deployment
@@ -3040,19 +3041,18 @@ public class NetworkStoreRepository {
         Stopwatch stopwatch = Stopwatch.createStarted();
         Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits = getV211TemporaryLimits(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
         Map<OwnerInfo, List<PermanentLimitAttributes>> oldPermanentLimits = getV211PermanentLimits(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
-        insertNewLimitsAndDeleteV211Ones(networkUuid, variantNum, oldTemporaryLimits, oldPermanentLimits);
+        boolean migrated = insertNewLimitsAndDeleteV211Ones(networkUuid, variantNum, oldTemporaryLimits, oldPermanentLimits);
         stopwatch.stop();
-        LOGGER.info("Limits of {}S of network {}/variantNum={} migrated in {} ms", valueForWhereClause, networkUuid, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        if (Boolean.TRUE.equals(migrated)) {
+            LOGGER.info("Limits of {}S of network {}/variantNum={} migrated in {} ms", valueForWhereClause, networkUuid, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        }
     }
 
     //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public void migrateV211LimitsWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
         Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits = getV211TemporaryLimitsWithInClause(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
         Map<OwnerInfo, List<PermanentLimitAttributes>> oldPermanentLimits = getV211PermanentLimitsWithInClause(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
         insertNewLimitsAndDeleteV211Ones(networkUuid, variantNum, oldTemporaryLimits, oldPermanentLimits);
-        stopwatch.stop();
-        LOGGER.info("Limits of network {}/variantNum={} with clause on {} migrated in {} ms", networkUuid, variantNum, columnNameForWhereClause, stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     //To be deprecated when limits are fully migrated — should be after v2.13 deployment
