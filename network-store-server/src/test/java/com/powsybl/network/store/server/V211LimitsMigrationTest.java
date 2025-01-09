@@ -70,7 +70,7 @@ class V211LimitsMigrationTest {
     }
 
     @Test
-    void insertTemporaryLimitsInLinesTest() throws Exception {
+    void migrateV211LimitsTest() throws Exception {
         createNetwork();
         createLine();
         createDanglineLine();

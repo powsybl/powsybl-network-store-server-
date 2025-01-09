@@ -32,10 +32,9 @@ public class MigrationController {
 
     @PutMapping(value = "/{networkId}")
     @Operation(summary = "Migrate limits of a network")
-    @ApiResponses(@ApiResponse(responseCode = "201", description = "Successfully migrated limits from V2.11.0 to new model"))
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully migrated limits from V2.11.0 to new model"))
     public ResponseEntity<Void> migrateV211Limits(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId) {
-        repository.migrateV211Limits(networkId);
+        V211LimitsMigration.migrateV211Limits(repository, networkId);
         return ResponseEntity.ok().build();
     }
-
 }
