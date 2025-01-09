@@ -45,7 +45,7 @@ public class V211LimitsMigration implements CustomTaskChange {
     public void execute(Database database) {
         init(database);
         JdbcConnection connection = (JdbcConnection) database.getConnection();
-        try (PreparedStatement stmt = connection.prepareStatement("select uuid from network")) {
+        try (PreparedStatement stmt = connection.prepareStatement("select distinct uuid from network ")) {
             ResultSet networkUuids = stmt.executeQuery();
             while (networkUuids.next()) {
                 UUID networkUuid = UUID.fromString(networkUuids.getString(1));
