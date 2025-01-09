@@ -867,7 +867,7 @@ class NetworkStoreIT {
             assertEquals(8, line.getB1(), 0.1);
             assertEquals(16, line.getB2(), 0.1);
 
-            verify(mockedListener, times(1)).onUpdate(line, "r", null, 1d, 5d);
+            verify(mockedListener, times(1)).onUpdate(line, "r", INITIAL_VARIANT_ID, 1d, 5d);
             verify(mockedListener, times(1)).onUpdate(line, "x", INITIAL_VARIANT_ID, 3d, 6d);
             verify(mockedListener, times(1)).onUpdate(line, "g1", INITIAL_VARIANT_ID, 4d, 12d);
             verify(mockedListener, times(1)).onUpdate(line, "g2", INITIAL_VARIANT_ID, 8d, 24d);
@@ -1515,7 +1515,7 @@ class NetworkStoreIT {
             verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedU1", INITIAL_VARIANT_ID, 65d, 95d);
             verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedU2", INITIAL_VARIANT_ID, 90d, 120d);
             verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedS", INITIAL_VARIANT_ID, 50d, 100d);
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "fictitious", null, false, true);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "fictitious", INITIAL_VARIANT_ID, false, true);
 
             readNetwork.removeListener(mockedListener);
         }
