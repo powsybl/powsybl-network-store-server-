@@ -200,7 +200,7 @@ public class NetworkStoreRepository {
             connection.commit();
         } catch (Exception e) {
             rollbackQuietly(connection);
-            if (withException) {
+            if (Boolean.TRUE.equals(withException)) {
                 throw new RuntimeException(e);
             }
         } finally {
@@ -3011,7 +3011,7 @@ public class NetworkStoreRepository {
     public void migrateV211Limits(UUID networkId) {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        List<Integer> variantNums = getVariantsInfos(networkId).stream().map(variantInfos -> variantInfos.getNum()).toList();
+        List<Integer> variantNums = getVariantsInfos(networkId).stream().map(VariantInfos::getNum).toList();
         variantNums.forEach(variantNum -> {
             migrateV211Limits(networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.LINE.toString());
             migrateV211Limits(networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.TWO_WINDINGS_TRANSFORMER.toString());

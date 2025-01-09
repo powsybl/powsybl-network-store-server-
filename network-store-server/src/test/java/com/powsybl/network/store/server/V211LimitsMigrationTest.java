@@ -112,27 +112,27 @@ class V211LimitsMigrationTest {
                 .build();
         limits.setPermanentLimits(List.of(permanentLimitAttributes));
 
-        insertLimitsOldFashion("l1", ResourceType.LINE, limits);
-        insertLimitsOldFashion("dl1", ResourceType.DANGLING_LINE, limits);
-        insertLimitsOldFashion("2wt", ResourceType.TWO_WINDINGS_TRANSFORMER, limits);
-        insertLimitsOldFashion("3wt", ResourceType.THREE_WINDINGS_TRANSFORMER, limits);
+        insertV211Limits("l1", ResourceType.LINE, limits);
+        insertV211Limits("dl1", ResourceType.DANGLING_LINE, limits);
+        insertV211Limits("2wt", ResourceType.TWO_WINDINGS_TRANSFORMER, limits);
+        insertV211Limits("3wt", ResourceType.THREE_WINDINGS_TRANSFORMER, limits);
 
         mvc.perform(MockMvcRequestBuilders.put("/" + VERSION + "/migration/" + NETWORK_UUID)
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        assertEquals(0, countPermanentLimitsOldFashion("l1"));
-        assertEquals(0, countPermanentLimitsOldFashion("dl1"));
-        assertEquals(0, countPermanentLimitsOldFashion("2wt"));
-        assertEquals(0, countPermanentLimitsOldFashion("3wt"));
+        assertEquals(0, countV211PermanentLimits("l1"));
+        assertEquals(0, countV211PermanentLimits("dl1"));
+        assertEquals(0, countV211PermanentLimits("2wt"));
+        assertEquals(0, countV211PermanentLimits("3wt"));
 
         //TODO: check limits in new table
     }
 
-    private void insertLimitsOldFashion(String equipmentId, ResourceType resourceType, LimitsInfos limits) {
+    private void insertV211Limits(String equipmentId, ResourceType resourceType, LimitsInfos limits) {
         OwnerInfo ownerInfo = new OwnerInfo(equipmentId, resourceType, NETWORK_UUID, 0);
-        insertPermanentLimitsOldFashion(Map.of(ownerInfo, limits));
-        insertTemporaryLimitsOldFashion(Map.of(ownerInfo, limits));
+        insertV211PermanentLimits(Map.of(ownerInfo, limits));
+        insertV211TemporaryLimits(Map.of(ownerInfo, limits));
     }
 
     public void createNetwork() throws Exception {
@@ -204,7 +204,7 @@ class V211LimitsMigrationTest {
                 .andExpect(status().isCreated());
     }
 
-    public static String buildInsertTemporaryLimitsOldFashionQuery() {
+    public static String buildInsertV211TemporaryLimitsQuery() {
         return "insert into temporarylimit(" +
                 EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
@@ -214,7 +214,7 @@ class V211LimitsMigrationTest {
                 " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
-    public static String buildInsertPermanentLimitsOldFashionQuery() {
+    public static String buildInsertV211PermanentLimitsQuery() {
         return "insert into permanentlimit(" +
                 EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
@@ -223,7 +223,7 @@ class V211LimitsMigrationTest {
                 " values (?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
-    public int countPermanentLimitsOldFashion(String equipmentId) {
+    public int countV211PermanentLimits(String equipmentId) {
         try (var connection = networkStoreRepository.getDataSource().getConnection()) {
             try (var preparedStmt = connection.prepareStatement("select count(*) from temporarylimit where " + EQUIPMENT_ID_COLUMN + " = ?")) {
                 preparedStmt.setString(1, equipmentId);
@@ -237,11 +237,11 @@ class V211LimitsMigrationTest {
         }
     }
 
-    public void insertPermanentLimitsOldFashion(Map<OwnerInfo, LimitsInfos> limitsInfos) {
+    public void insertV211PermanentLimits(Map<OwnerInfo, LimitsInfos> limitsInfos) {
         Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits = limitsInfos.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getPermanentLimits()));
         try (var connection = networkStoreRepository.getDataSource().getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(buildInsertPermanentLimitsOldFashionQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildInsertV211PermanentLimitsQuery())) {
                 List<Object> values = new ArrayList<>(8);
                 List<Map.Entry<OwnerInfo, List<PermanentLimitAttributes>>> list = new ArrayList<>(permanentLimits.entrySet());
                 for (List<Map.Entry<OwnerInfo, List<PermanentLimitAttributes>>> subUnit : Lists.partition(list, BATCH_SIZE)) {
@@ -270,11 +270,11 @@ class V211LimitsMigrationTest {
         }
     }
 
-    public void insertTemporaryLimitsOldFashion(Map<OwnerInfo, LimitsInfos> limitsInfos) {
+    public void insertV211TemporaryLimits(Map<OwnerInfo, LimitsInfos> limitsInfos) {
         Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = limitsInfos.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getTemporaryLimits()));
         try (var connection = networkStoreRepository.getDataSource().getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(buildInsertTemporaryLimitsOldFashionQuery())) {
+            try (var preparedStmt = connection.prepareStatement(buildInsertV211TemporaryLimitsQuery())) {
                 List<Object> values = new ArrayList<>(11);
                 List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> list = new ArrayList<>(temporaryLimits.entrySet());
                 for (List<Map.Entry<OwnerInfo, List<TemporaryLimitAttributes>>> subUnit : Lists.partition(list, BATCH_SIZE)) {
