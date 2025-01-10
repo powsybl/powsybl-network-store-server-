@@ -1146,7 +1146,6 @@ class NetworkStoreRepositoryTest {
                 .name(twtId)
                 .ratioTapChangerAttributes(RatioTapChangerAttributes.builder()
                     .regulatingPoint(RegulatingPointAttributes.builder()
-                        .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                         .regulatingResourceType(ResourceType.TWO_WINDINGS_TRANSFORMER)
                         .regulatingTapChangerType(RegulatingTapChangerType.RATIO_TAP_CHANGER)
                         .regulatedResourceType(ResourceType.TWO_WINDINGS_TRANSFORMER)
@@ -1156,7 +1155,6 @@ class NetworkStoreRepositoryTest {
                     .build())
                 .phaseTapChangerAttributes(PhaseTapChangerAttributes.builder()
                     .regulatingPoint(RegulatingPointAttributes.builder()
-                        .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                         .regulatingResourceType(ResourceType.TWO_WINDINGS_TRANSFORMER)
                         .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER)
                         .regulatedResourceType(ResourceType.TWO_WINDINGS_TRANSFORMER)
@@ -1182,15 +1180,13 @@ class NetworkStoreRepositoryTest {
         assertEquals(twtId, twoWindingsTransformer.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingEquipmentId());
         assertNull(twoWindingsTransformer.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twoWindingsTransformer.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twoWindingsTransformer.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twoWindingsTransformer.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twoWindingsTransformer.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         // phase tap changer regulation
         assertEquals(twtId, twoWindingsTransformer.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingEquipmentId());
         assertNull(twoWindingsTransformer.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twoWindingsTransformer.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twoWindingsTransformer.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twoWindingsTransformer.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twoWindingsTransformer.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         // get vl twt
         List<Resource<TwoWindingsTransformerAttributes>> twtList = networkStoreRepository.getVoltageLevelTwoWindingsTransformers(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, "vl1");
@@ -1202,16 +1198,14 @@ class NetworkStoreRepositoryTest {
         assertEquals(twtId, twtVl.getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtVl.getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtVl.getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtVl.getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtVl.getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtVl.getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         // phase tap changer regulation
         assertEquals(twtId, twtVl.getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingEquipmentId());
         assertEquals(twtId, twtVl.getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtVl.getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtVl.getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtVl.getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtVl.getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtVl.getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         Resource<TwoWindingsTransformerAttributes> updatedTwt = Resource.twoWindingsTransformerBuilder()
             .id(twtId)
@@ -1242,14 +1236,12 @@ class NetworkStoreRepositoryTest {
         assertEquals(loadId, twtResult.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtResult.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtResult.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtResult.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtResult.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtResult.get().getAttributes().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
         // phase tap changer
         assertEquals(loadId, twtResult.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtResult.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtResult.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtResult.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtResult.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtResult.get().getAttributes().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         assertTrue(twtResult.get().getAttributes().getRegulatingEquipments().isEmpty());
 
@@ -1277,7 +1269,6 @@ class NetworkStoreRepositoryTest {
                     .voltageLevelId("vl1")
                     .ratioTapChangerAttributes(RatioTapChangerAttributes.builder()
                         .regulatingPoint(RegulatingPointAttributes.builder()
-                            .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingTapChangerType(RegulatingTapChangerType.RATIO_TAP_CHANGER_SIDE_ONE)
                             .regulatedResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
@@ -1287,7 +1278,6 @@ class NetworkStoreRepositoryTest {
                         .build())
                     .phaseTapChangerAttributes(PhaseTapChangerAttributes.builder()
                         .regulatingPoint(RegulatingPointAttributes.builder()
-                            .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_ONE)
                             .regulatedResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
@@ -1299,7 +1289,6 @@ class NetworkStoreRepositoryTest {
                 .leg2(LegAttributes.builder()
                     .phaseTapChangerAttributes(PhaseTapChangerAttributes.builder()
                         .regulatingPoint(RegulatingPointAttributes.builder()
-                            .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_TWO)
                             .regulatedResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
@@ -1329,22 +1318,19 @@ class NetworkStoreRepositoryTest {
         assertEquals(twtId, threeWindingsTransformer.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingEquipmentId());
         assertNull(threeWindingsTransformer.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(threeWindingsTransformer.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, threeWindingsTransformer.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(threeWindingsTransformer.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(threeWindingsTransformer.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         // phase tap changer regulation
         assertEquals(twtId, threeWindingsTransformer.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingEquipmentId());
         assertNull(threeWindingsTransformer.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(threeWindingsTransformer.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, threeWindingsTransformer.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(threeWindingsTransformer.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(threeWindingsTransformer.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         // leg 2
         assertEquals(twtId, threeWindingsTransformer.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingEquipmentId());
         assertNull(threeWindingsTransformer.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(threeWindingsTransformer.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, threeWindingsTransformer.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(threeWindingsTransformer.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(threeWindingsTransformer.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         // leg 3
         assertNull(threeWindingsTransformer.get().getAttributes().getLeg3().getPhaseTapChangerAttributes());
@@ -1361,16 +1347,14 @@ class NetworkStoreRepositoryTest {
         assertEquals(twtId, twtVl.getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtVl.getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtVl.getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtVl.getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtVl.getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtVl.getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         // phase tap changer regulation
         assertEquals(twtId, twtVl.getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingEquipmentId());
         assertEquals(twtId, twtVl.getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtVl.getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtVl.getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtVl.getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtVl.getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtVl.getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         Resource<ThreeWindingsTransformerAttributes> updatedTwt = Resource.threeWindingsTransformerBuilder()
             .id(twtId)
@@ -1381,7 +1365,6 @@ class NetworkStoreRepositoryTest {
                     .voltageLevelId("vl1")
                     .ratioTapChangerAttributes(RatioTapChangerAttributes.builder()
                         .regulatingPoint(RegulatingPointAttributes.builder()
-                            .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingTapChangerType(RegulatingTapChangerType.RATIO_TAP_CHANGER_SIDE_ONE)
                             .regulatedResourceType(ResourceType.LOAD)
@@ -1391,7 +1374,6 @@ class NetworkStoreRepositoryTest {
                         .build())
                     .phaseTapChangerAttributes(PhaseTapChangerAttributes.builder()
                         .regulatingPoint(RegulatingPointAttributes.builder()
-                            .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_ONE)
                             .regulatingEquipmentId(twtId)
@@ -1402,7 +1384,6 @@ class NetworkStoreRepositoryTest {
                 .leg2(LegAttributes.builder()
                     .phaseTapChangerAttributes(PhaseTapChangerAttributes.builder()
                         .regulatingPoint(RegulatingPointAttributes.builder()
-                            .localTerminal(TerminalRefAttributes.builder().connectableId(twtId).build())
                             .regulatingResourceType(ResourceType.THREE_WINDINGS_TRANSFORMER)
                             .regulatingTapChangerType(RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_TWO)
                             .regulatedResourceType(ResourceType.LOAD)
@@ -1423,21 +1404,18 @@ class NetworkStoreRepositoryTest {
         assertEquals(loadId, twtResult.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtResult.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtResult.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtResult.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtResult.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtResult.get().getAttributes().getLeg1().getRatioTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
         // phase tap changer side 1
         assertEquals(loadId, twtResult.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtResult.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtResult.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtResult.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtResult.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtResult.get().getAttributes().getLeg1().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         // phase tap changer side 2
         assertEquals(loadId, twtResult.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getConnectableId());
         assertNull(twtResult.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulatingTerminal().getSide());
         assertNull(twtResult.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getRegulationMode());
-        assertEquals(twtId, twtResult.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getConnectableId());
-        assertNull(twtResult.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal().getSide());
+        assertNull(twtResult.get().getAttributes().getLeg2().getPhaseTapChangerAttributes().getRegulatingPoint().getLocalTerminal());
 
         assertTrue(twtResult.get().getAttributes().getRegulatingEquipments().isEmpty());
 
@@ -1452,7 +1430,7 @@ class NetworkStoreRepositoryTest {
             ResourceType.THREE_WINDINGS_TRANSFORMER, RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_TWO)));
 
         // delete
-        networkStoreRepository.deleteTwoWindingsTransformers(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, Collections.singletonList(twtId));
+        networkStoreRepository.deleteThreeWindingsTransformers(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, Collections.singletonList(twtId));
         networkStoreRepository.deleteLoads(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, Collections.singletonList(loadId));
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getThreeWindingsTransformer(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, twtId).isEmpty());
