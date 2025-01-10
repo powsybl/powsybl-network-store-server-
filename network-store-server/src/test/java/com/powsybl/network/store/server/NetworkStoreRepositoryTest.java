@@ -1260,8 +1260,8 @@ class NetworkStoreRepositoryTest {
         assertTrue(loadResult.get().getAttributes().getRegulatingEquipments().contains(new RegulatingEquipmentIdentifier(twtId, ResourceType.TWO_WINDINGS_TRANSFORMER, RegulatingTapChangerType.PHASE_TAP_CHANGER)));
 
         // delete
-        networkStoreRepository.deleteTwoWindingsTransformer(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, twtId);
-        networkStoreRepository.deleteLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        networkStoreRepository.deleteTwoWindingsTransformers(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, Collections.singletonList(twtId));
+        networkStoreRepository.deleteLoads(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, Collections.singletonList(loadId));
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getTwoWindingsTransformer(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, twtId).isEmpty());
     }
@@ -1452,8 +1452,8 @@ class NetworkStoreRepositoryTest {
             ResourceType.THREE_WINDINGS_TRANSFORMER, RegulatingTapChangerType.PHASE_TAP_CHANGER_SIDE_TWO)));
 
         // delete
-        networkStoreRepository.deleteThreeWindingsTransformer(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, twtId);
-        networkStoreRepository.deleteLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        networkStoreRepository.deleteTwoWindingsTransformers(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, Collections.singletonList(twtId));
+        networkStoreRepository.deleteLoads(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, Collections.singletonList(loadId));
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getThreeWindingsTransformer(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, twtId).isEmpty());
     }

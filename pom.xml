@@ -50,7 +50,7 @@
     <properties>
         <sirocco.version>1.0</sirocco.version>
         <powsybl-ws-dependencies.version>2.16.0</powsybl-ws-dependencies.version>
-        <powsybl-network-store.version>1.21.0-SNAPSHOT</powsybl-network-store.version>
+        <powsybl-network-store.version>1.22.0-SNAPSHOT</powsybl-network-store.version>
         <!-- FIXME : to remove when sonar version is updated on github actions -->
         <!-- https://community.sonarsource.com/t/stackoverflowerror-at-defaultinputcomponent-equals/20324 -->
         <!-- The versions are very different from this post. But the fix works again. Maybe a similar problem in sonar code -->
