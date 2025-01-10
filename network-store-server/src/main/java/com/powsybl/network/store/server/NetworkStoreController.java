@@ -144,8 +144,8 @@ public class NetworkStoreController {
     public ResponseEntity<Void> cloneNetworkVariant(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                              @Parameter(description = "Source variant number", required = true) @PathVariable("sourceVariantNum") int sourceVariantNum,
                                              @Parameter(description = "Target variant number", required = true) @PathVariable("targetVariantNum") int targetVariantNum,
-                                             @Parameter(description = "Target variant id", required = true) @RequestParam(required = false) String targetVariantId) {
-        repository.cloneNetworkVariant(networkId, sourceVariantNum, targetVariantNum, targetVariantId);
+                                             @Parameter(description = "Target variant id") @RequestParam(required = false) String targetVariantId) {
+        repository.cloneNetworkVariant(networkId, sourceVariantNum, targetVariantNum, targetVariantId, null);
         return ResponseEntity.ok().build();
     }
 
@@ -169,8 +169,9 @@ public class NetworkStoreController {
     public ResponseEntity<Void> cloneNetwork(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                              @Parameter(description = "Source variant Id", required = true) @PathVariable("sourceVariantId") String sourceVariantId,
                                              @Parameter(description = "Target variant Id", required = true) @PathVariable("targetVariantId") String targetVariantId,
-                                             @Parameter(description = "mayOverwrite", required = false) @RequestParam(required = false) boolean mayOverwrite) {
-        repository.cloneNetwork(networkId, sourceVariantId, targetVariantId, mayOverwrite);
+                                             @Parameter(description = "mayOverwrite") @RequestParam(required = false) boolean mayOverwrite,
+                                             @Parameter(description = "Clone strategy") @RequestParam(required = false) CloneStrategy cloneStrategy) {
+        repository.cloneNetwork(networkId, sourceVariantId, targetVariantId, mayOverwrite, cloneStrategy);
         return ResponseEntity.ok().build();
     }
 
@@ -213,17 +214,20 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateSubstations(networkId, resources), substationsResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/substations/{substationId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a substation by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/substations", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple substations by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete substation")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted substations"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
-    public ResponseEntity<Void> deleteSubstation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                 @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                 @Parameter(description = "Substation ID", required = true) @PathVariable("substationId") String substationId) {
-        repository.deleteSubstation(networkId, variantNum, substationId);
+    public ResponseEntity<Void> deleteSubstations(
+            @Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+            @Parameter(description = "List of substation IDs to delete", required = true) @RequestBody List<String> substationIds) {
+        repository.deleteSubstations(networkId, variantNum, substationIds);
         return ResponseEntity.ok().build();
     }
+
 
     // voltage level
 
@@ -274,15 +278,16 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateVoltageLevelsSv(networkId, resources), voltageLevelResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/voltage-levels/{voltageLevelId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a voltage level by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/voltage-levels", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple voltage levels by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete voltage level")
+        @ApiResponse(responseCode = "200", description = "Successfully delete voltage levels"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
-    public ResponseEntity<Void> deleteVoltageLevel(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+    public ResponseEntity<Void> deleteVoltageLevels(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                                    @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                   @Parameter(description = "Voltage level ID", required = true) @PathVariable("voltageLevelId") String voltageLevelId) {
-        repository.deleteVoltageLevel(networkId, variantNum, voltageLevelId);
+                                                    @Parameter(description = "List of voltage level IDs to delete", required = true) @RequestBody List<String> voltageLevelIds) {
+        repository.deleteVoltageLevels(networkId, variantNum, voltageLevelIds);
         return ResponseEntity.ok().build();
     }
 
@@ -472,18 +477,18 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateGeneratorsSv(networkId, resources), generatorResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/generators/{generatorId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a generator by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/generators", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple generators by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete generator")
+        @ApiResponse(responseCode = "200", description = "Successfully delete generator"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
-    public ResponseEntity<Void> deleteGenerator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                @Parameter(description = "Generator ID", required = true) @PathVariable("generatorId") String generatorId) {
-        repository.deleteGenerator(networkId, variantNum, generatorId);
+    public ResponseEntity<Void> deleteGenerators(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                 @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                 @Parameter(description = "List of generator IDs to delete", required = true) @RequestBody List<String> generatorIds) {
+        repository.deleteGenerators(networkId, variantNum, generatorIds);
         return ResponseEntity.ok().build();
     }
-
     // tie line
 
     @PostMapping(value = "/{networkId}/tie-lines")
@@ -524,18 +529,18 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateTieLines(networkId, resources), tieLineResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/tie-lines/{tieLineId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a generator by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/tie-lines", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple tie lines by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete generator")
+        @ApiResponse(responseCode = "200", description = "Successfully delete tie lines"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
-    public ResponseEntity<Void> deleteTieLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                @Parameter(description = "Tie line ID", required = true) @PathVariable("tieLineId") String tieLineId) {
-        repository.deleteTieLine(networkId, variantNum, tieLineId);
+    public ResponseEntity<Void> deleteTieLines(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                              @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                              @Parameter(description = "List of tie line IDs to delete", required = true) @RequestBody List<String> tieLineIds) {
+        repository.deleteTieLines(networkId, variantNum, tieLineIds);
         return ResponseEntity.ok().build();
     }
-
     // battery
 
     @PostMapping(value = "/{networkId}/batteries")
@@ -585,15 +590,16 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateBatteriesSv(networkId, resources), batteryResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/batteries/{batteryId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a battery by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/batteries", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple batteries by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete battery")
+        @ApiResponse(responseCode = "200", description = "Successfully delete batteries"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
     public ResponseEntity<Void> deleteBattery(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
                                               @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                              @Parameter(description = "Battery ID", required = true) @PathVariable("batteryId") String batteryId) {
-        repository.deleteBattery(networkId, variantNum, batteryId);
+                                              @Parameter(description = "List of battery IDs to delete", required = true) @RequestBody List<String> batteryIds) {
+        repository.deleteBatteries(networkId, variantNum, batteryIds);
         return ResponseEntity.ok().build();
     }
 
@@ -646,15 +652,16 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateLoadsSv(networkId, resources), loadResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/loads/{loadId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a load by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/loads", produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple loads by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete load")
+        @ApiResponse(responseCode = "200", description = "Successfully delete loads"),
+        @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
-    public ResponseEntity<Void> deleteLoad(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                           @Parameter(description = "Load ID", required = true) @PathVariable("loadId") String loadId) {
-        repository.deleteLoad(networkId, variantNum, loadId);
+    public ResponseEntity<Void> deleteLoads(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                            @Parameter(description = "List of load IDs to delete", required = true) @RequestBody List<String> loadIds) {
+        repository.deleteLoads(networkId, variantNum, loadIds);
         return ResponseEntity.ok().build();
     }
 
@@ -707,15 +714,17 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateShuntCompensatorsSv(networkId, resources), shuntCompensatorResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/shunt-compensators/{shuntCompensatorId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a shunt compensator by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/shunt-compensators", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple shunt compensators by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete shunt compensator")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted shunt compensators"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteShuntCompensator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                       @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                       @Parameter(description = "Shunt compensator ID", required = true) @PathVariable("shuntCompensatorId") String shuntCompensatorId) {
-        repository.deleteShuntCompensator(networkId, variantNum, shuntCompensatorId);
+    public ResponseEntity<Void> deleteShuntCompensators(
+            @Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+            @Parameter(description = "List of shunt compensator IDs to delete", required = true) @RequestBody List<String> shuntCompensatorIds) {
+        repository.deleteShuntCompensators(networkId, variantNum, shuntCompensatorIds);
         return ResponseEntity.ok().build();
     }
 
@@ -768,17 +777,20 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateVscConverterStationsSv(networkId, resources), vscConverterStationResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/vsc-converter-stations/{vscConverterStationId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a vsc converter station by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/vsc-converter-stations", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple VSC converter stations by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete vsc converter station")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted VSC converter stations"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteVscConverterStation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                          @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                          @Parameter(description = "Vsc converter station ID", required = true) @PathVariable("vscConverterStationId") String vscConverterStationId) {
-        repository.deleteVscConverterStation(networkId, variantNum, vscConverterStationId);
+    public ResponseEntity<Void> deleteVscConverterStations(
+            @Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+            @Parameter(description = "List of VSC converter station IDs to delete", required = true) @RequestBody List<String> vscConverterStationIds) {
+        repository.deleteVscConverterStations(networkId, variantNum, vscConverterStationIds);
         return ResponseEntity.ok().build();
     }
+
 
     // LCC converter station
 
@@ -829,17 +841,20 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateLccConverterStationsSv(networkId, resources), lccConverterStationResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/lcc-converter-stations/{lccConverterStationId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a lcc converter station by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/lcc-converter-stations", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple LCC converter stations by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete lcc converter station")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted LCC converter stations"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteLccConverterStation(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                          @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                          @Parameter(description = "Lcc converter station ID", required = true) @PathVariable("lccConverterStationId") String lccConverterStationId) {
-        repository.deleteLccConverterStation(networkId, variantNum, lccConverterStationId);
+    public ResponseEntity<Void> deleteLccConverterStations(
+            @Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+            @Parameter(description = "List of LCC converter station IDs to delete", required = true) @RequestBody List<String> lccConverterStationIds) {
+        repository.deleteLccConverterStations(networkId, variantNum, lccConverterStationIds);
         return ResponseEntity.ok().build();
     }
+
 
     // static var compensator
 
@@ -890,15 +905,16 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateStaticVarCompensatorsSv(networkId, resources), staticVarCompensatorResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/static-var-compensators/{staticVarCompensatorId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a static var compensator by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/static-var-compensators", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple static var compensators by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete static var compensator")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted static var compensators"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteStaticVarCompensator(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                           @Parameter(description = "Static var compensator ID", required = true) @PathVariable("staticVarCompensatorId") String staticVarCompensatorId) {
-        repository.deleteStaticVarCompensator(networkId, variantNum, staticVarCompensatorId);
+    public ResponseEntity<Void> deleteStaticVarCompensators(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                            @Parameter(description = "List of static var compensator IDs to delete", required = true) @RequestBody List<String> staticVarCompensatorIds) {
+        repository.deleteStaticVarCompensators(networkId, variantNum, staticVarCompensatorIds);
         return ResponseEntity.ok().build();
     }
 
@@ -934,15 +950,17 @@ public class NetworkStoreController {
         return get(() -> repository.getBusbarSection(networkId, variantNum, busbarSectionId));
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/busbar-sections/{busBarSectionId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a bus bar section by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/busbar-sections", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple bus bar sections by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete bus bar section")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted bus bar sections"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteBusBarSection(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                    @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                    @Parameter(description = "Bus bar section ID", required = true) @PathVariable("busBarSectionId") String busBarSectionId) {
-        repository.deleteBusBarSection(networkId, variantNum, busBarSectionId);
+    public ResponseEntity<Void> deleteBusBarSections(
+            @Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+            @Parameter(description = "List of bus bar section IDs to delete", required = true) @RequestBody List<String> busBarSectionIds) {
+        repository.deleteBusBarSections(networkId, variantNum, busBarSectionIds);
         return ResponseEntity.ok().build();
     }
 
@@ -994,17 +1012,20 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateSwitches(networkId, resources), switchResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/switches/{switchId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a switch by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/switches", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple switches by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete switch")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted switches"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteSwitch(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                             @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                             @Parameter(description = "Switch ID", required = true) @PathVariable("switchId") String switchId) {
-        repository.deleteSwitch(networkId, variantNum, switchId);
+    public ResponseEntity<Void> deleteSwitches(
+            @Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+            @Parameter(description = "List of switch IDs to delete", required = true) @RequestBody List<String> switchIds) {
+        repository.deleteSwitches(networkId, variantNum, switchIds);
         return ResponseEntity.ok().build();
     }
+
 
     // 2 windings transformer
 
@@ -1055,17 +1076,19 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateTwoWindingsTransformersSv(networkId, resources), twoWindingsTransformerResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/2-windings-transformers/{twoWindingsTransformerId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a 2 windings transformer by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/2-windings-transformers", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple 2-windings transformers by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete 2 windings transformer")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted 2-windings transformers"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteTwoWindingsTransformer(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                             @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                             @Parameter(description = "2 windings transformer ID", required = true) @PathVariable("twoWindingsTransformerId") String twoWindingsTransformerId) {
-        repository.deleteTwoWindingsTransformer(networkId, variantNum, twoWindingsTransformerId);
+    public ResponseEntity<Void> deleteTwoWindingsTransformers(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                              @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                              @Parameter(description = "List of 2-windings transformer IDs to delete", required = true) @RequestBody List<String> twoWindingsTransformerIds) {
+        repository.deleteTwoWindingsTransformers(networkId, variantNum, twoWindingsTransformerIds);
         return ResponseEntity.ok().build();
     }
+
 
     // 3 windings transformer
 
@@ -1116,17 +1139,19 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateThreeWindingsTransformersSv(networkId, resources), threeWindingsTransformerResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/3-windings-transformers/{threeWindingsTransformerId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a 3 windings transformer by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/3-windings-transformers", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple 3-windings transformers by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete 3 windings transformer")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted 3-windings transformers"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteThreeWindingsTransformer(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                               @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                               @Parameter(description = "3 windings transformer ID", required = true) @PathVariable("threeWindingsTransformerId") String threeWindingsTransformerId) {
-        repository.deleteThreeWindingsTransformer(networkId, variantNum, threeWindingsTransformerId);
+    public ResponseEntity<Void> deleteThreeWindingsTransformers(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                                @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                                @Parameter(description = "List of 3-windings transformer IDs to delete", required = true) @RequestBody List<String> threeWindingsTransformerIds) {
+        repository.deleteThreeWindingsTransformers(networkId, variantNum, threeWindingsTransformerIds);
         return ResponseEntity.ok().build();
     }
+
 
     // line
 
@@ -1177,17 +1202,19 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateLinesSv(networkId, resources), lineResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/lines/{lineId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a line by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/lines", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple lines by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete line")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted lines"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                           @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                           @Parameter(description = "Line ID", required = true) @PathVariable("lineId") String lineId) {
-        repository.deleteLine(networkId, variantNum, lineId);
+    public ResponseEntity<Void> deleteLines(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                            @Parameter(description = "List of line IDs to delete", required = true) @RequestBody List<String> lineIds) {
+        repository.deleteLines(networkId, variantNum, lineIds);
         return ResponseEntity.ok().build();
     }
+
 
     // hvdc line
 
@@ -1229,17 +1256,19 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateHvdcLines(networkId, resources), hvdcLineResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/hvdc-lines/{hvdcLineId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a hvdc line by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/hvdc-lines", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple hvdc lines by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete hvdc line")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted hvdc lines"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteHvdcLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                               @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                               @Parameter(description = "Hvdc line ID", required = true) @PathVariable("hvdcLineId") String hvdcLineId) {
-        repository.deleteHvdcLine(networkId, variantNum, hvdcLineId);
+    public ResponseEntity<Void> deleteHvdcLines(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                @Parameter(description = "List of hvdc line IDs to delete", required = true) @RequestBody List<String> hvdcLineIds) {
+        repository.deleteHvdcLines(networkId, variantNum, hvdcLineIds);
         return ResponseEntity.ok().build();
     }
+
 
     // dangling line
 
@@ -1272,15 +1301,16 @@ public class NetworkStoreController {
         return get(() -> repository.getDanglingLine(networkId, variantNum, danglingLineId));
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/dangling-lines/{danglingLineId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a dangling line by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/dangling-lines", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple dangling lines by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete dangling line")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted dangling lines"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteDanglingLine(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                   @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                   @Parameter(description = "Dangling line ID", required = true) @PathVariable("danglingLineId") String danglingLineId) {
-        repository.deleteDanglingLine(networkId, variantNum, danglingLineId);
+    public ResponseEntity<Void> deleteDanglingLines(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                                    @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                                    @Parameter(description = "List of dangling line IDs to delete", required = true) @RequestBody List<String> danglingLineIds) {
+        repository.deleteDanglingLines(networkId, variantNum, danglingLineIds);
         return ResponseEntity.ok().build();
     }
 
@@ -1340,17 +1370,19 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateGrounds(networkId, resources), groundResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/grounds/{groundId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a ground by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/grounds", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple grounds by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete ground")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted grounds"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteGround(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                                   @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                                   @Parameter(description = "Ground ID", required = true) @PathVariable("groundId") String groundId) {
-        repository.deleteGround(networkId, variantNum, groundId);
+    public ResponseEntity<Void> deleteGrounds(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                              @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                              @Parameter(description = "List of ground IDs to delete", required = true) @RequestBody List<String> groundIds) {
+        repository.deleteGrounds(networkId, variantNum, groundIds);
         return ResponseEntity.ok().build();
     }
+
 
     // buses
 
@@ -1404,15 +1436,16 @@ public class NetworkStoreController {
         return updateAll(resources -> repository.updateBuses(networkId, resources), busResources);
     }
 
-    @DeleteMapping(value = "/{networkId}/{variantNum}/configured-buses/{busId}", produces = APPLICATION_JSON_VALUE)
-    @Operation(summary = "Delete a bus by id")
+    @DeleteMapping(value = "/{networkId}/{variantNum}/configured-buses", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete multiple buses by IDs")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully delete bus")
+        @ApiResponse(responseCode = "200", description = "Successfully deleted buses"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
     })
-    public ResponseEntity<Void> deleteBus(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
-                                          @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
-                                          @Parameter(description = "Bus ID", required = true) @PathVariable("busId") String busId) {
-        repository.deleteBus(networkId, variantNum, busId);
+    public ResponseEntity<Void> deleteBuses(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
+                                            @Parameter(description = "Variant number", required = true) @PathVariable("variantNum") int variantNum,
+                                            @Parameter(description = "List of bus IDs to delete", required = true) @RequestBody List<String> busIds) {
+        repository.deleteBuses(networkId, variantNum, busIds);
         return ResponseEntity.ok().build();
     }
 

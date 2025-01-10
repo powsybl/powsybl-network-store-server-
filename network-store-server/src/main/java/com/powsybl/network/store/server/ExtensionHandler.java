@@ -9,22 +9,22 @@ package com.powsybl.network.store.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import com.powsybl.network.store.model.ExtensionAttributes;
-import com.powsybl.network.store.model.IdentifiableAttributes;
-import com.powsybl.network.store.model.NetworkAttributes;
-import com.powsybl.network.store.model.Resource;
+import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
 import java.io.UncheckedIOException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static com.powsybl.network.store.server.NetworkStoreRepository.BATCH_SIZE;
+import static com.powsybl.network.store.server.QueryCatalog.*;
+import static com.powsybl.network.store.server.QueryExtensionCatalog.EXTENSION_NAME_COLUMN;
 import static com.powsybl.network.store.server.Utils.bindValues;
 
 /**
@@ -32,46 +32,94 @@ import static com.powsybl.network.store.server.Utils.bindValues;
  */
 @Component
 public class ExtensionHandler {
-    private final DataSource dataSource;
+
     private final ObjectMapper mapper;
 
-    public ExtensionHandler(DataSource dataSource, ObjectMapper mapper) {
-        this.dataSource = dataSource;
+    public ExtensionHandler(ObjectMapper mapper) {
         this.mapper = mapper;
     }
 
-    public void insertExtensions(Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) {
-        try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildInsertExtensionsQuery())) {
-                List<Object> values = new ArrayList<>(6);
-                List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(extensions.entrySet());
-                for (List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> subExtensions : Lists.partition(list, BATCH_SIZE)) {
-                    for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
-                        for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
-                            if (extension.getValue().isPersistent()) {
-                                values.clear();
-                                values.add(entry.getKey().getEquipmentId());
-                                values.add(entry.getKey().getEquipmentType().toString());
-                                values.add(entry.getKey().getNetworkUuid());
-                                values.add(entry.getKey().getVariantNum());
-                                values.add(extension.getKey());
-                                values.add(extension.getValue());
-                                bindValues(preparedStmt, values, mapper);
-                                preparedStmt.addBatch();
-                            }
+    public void insertExtensions(Connection connection, Map<OwnerInfo, Map<String, ExtensionAttributes>> extensions) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildInsertExtensionsQuery())) {
+            List<Object> values = new ArrayList<>(6);
+            List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> list = new ArrayList<>(extensions.entrySet());
+            for (List<Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>>> subExtensions : Lists.partition(list, BATCH_SIZE)) {
+                for (Map.Entry<OwnerInfo, Map<String, ExtensionAttributes>> entry : subExtensions) {
+                    for (Map.Entry<String, ExtensionAttributes> extension : entry.getValue().entrySet()) {
+                        if (extension.getValue().isPersistent()) {
+                            values.clear();
+                            values.add(entry.getKey().getEquipmentId());
+                            values.add(entry.getKey().getEquipmentType().toString());
+                            values.add(entry.getKey().getNetworkUuid());
+                            values.add(entry.getKey().getVariantNum());
+                            values.add(extension.getKey());
+                            values.add(extension.getValue());
+                            bindValues(preparedStmt, values, mapper);
+                            preparedStmt.addBatch();
                         }
                     }
-                    preparedStmt.executeBatch();
                 }
+                preparedStmt.executeBatch();
             }
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
         }
     }
 
-    public Optional<ExtensionAttributes> getExtensionAttributes(UUID networkUuid, int variantNum, String identifiableId, String extensionName) {
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetExtensionsQuery());
+    public Map<String, Set<String>> getTombstonedExtensions(Connection connection, UUID networkUuid, int variantNum) throws SQLException {
+        Map<String, Set<String>> tombstonedExtensions = new HashMap<>();
+
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetTombstonedExtensionsQuery())) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+
+            try (var resultSet = preparedStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    String identifiableId = resultSet.getString(EQUIPMENT_ID_COLUMN);
+                    String extensionName = resultSet.getString(EXTENSION_NAME_COLUMN);
+
+                    tombstonedExtensions
+                            .computeIfAbsent(identifiableId, k -> new HashSet<>())
+                            .add(extensionName);
+                }
+            }
+        }
+
+        return tombstonedExtensions;
+    }
+
+    public Optional<ExtensionAttributes> getExtensionAttributes(
+            Connection connection,
+            UUID networkId,
+            int variantNum,
+            String identifiableId,
+            String extensionName,
+            int fullVariantNum,
+            Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
+            // If the variant is full, retrieve extensions for the specified variant directly
+            return getExtensionAttributesForVariant(connection, networkId, variantNum, identifiableId, extensionName);
+        }
+
+        // Retrieve extension in partial variant
+        Optional<ExtensionAttributes> partialVariantExtensionAttributes = getExtensionAttributesForVariant(connection, networkId, variantNum, identifiableId, extensionName);
+        if (partialVariantExtensionAttributes.isPresent()) {
+            return partialVariantExtensionAttributes;
+        }
+
+        // Return empty if it's a tombstoned extension or identifiable
+        Map<String, Set<String>> tombstonedExtensions = getTombstonedExtensions(connection, networkId, variantNum);
+        boolean isTombstonedExtension = tombstonedExtensions.containsKey(identifiableId) && tombstonedExtensions.get(identifiableId).contains(extensionName);
+        Set<String> tombstonedIds = tombstonedIdsSupplier.get();
+        boolean isTombstonedIdentifiable = tombstonedIds.contains(identifiableId);
+        if (isTombstonedIdentifiable || isTombstonedExtension) {
+            return Optional.empty();
+        }
+
+        // Retrieve extension from the full variant
+        return getExtensionAttributesForVariant(connection, networkId, fullVariantNum, identifiableId, extensionName);
+    }
+
+    public Optional<ExtensionAttributes> getExtensionAttributesForVariant(Connection connection, UUID networkUuid, int variantNum, String identifiableId, String extensionName) {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetExtensionsQuery());) {
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, identifiableId);
@@ -94,16 +142,44 @@ public class ExtensionHandler {
         }
     }
 
-    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionName(UUID networkUuid, int variantNum, String resourceType, String extensionName) {
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByResourceTypeAndExtensionName());
+    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionName(
+            Connection connection,
+            UUID networkId,
+            int variantNum,
+            String resourceType,
+            String extensionName,
+            int fullVariantNum,
+            Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
+            // If the variant is full, retrieve extensions for the specified variant directly
+            return getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, variantNum, resourceType, extensionName);
+        }
+
+        // Retrieve extensions in full variant
+        Map<String, ExtensionAttributes> extensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, fullVariantNum, resourceType, extensionName);
+
+        // Remove tombstoned identifiables and tombstoned extensions
+        Set<String> tombstonedIds = tombstonedIdsSupplier.get();
+        Map<String, Set<String>> tombstonedExtensions = getTombstonedExtensions(connection, networkId, variantNum);
+        extensionsAttributesByResourceTypeAndExtensionName.entrySet().removeIf(entry ->
+                        tombstonedIds.contains(entry.getKey()) ||
+                        tombstonedExtensions.getOrDefault(entry.getKey(), Set.of()).contains(extensionName));
+
+        // Retrieve extensions in partial variant
+        Map<String, ExtensionAttributes> partialVariantExtensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(connection, networkId, variantNum, resourceType, extensionName);
+
+        // Combine extensions from full and partial variants
+        extensionsAttributesByResourceTypeAndExtensionName.putAll(partialVariantExtensionsAttributesByResourceTypeAndExtensionName);
+        return extensionsAttributesByResourceTypeAndExtensionName;
+    }
+
+    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByResourceTypeAndExtensionNameForVariant(Connection connection, UUID networkUuid, int variantNum, String resourceType, String extensionName) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByResourceTypeAndExtensionName())) {
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, resourceType);
             preparedStmt.setString(4, extensionName);
             return innerGetAllExtensionsAttributesByResourceTypeAndExtensionName(preparedStmt);
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
         }
     }
 
@@ -121,15 +197,45 @@ public class ExtensionHandler {
         }
     }
 
-    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableId(UUID networkUuid, int variantNum, String identifiableId) {
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByIdentifiableId());
+    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableId(
+            Connection connection,
+            UUID networkId,
+            int variantNum,
+            String identifiableId,
+            int fullVariantNum,
+            Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
+            // If the variant is full, retrieve extensions for the specified variant directly
+            return getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, variantNum, identifiableId);
+        }
+
+        Set<String> tombstonedIds = tombstonedIdsSupplier.get();
+        if (tombstonedIds.contains(identifiableId)) {
+            // If the identifiable is tombstoned, we return directly
+            return Map.of();
+        }
+
+        // Retrieve extensions from full variant
+        Map<String, ExtensionAttributes> extensionsAttributesByIdentifiableId = getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, fullVariantNum, identifiableId);
+
+        // Remove tombstoned extensions
+        Map<String, Set<String>> tombstonedExtensions = getTombstonedExtensions(connection, networkId, variantNum);
+        extensionsAttributesByIdentifiableId.entrySet().removeIf(entry -> tombstonedExtensions.getOrDefault(identifiableId, Set.of()).contains(entry.getKey()));
+
+        // Retrieve extensions in partial variant
+        Map<String, ExtensionAttributes> partialVariantExtensionsAttributesByResourceTypeAndExtensionName = getAllExtensionsAttributesByIdentifiableIdForVariant(connection, networkId, variantNum, identifiableId);
+
+        // Combine extensions from full and partial variants
+        extensionsAttributesByIdentifiableId.putAll(partialVariantExtensionsAttributesByResourceTypeAndExtensionName);
+        return extensionsAttributesByIdentifiableId;
+    }
+
+    public Map<String, ExtensionAttributes> getAllExtensionsAttributesByIdentifiableIdForVariant(Connection connection, UUID networkUuid, int variantNum, String identifiableId) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByIdentifiableId())) {
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, identifiableId);
             return innerGetAllExtensionsAttributesByIdentifiableId(preparedStmt);
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
         }
     }
 
@@ -147,15 +253,56 @@ public class ExtensionHandler {
         }
     }
 
-    public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceType(UUID networkUuid, int variantNum, String resourceType) {
-        try (var connection = dataSource.getConnection()) {
-            var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByResourceType());
+    public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceType(
+            Connection connection, UUID networkId,
+            int variantNum,
+            ResourceType type,
+            int fullVariantNum,
+            Supplier<Set<String>> tombstonedIdsSupplier) throws SQLException {
+        if (NetworkAttributes.isFullVariant(fullVariantNum)) {
+            // If the variant is full, retrieve extensions for the specified variant directly
+            return getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, variantNum, type.toString());
+        }
+
+        // Retrieve extensions from full variant
+        Map<String, Map<String, ExtensionAttributes>> extensionsAttributesByResourceType = getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, fullVariantNum, type.toString());
+
+        // Remove tombstoned identifiables
+        Set<String> tombstonedIds = tombstonedIdsSupplier.get();
+        extensionsAttributesByResourceType.keySet().removeIf(tombstonedIds::contains);
+
+        // Remove tombstoned extensions
+        Map<String, Set<String>> tombstonedExtensions = getTombstonedExtensions(connection, networkId, variantNum);
+        extensionsAttributesByResourceType.forEach((identifiableId, extensionsAttributes) -> {
+            Set<String> tombstonedExtensionNames = tombstonedExtensions.get(identifiableId);
+            if (tombstonedExtensionNames != null) {
+                extensionsAttributes.keySet().removeIf(tombstonedExtensionNames::contains);
+            }
+        });
+        // Remove entries with no remaining extensions after removing tombstoned extensions
+        extensionsAttributesByResourceType.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+
+        // Retrieve extensions in partial variant
+        Map<String, Map<String, ExtensionAttributes>> partialVariantExtensionsAttributesByResourceType = getAllExtensionsAttributesByResourceTypeForVariant(connection, networkId, variantNum, type.toString());
+
+        // Combine extensions from full and partial variants
+        partialVariantExtensionsAttributesByResourceType.forEach((identifiableId, updatedExtensions) ->
+                extensionsAttributesByResourceType.merge(identifiableId, updatedExtensions, (existingExtensions, newExtensions) -> {
+                    // Merge each extension within the nested maps
+                    newExtensions.forEach((extensionName, newExtensionAttributes) ->
+                            existingExtensions.merge(extensionName, newExtensionAttributes, (oldValue, value) -> value));
+                    return existingExtensions;
+                })
+        );
+        return extensionsAttributesByResourceType;
+    }
+
+    public Map<String, Map<String, ExtensionAttributes>> getAllExtensionsAttributesByResourceTypeForVariant(Connection connection, UUID networkUuid, int variantNum, String resourceType) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildGetAllExtensionsAttributesByResourceType())) {
             preparedStmt.setObject(1, networkUuid);
             preparedStmt.setInt(2, variantNum);
             preparedStmt.setString(3, resourceType);
             return innerGetAllExtensionsAttributesByResourceType(preparedStmt);
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
         }
     }
 
@@ -174,47 +321,64 @@ public class ExtensionHandler {
         }
     }
 
-    public void deleteExtensionsFromIdentifiable(UUID networkUuid, int variantNum, String equipmentId) {
-        deleteExtensionsFromIdentifiables(networkUuid, variantNum, List.of(equipmentId));
+    public void deleteExtensionsFromIdentifiable(Connection connection, UUID networkUuid, int variantNum, String equipmentId) throws SQLException {
+        deleteExtensionsFromIdentifiables(connection, networkUuid, variantNum, List.of(equipmentId));
     }
 
-    public void deleteExtensionsFromIdentifiables(UUID networkUuid, int variantNum, List<String> equipmentIds) {
-        try (var connection = dataSource.getConnection()) {
-            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantEquipmentINQuery(equipmentIds.size()))) {
-                preparedStmt.setObject(1, networkUuid);
-                preparedStmt.setInt(2, variantNum);
-                for (int i = 0; i < equipmentIds.size(); i++) {
-                    preparedStmt.setString(3 + i, equipmentIds.get(i));
-                }
-                preparedStmt.executeUpdate();
+    public void deleteExtensionsFromIdentifiables(Connection connection, UUID networkUuid, int variantNum, List<String> equipmentIds) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantEquipmentINQuery(equipmentIds.size()))) {
+            preparedStmt.setObject(1, networkUuid);
+            preparedStmt.setInt(2, variantNum);
+            for (int i = 0; i < equipmentIds.size(); i++) {
+                preparedStmt.setString(3 + i, equipmentIds.get(i));
             }
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
+            preparedStmt.executeUpdate();
         }
     }
 
-    public void deleteExtensionsFromIdentifiables(UUID networkUuid, int variantNum, Map<String, Set<String>> extensionNamesByIdentifiableId) {
-        try (var connection = dataSource.getConnection()) {
-            int totalParameters = extensionNamesByIdentifiableId.values().stream().mapToInt(Set::size).sum();
-            if (totalParameters > 0) {
-                try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantByIdentifiableIdAndExtensionsNameINQuery(totalParameters))) {
-                    preparedStmt.setObject(1, networkUuid);
-                    preparedStmt.setInt(2, variantNum);
+    public void deleteExtensionsFromIdentifiables(Connection connection, UUID networkUuid, int variantNum, Map<String, Set<String>> extensionNamesByIdentifiableId) {
+        int totalParameters = extensionNamesByIdentifiableId.values().stream().mapToInt(Set::size).sum();
+        if (totalParameters > 0) {
+            try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildDeleteExtensionsVariantByIdentifiableIdAndExtensionsNameINQuery(totalParameters))) {
+                preparedStmt.setObject(1, networkUuid);
+                preparedStmt.setInt(2, variantNum);
 
-                    int paramIndex = 3;
-                    for (Map.Entry<String, Set<String>> entry : extensionNamesByIdentifiableId.entrySet()) {
-                        String equipmentId = entry.getKey();
-                        for (String extensionName : entry.getValue()) {
-                            preparedStmt.setString(paramIndex++, equipmentId);
-                            preparedStmt.setString(paramIndex++, extensionName);
-                        }
+                int paramIndex = 3;
+                for (Map.Entry<String, Set<String>> entry : extensionNamesByIdentifiableId.entrySet()) {
+                    String equipmentId = entry.getKey();
+                    for (String extensionName : entry.getValue()) {
+                        preparedStmt.setString(paramIndex++, equipmentId);
+                        preparedStmt.setString(paramIndex++, extensionName);
                     }
+                }
 
-                    preparedStmt.executeUpdate();
+                preparedStmt.executeUpdate();
+            } catch (SQLException e) {
+                throw new UncheckedSqlException(e);
+            }
+        }
+    }
+
+    public void deleteAndTombstoneExtensions(Connection connection, UUID networkUuid, int variantNum, Map<String, Set<String>> extensionNamesByIdentifiableId, boolean isPartialVariant) throws SQLException {
+        deleteExtensionsFromIdentifiables(connection, networkUuid, variantNum, extensionNamesByIdentifiableId);
+        if (isPartialVariant) {
+            insertTombstonedExtensions(networkUuid, variantNum, extensionNamesByIdentifiableId, connection);
+        }
+    }
+
+    public void insertTombstonedExtensions(UUID networkId, int variantNum, Map<String, Set<String>> extensionNamesByIdentifiableId, Connection connection) throws SQLException {
+        try (var preparedStmt = connection.prepareStatement(QueryExtensionCatalog.buildInsertTombstonedExtensionsQuery())) {
+            for (Map.Entry<String, Set<String>> entry : extensionNamesByIdentifiableId.entrySet()) {
+                String identifiableId = entry.getKey();
+                for (String extensionName : entry.getValue()) {
+                    preparedStmt.setObject(1, networkId);
+                    preparedStmt.setInt(2, variantNum);
+                    preparedStmt.setString(3, identifiableId);
+                    preparedStmt.setString(4, extensionName);
+                    preparedStmt.addBatch();
                 }
             }
-        } catch (SQLException e) {
-            throw new UncheckedSqlException(e);
+            preparedStmt.executeBatch();
         }
     }
 
@@ -223,9 +387,9 @@ public class ExtensionHandler {
      * We can't delete all the extensions attributes associated with this resource here as we are not sure that all
      * extension attributes have been modified/loaded in the resource.
      */
-    public <T extends IdentifiableAttributes> void updateExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
-        deleteExtensionsFromEquipments(networkUuid, resources);
-        insertExtensions(getExtensionsFromEquipments(networkUuid, resources));
+    public <T extends IdentifiableAttributes> void updateExtensionsFromEquipments(Connection connection, UUID networkUuid, List<Resource<T>> resources) throws SQLException {
+        deleteExtensionsFromEquipments(connection, networkUuid, resources);
+        insertExtensions(connection, getExtensionsFromEquipments(networkUuid, resources));
     }
 
     public <T extends IdentifiableAttributes> Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
@@ -248,14 +412,14 @@ public class ExtensionHandler {
         return map;
     }
 
-    public <T extends IdentifiableAttributes> void deleteExtensionsFromEquipments(UUID networkUuid, List<Resource<T>> resources) {
+    public <T extends IdentifiableAttributes> void deleteExtensionsFromEquipments(Connection connection, UUID networkUuid, List<Resource<T>> resources) {
         Map<Integer, Map<String, Set<String>>> extensionsAttributesByVariant = new HashMap<>();
         for (Resource<T> resource : resources) {
             extensionsAttributesByVariant
                     .computeIfAbsent(resource.getVariantNum(), k -> new HashMap<>())
                     .put(resource.getId(), resource.getAttributes().getExtensionAttributes().keySet());
         }
-        extensionsAttributesByVariant.forEach((k, v) -> deleteExtensionsFromIdentifiables(networkUuid, k, v));
+        extensionsAttributesByVariant.forEach((k, v) -> deleteExtensionsFromIdentifiables(connection, networkUuid, k, v));
     }
 
     /**
@@ -263,9 +427,9 @@ public class ExtensionHandler {
      * We can't delete all the extensions attributes associated with this resource here as we are not sure that all
      * extension attributes have been modified/loaded in the resource.
      */
-    public void updateExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
-        deleteExtensionsFromNetworks(resources);
-        insertExtensions(getExtensionsFromNetworks(resources));
+    public void updateExtensionsFromNetworks(Connection connection, List<Resource<NetworkAttributes>> resources) throws SQLException {
+        deleteExtensionsFromNetworks(connection, resources);
+        insertExtensions(connection, getExtensionsFromNetworks(resources));
     }
 
     public Map<OwnerInfo, Map<String, ExtensionAttributes>> getExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
@@ -288,9 +452,9 @@ public class ExtensionHandler {
         return map;
     }
 
-    private void deleteExtensionsFromNetworks(List<Resource<NetworkAttributes>> resources) {
+    private void deleteExtensionsFromNetworks(Connection connection, List<Resource<NetworkAttributes>> resources) {
         for (Resource<NetworkAttributes> resource : resources) {
-            deleteExtensionsFromIdentifiables(resource.getAttributes().getUuid(), resource.getVariantNum(), Map.of(resource.getId(), resource.getAttributes().getExtensionAttributes().keySet()));
+            deleteExtensionsFromIdentifiables(connection, resource.getAttributes().getUuid(), resource.getVariantNum(), Map.of(resource.getId(), resource.getAttributes().getExtensionAttributes().keySet()));
         }
     }
 }

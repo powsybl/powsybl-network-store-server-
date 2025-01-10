@@ -26,6 +26,8 @@ import com.powsybl.network.store.client.NetworkStoreService;
 import com.powsybl.network.store.iidm.impl.ConfiguredBusImpl;
 import com.powsybl.network.store.iidm.impl.NetworkFactoryImpl;
 import com.powsybl.network.store.iidm.impl.NetworkImpl;
+import com.powsybl.network.store.model.CloneStrategy;
+import com.powsybl.network.store.model.NetworkAttributes;
 import com.powsybl.network.store.server.NetworkStoreApplication;
 import com.powsybl.ucte.converter.UcteImporter;
 import org.apache.commons.collections4.IterableUtils;
@@ -199,10 +201,12 @@ class NetworkStoreIT {
             assertNull(voltageLevel1.getNodeBreakerView().getTerminal(4));
             List<Integer> traversedNodes = new ArrayList<>();
             voltageLevel1.getNodeBreakerView().traverse(2, (node1, sw, node2) -> {
-                traversedNodes.add(node1);
+                if (!traversedNodes.contains(node1)) {
+                    traversedNodes.add(node1);
+                }
                 return TraverseResult.CONTINUE;
             });
-            assertEquals(Arrays.asList(2, 3, 0, 1, 6), traversedNodes);
+            assertEquals(Arrays.asList(2, 3, 0, 1, 6, 5), traversedNodes);
         }
     }
 
@@ -681,9 +685,9 @@ class NetworkStoreIT {
             s.setTso("New TSO");
             s.addGeographicalTag("paris");
 
-            verify(mockedListener, times(1)).onUpdate(s, "country", Country.FR, Country.BB);
-            verify(mockedListener, times(1)).onUpdate(s, "tso", null, "New TSO");
-            verify(mockedListener, times(1)).onElementAdded(s, "geographicalTags", "paris");
+            verify(mockedListener, times(1)).onUpdate(s, "country", INITIAL_VARIANT_ID, Country.FR, Country.BB);
+            verify(mockedListener, times(1)).onUpdate(s, "tso", INITIAL_VARIANT_ID, null, "New TSO");
+            verify(mockedListener, times(1)).onPropertyAdded(s, "geographicalTags", "paris");
 
             service.flush(readNetwork);
         }
@@ -733,14 +737,14 @@ class NetworkStoreIT {
             assertEquals(Country.BE, s1.getCountry().get());
             assertEquals("TSO_BE", s1.getTso());
 
-            verify(mockedListener, times(1)).onUpdate(s1, "country", Country.FR, Country.BE);
-            verify(mockedListener, times(1)).onUpdate(s1, "tso", "TSO_FR", "TSO_BE");
-            verify(mockedListener, times(1)).onElementAdded(s1, "geographicalTags", "BELGIUM");
+            verify(mockedListener, times(1)).onUpdate(s1, "country", INITIAL_VARIANT_ID, Country.FR, Country.BE);
+            verify(mockedListener, times(1)).onUpdate(s1, "tso", INITIAL_VARIANT_ID, "TSO_FR", "TSO_BE");
+            verify(mockedListener, times(1)).onPropertyAdded(s1, "geographicalTags", "BELGIUM");
 
             s1.setProperty("testProperty", "original");
-            verify(mockedListener, times(1)).onElementAdded(s1, "properties[testProperty]", "original");
+            verify(mockedListener, times(1)).onPropertyAdded(s1, "properties[testProperty]", "original");
             s1.setProperty("testProperty", "modified");
-            verify(mockedListener, times(1)).onElementReplaced(s1, "properties[testProperty]", "original", "modified");
+            verify(mockedListener, times(1)).onPropertyReplaced(s1, "properties[testProperty]", "original", "modified");
         }
     }
 
@@ -785,9 +789,9 @@ class NetworkStoreIT {
             assertEquals(370, vl1.getLowVoltageLimit(), 0.1);
             assertEquals(390, vl1.getHighVoltageLimit(), 0.1);
 
-            verify(mockedListener, times(1)).onUpdate(vl1, "nominalV", 400d, 380d);
-            verify(mockedListener, times(1)).onUpdate(vl1, "lowVoltageLimit", 385d, 370d);
-            verify(mockedListener, times(1)).onUpdate(vl1, "highVoltageLimit", 415d, 390d);
+            verify(mockedListener, times(1)).onUpdate(vl1, "nominalV", INITIAL_VARIANT_ID, 400d, 380d);
+            verify(mockedListener, times(1)).onUpdate(vl1, "lowVoltageLimit", INITIAL_VARIANT_ID, 385d, 370d);
+            verify(mockedListener, times(1)).onUpdate(vl1, "highVoltageLimit", INITIAL_VARIANT_ID, 415d, 390d);
         }
     }
 
@@ -865,12 +869,12 @@ class NetworkStoreIT {
             assertEquals(8, line.getB1(), 0.1);
             assertEquals(16, line.getB2(), 0.1);
 
-            verify(mockedListener, times(1)).onUpdate(line, "r", 1d, 5d);
-            verify(mockedListener, times(1)).onUpdate(line, "x", 3d, 6d);
-            verify(mockedListener, times(1)).onUpdate(line, "g1", 4d, 12d);
-            verify(mockedListener, times(1)).onUpdate(line, "g2", 8d, 24d);
-            verify(mockedListener, times(1)).onUpdate(line, "b1", 2d, 8d);
-            verify(mockedListener, times(1)).onUpdate(line, "b2", 4d, 16d);
+            verify(mockedListener, times(1)).onUpdate(line, "r", INITIAL_VARIANT_ID, 1d, 5d);
+            verify(mockedListener, times(1)).onUpdate(line, "x", INITIAL_VARIANT_ID, 3d, 6d);
+            verify(mockedListener, times(1)).onUpdate(line, "g1", INITIAL_VARIANT_ID, 4d, 12d);
+            verify(mockedListener, times(1)).onUpdate(line, "g2", INITIAL_VARIANT_ID, 8d, 24d);
+            verify(mockedListener, times(1)).onUpdate(line, "b1", INITIAL_VARIANT_ID, 2d, 8d);
+            verify(mockedListener, times(1)).onUpdate(line, "b2", INITIAL_VARIANT_ID, 4d, 16d);
         }
     }
 
@@ -927,8 +931,8 @@ class NetworkStoreIT {
 
             battery.setMaxP(90);
             battery.setMinP(50);
-            verify(mockedListener, times(1)).onUpdate(battery, "maxP", 70d, 90d);
-            verify(mockedListener, times(1)).onUpdate(battery, "minP", 40d, 50d);
+            verify(mockedListener, times(1)).onUpdate(battery, "maxP", INITIAL_VARIANT_ID, 70d, 90d);
+            verify(mockedListener, times(1)).onUpdate(battery, "minP", INITIAL_VARIANT_ID, 40d, 50d);
         }
     }
 
@@ -1082,18 +1086,18 @@ class NetworkStoreIT {
             danglingLine.getGeneration().setVoltageRegulationOn(false);
 
             // Check update notification
-            verify(mockedListener, times(1)).onUpdate(danglingLine, "r", 27d, 25d);
-            verify(mockedListener, times(1)).onUpdate(danglingLine, "x", 44d, 48d);
-            verify(mockedListener, times(1)).onUpdate(danglingLine, "g", 89d, 83d);
-            verify(mockedListener, times(1)).onUpdate(danglingLine, "b", 11d, 15d);
+            verify(mockedListener, times(1)).onUpdate(danglingLine, "r", INITIAL_VARIANT_ID, 27d, 25d);
+            verify(mockedListener, times(1)).onUpdate(danglingLine, "x", INITIAL_VARIANT_ID, 44d, 48d);
+            verify(mockedListener, times(1)).onUpdate(danglingLine, "g", INITIAL_VARIANT_ID, 89d, 83d);
+            verify(mockedListener, times(1)).onUpdate(danglingLine, "b", INITIAL_VARIANT_ID, 11d, 15d);
             verify(mockedListener, times(1)).onUpdate(danglingLine, "p0", INITIAL_VARIANT_ID, 533d, 520d);
             verify(mockedListener, times(1)).onUpdate(danglingLine, "q0", INITIAL_VARIANT_ID, 242d, 250d);
-            verify(mockedListener, times(1)).onUpdate(danglingLine, "minP", 10d, 20d);
-            verify(mockedListener, times(1)).onUpdate(danglingLine, "maxP", 500d, 900d);
+            verify(mockedListener, times(1)).onUpdate(danglingLine, "minP", INITIAL_VARIANT_ID, 10d, 20d);
+            verify(mockedListener, times(1)).onUpdate(danglingLine, "maxP", INITIAL_VARIANT_ID, 500d, 900d);
             verify(mockedListener, times(1)).onUpdate(danglingLine, "targetP", INITIAL_VARIANT_ID, 100d, 300d);
             verify(mockedListener, times(1)).onUpdate(danglingLine, "targetQ", INITIAL_VARIANT_ID, 200d, 1100d);
             verify(mockedListener, times(1)).onUpdate(danglingLine, "targetV", INITIAL_VARIANT_ID, 300d, 350d);
-            verify(mockedListener, times(1)).onUpdate(danglingLine, "voltageRegulationOn", true, false);
+            verify(mockedListener, times(1)).onUpdate(danglingLine, "voltageRegulationOn", INITIAL_VARIANT_ID, true, false);
 
             readNetwork.removeListener(mockedListener);
 
@@ -1506,14 +1510,14 @@ class NetworkStoreIT {
             assertEquals(120, twoWindingsTransformer.getRatedU2(), 0.1);
             assertEquals(100, twoWindingsTransformer.getRatedS(), 0.1);
 
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "r", 250d, 280d);
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "x", 100d, 130d);
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "g", 52d, 82d);
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "b", 12d, 42d);
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedU1", 65d, 95d);
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedU2", 90d, 120d);
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedS", 50d, 100d);
-            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "fictitious", false, true);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "r", INITIAL_VARIANT_ID, 250d, 280d);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "x", INITIAL_VARIANT_ID, 100d, 130d);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "g", INITIAL_VARIANT_ID, 52d, 82d);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "b", INITIAL_VARIANT_ID, 12d, 42d);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedU1", INITIAL_VARIANT_ID, 65d, 95d);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedU2", INITIAL_VARIANT_ID, 90d, 120d);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "ratedS", INITIAL_VARIANT_ID, 50d, 100d);
+            verify(mockedListener, times(1)).onUpdate(twoWindingsTransformer, "fictitious", INITIAL_VARIANT_ID, false, true);
 
             readNetwork.removeListener(mockedListener);
         }
@@ -3727,7 +3731,7 @@ class NetworkStoreIT {
         // For an empty cache and buffer this should be the same as network.getVariantManager().cloneVariant()
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant to variant "v2" while nothing has been cached or modified
-            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v2");
+            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v2", CloneStrategy.FULL);
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.getNetwork(networkUuid);
@@ -3755,7 +3759,7 @@ class NetworkStoreIT {
 
             // clone initial variant after flush
             service.flush(network);
-            service.cloneVariant(networkUuid, "v2", "v3");
+            service.cloneVariant(networkUuid, "v2", "v3", CloneStrategy.FULL);
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.getNetwork(networkUuid);
@@ -3772,7 +3776,7 @@ class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant over existing
             PowsyblException ex = assertThrows(PowsyblException.class,
-                () -> service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3"));
+                    () -> service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3", CloneStrategy.FULL));
             assertTrue(ex.getMessage().contains("already exists"));
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -3789,7 +3793,7 @@ class NetworkStoreIT {
         // Using NetworkStoreService.cloneVariant, testing maybeOverwrite
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant over existing with mayOverwrite=true
-            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3", true);
+            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v3", true, CloneStrategy.FULL);
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             Network network = service.getNetwork(networkUuid);
@@ -3806,7 +3810,7 @@ class NetworkStoreIT {
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
             // clone initial variant over existing with mayOverwrite=true
             PowsyblException ex = assertThrows(PowsyblException.class,
-                () -> service.cloneVariant(networkUuid, "v2", INITIAL_VARIANT_ID, true));
+                    () -> service.cloneVariant(networkUuid, "v2", INITIAL_VARIANT_ID, true, CloneStrategy.FULL));
             assertTrue(ex.getMessage().contains("forbidden"));
         }
         try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
@@ -4129,6 +4133,93 @@ class NetworkStoreIT {
             // server
             assertEquals(18, metrics.oneGetterCallCount);
             assertEquals(0, metrics.allGetterCallCount);
+        }
+    }
+
+    @Test
+    void testPartialClone() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
+            UUID networkUuid = networkIds.keySet().stream().findFirst().orElseThrow();
+            Network network = service.getNetwork(networkUuid);
+            // Initial variant -> v1 (full clone)
+            service.cloneVariant(networkUuid, INITIAL_VARIANT_ID, "v1", CloneStrategy.FULL);
+            // v1 -> v2 (partial clone)
+            service.cloneVariant(networkUuid, "v1", "v2", CloneStrategy.PARTIAL);
+            // v2 -> v3 (partial clone)
+            network.getVariantManager().cloneVariant("v2", "v3");
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
+            UUID networkUuid = networkIds.keySet().stream().findFirst().orElseThrow();
+            NetworkImpl network = (NetworkImpl) service.getNetwork(networkUuid);
+            // Initial variant (full variant)
+            NetworkAttributes networkAttributes = network.getResource().getAttributes();
+            assertEquals(CloneStrategy.PARTIAL, networkAttributes.getCloneStrategy());
+            assertEquals(-1, networkAttributes.getFullVariantNum());
+            // For a new network (cloned or created), we always set the clone strategy to PARTIAL
+            // v1 variant (full variant)
+            network.getVariantManager().setWorkingVariant("v1");
+            networkAttributes = network.getResource().getAttributes();
+            assertEquals(CloneStrategy.PARTIAL, networkAttributes.getCloneStrategy());
+            assertEquals(-1, networkAttributes.getFullVariantNum());
+            // v2 variant (partial variant)
+            network.getVariantManager().setWorkingVariant("v2");
+            networkAttributes = network.getResource().getAttributes();
+            assertEquals(CloneStrategy.PARTIAL, networkAttributes.getCloneStrategy());
+            assertEquals(1, networkAttributes.getFullVariantNum());
+            // v3 variant (partial variant)
+            network.getVariantManager().setWorkingVariant("v3");
+            networkAttributes = network.getResource().getAttributes();
+            assertEquals(CloneStrategy.PARTIAL, networkAttributes.getCloneStrategy());
+            assertEquals(1, networkAttributes.getFullVariantNum());
+        }
+    }
+
+    @Test
+    void testPartialClone1() {
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Network network = EurostagTutorialExample1Factory.create(service.getNetworkFactory());
+            service.flush(network);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
+            UUID networkUuid = networkIds.keySet().stream().findFirst().orElseThrow();
+            Network network = service.getNetwork(networkUuid);
+            // Initial variant -> v1 (full clone)
+            service.setCloneStrategy(network, CloneStrategy.FULL);
+            network.getVariantManager().cloneVariant(INITIAL_VARIANT_ID, "v1");
+            // v1 -> v2 (partial clone because clone strategy is overridden)
+            network.getVariantManager().setWorkingVariant("v1");
+            service.setCloneStrategy(network, CloneStrategy.FULL);
+            service.cloneVariant(networkUuid, "v1", "v2", CloneStrategy.PARTIAL);
+        }
+
+        try (NetworkStoreService service = createNetworkStoreService(randomServerPort)) {
+            Map<UUID, String> networkIds = service.getNetworkIds();
+            UUID networkUuid = networkIds.keySet().stream().findFirst().orElseThrow();
+            NetworkImpl network = (NetworkImpl) service.getNetwork(networkUuid);
+            // Initial variant (full variant)
+            NetworkAttributes networkAttributes = network.getResource().getAttributes();
+            assertEquals(CloneStrategy.FULL, networkAttributes.getCloneStrategy());
+            assertEquals(-1, networkAttributes.getFullVariantNum());
+            // v1 variant (full variant)
+            network.getVariantManager().setWorkingVariant("v1");
+            networkAttributes = network.getResource().getAttributes();
+            assertEquals(CloneStrategy.FULL, networkAttributes.getCloneStrategy());
+            assertEquals(-1, networkAttributes.getFullVariantNum());
+            // v2 variant (partial variant)
+            network.getVariantManager().setWorkingVariant("v2");
+            networkAttributes = network.getResource().getAttributes();
+            assertEquals(CloneStrategy.PARTIAL, networkAttributes.getCloneStrategy());
+            assertEquals(1, networkAttributes.getFullVariantNum());
         }
     }
 }
