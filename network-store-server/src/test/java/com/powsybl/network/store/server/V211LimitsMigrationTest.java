@@ -68,8 +68,8 @@ class V211LimitsMigrationTest {
         create2WTLine();
         create3WTLine();
         // To simulate the state of a non migrated network, we first clean the limits created with the new code.
-        truncateTable("newtemporarylimits");
-        truncateTable("newpermanentlimits");
+        truncateTable("temporarylimits");
+        truncateTable("permanentlimits");
 
         // Then we add the limits with the V2.11 model
         LimitsInfos limits1 = createLimitSet();
@@ -108,15 +108,15 @@ class V211LimitsMigrationTest {
                 .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group2\"].currentLimits.temporaryLimits.[\"300\"].acceptableDuration").value(300))
                 .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group2\"].currentLimits.temporaryLimits.[\"500\"].acceptableDuration").value(500));
 
-        assertEquals(1, countRowsByEquipmentId("l1", "newtemporarylimits"));
-        assertEquals(1, countRowsByEquipmentId("dl1", "newtemporarylimits"));
-        assertEquals(1, countRowsByEquipmentId("2wt", "newtemporarylimits"));
-        assertEquals(1, countRowsByEquipmentId("3wt", "newtemporarylimits"));
+        assertEquals(1, countRowsByEquipmentId("l1", "temporarylimits"));
+        assertEquals(1, countRowsByEquipmentId("dl1", "temporarylimits"));
+        assertEquals(1, countRowsByEquipmentId("2wt", "temporarylimits"));
+        assertEquals(1, countRowsByEquipmentId("3wt", "temporarylimits"));
 
-        assertEquals(1, countRowsByEquipmentId("l1", "newpermanentlimits"));
-        assertEquals(1, countRowsByEquipmentId("dl1", "newpermanentlimits"));
-        assertEquals(1, countRowsByEquipmentId("2wt", "newpermanentlimits"));
-        assertEquals(1, countRowsByEquipmentId("3wt", "newpermanentlimits"));
+        assertEquals(1, countRowsByEquipmentId("l1", "permanentlimits"));
+        assertEquals(1, countRowsByEquipmentId("dl1", "permanentlimits"));
+        assertEquals(1, countRowsByEquipmentId("2wt", "permanentlimits"));
+        assertEquals(1, countRowsByEquipmentId("3wt", "permanentlimits"));
     }
 
     private void truncateTable(String tableName) {

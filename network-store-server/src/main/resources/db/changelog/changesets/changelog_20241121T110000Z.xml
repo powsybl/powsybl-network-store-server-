@@ -5,40 +5,42 @@
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="2986331049275-1" author="lesoteti">
-        <createTable tableName="newtemporarylimits">
+        <renameTable newTableName="v211permanentlimit" oldTableName="permanentlimit" />
+        <renameTable newTableName="v211temporarylimit" oldTableName="temporarylimit" />
+        <createTable tableName="temporarylimits">
             <column name="networkuuid" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="temporarylimits_pkey"/>
             </column>
             <column name="variantnum" type="INTEGER">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="temporarylimits_pkey"/>
             </column>
             <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="newtemporarylimits_pkey"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="temporarylimits_pkey"/>
             </column>
             <column name="equipmenttype" type="VARCHAR(255)">
             </column>
                 <column name="temporarylimits" type="TEXT"/>
         </createTable>
-        <createTable tableName="newpermanentlimits">
+        <createTable tableName="permanentlimits">
             <column name="networkuuid" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="newpermanentlimits_pkey"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="permanentlimits_pkey"/>
             </column>
             <column name="variantnum" type="INTEGER">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="newpermanentlimits_pkey"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="permanentlimits_pkey"/>
             </column>
             <column name="equipmentid" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="newpermanentlimits_pkey"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="permanentlimits_pkey"/>
             </column>
             <column name="equipmenttype" type="VARCHAR(255)">
             </column>
             <column name="permanentlimits" type="TEXT"/>
         </createTable>
-        <createIndex indexName="permanentlimits_networkuuid_variantnum_equipmenttype_idx" tableName="newpermanentlimits">
+        <createIndex indexName="permanentlimits_networkuuid_variantnum_equipmenttype_idx" tableName="permanentlimits">
             <column name="networkuuid"/>
             <column name="variantnum"/>
             <column name="equipmenttype"/>
         </createIndex>
-        <createIndex indexName="temporarylimits_networkuuid_variantnum_equipmenttype_idx" tableName="newtemporarylimits">
+        <createIndex indexName="temporarylimits_networkuuid_variantnum_equipmenttype_idx" tableName="temporarylimits">
             <column name="networkuuid"/>
             <column name="variantnum"/>
             <column name="equipmenttype"/>

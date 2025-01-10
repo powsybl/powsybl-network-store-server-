@@ -39,9 +39,9 @@ public final class QueryCatalog {
     static final String INDEX_COLUMN = "index";
     static final String TAPCHANGER_TYPE_COLUMN = "tapChangerType";
     static final String ALPHA_COLUMN = "alpha";
-    static final String TEMPORARY_LIMITS_TABLE = "newtemporarylimits";
+    static final String TEMPORARY_LIMITS_TABLE = "temporarylimits";
     static final String TEMPORARY_LIMITS = "temporarylimits";
-    static final String PERMANENT_LIMITS_TABLE = "newpermanentlimits";
+    static final String PERMANENT_LIMITS_TABLE = "permanentlimits";
     static final String PERMANENT_LIMITS = "permanentlimits";
     static final String TAP_CHANGER_STEP_TABLE = "tapChangerStep";
     static final String REGULATING_POINT_TABLE = "regulatingPoint";
