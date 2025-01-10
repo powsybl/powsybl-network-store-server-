@@ -72,11 +72,12 @@ class V211LimitsMigrationTest {
         truncateTable("newpermanentlimits");
 
         // Then we add the limits with the V2.11 model
-        LimitsInfos limits = createLimitSet();
-        insertV211Limits("l1", ResourceType.LINE, limits);
-        insertV211Limits("dl1", ResourceType.DANGLING_LINE, limits);
-        insertV211Limits("2wt", ResourceType.TWO_WINDINGS_TRANSFORMER, limits);
-        insertV211Limits("3wt", ResourceType.THREE_WINDINGS_TRANSFORMER, limits);
+        LimitsInfos limits1 = createLimitSet();
+        LimitsInfos limits2 = createLimitSet2();
+        insertV211Limits("l1", ResourceType.LINE, limits1, limits2);
+        insertV211Limits("dl1", ResourceType.DANGLING_LINE, limits1, limits2);
+        insertV211Limits("2wt", ResourceType.TWO_WINDINGS_TRANSFORMER, limits1, limits2);
+        insertV211Limits("3wt", ResourceType.THREE_WINDINGS_TRANSFORMER, limits1, limits2);
 
         // Finally we migrate the network
         mvc.perform(MockMvcRequestBuilders.put("/" + VERSION + "/migration/" + NETWORK_UUID)
@@ -101,7 +102,11 @@ class V211LimitsMigrationTest {
                 .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group1\"].currentLimits.permanentLimit").value(300.))
                 .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group1\"].currentLimits.permanentLimit").value(300.))
                 .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group1\"].currentLimits.temporaryLimits.[\"100\"].acceptableDuration").value(100.))
-                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group1\"].currentLimits.temporaryLimits.[\"200\"].acceptableDuration").value(200));
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group1\"].currentLimits.temporaryLimits.[\"200\"].acceptableDuration").value(200))
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group2\"].currentLimits.permanentLimit").value(400))
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group2\"].currentLimits.permanentLimit").value(400))
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group2\"].currentLimits.temporaryLimits.[\"300\"].acceptableDuration").value(300))
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group2\"].currentLimits.temporaryLimits.[\"500\"].acceptableDuration").value(500));
 
         assertEquals(1, countRowsByEquipmentId("l1", "newtemporarylimits"));
         assertEquals(1, countRowsByEquipmentId("dl1", "newtemporarylimits"));
@@ -170,10 +175,60 @@ class V211LimitsMigrationTest {
         return limits;
     }
 
-    private void insertV211Limits(String equipmentId, ResourceType resourceType, LimitsInfos limits) {
+    private LimitsInfos createLimitSet2() {
+        LimitsInfos limits = new LimitsInfos();
+        List<TemporaryLimitAttributes> temporaryLimits = new ArrayList<>();
+
+        TemporaryLimitAttributes templimitAOkSide1a = TemporaryLimitAttributes.builder()
+                .side(1)
+                .acceptableDuration(300)
+                .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group2")
+                .build();
+
+        TemporaryLimitAttributes templimitAOkSide2a = TemporaryLimitAttributes.builder()
+                .side(2)
+                .acceptableDuration(400)
+                .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group2")
+                .build();
+
+        TemporaryLimitAttributes templimitAOkSide2b = TemporaryLimitAttributes.builder()
+                .side(2)
+                .acceptableDuration(500)
+                .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group2")
+                .build();
+        temporaryLimits.add(templimitAOkSide1a);
+        temporaryLimits.add(templimitAOkSide2a);
+        temporaryLimits.add(templimitAOkSide2b);
+        limits.setTemporaryLimits(temporaryLimits);
+
+        PermanentLimitAttributes permanentLimitSide1 = PermanentLimitAttributes.builder()
+                .side(1)
+                .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group2")
+                .value(400)
+                .build();
+        PermanentLimitAttributes permanentLimitSide2 = PermanentLimitAttributes.builder()
+                .side(2)
+                .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group2")
+                .value(400)
+                .build();
+        limits.setPermanentLimits(List.of(permanentLimitSide1, permanentLimitSide2));
+
+        return limits;
+    }
+
+    private void insertV211Limits(String equipmentId, ResourceType resourceType, LimitsInfos limits1, LimitsInfos limits2) {
         OwnerInfo ownerInfo = new OwnerInfo(equipmentId, resourceType, NETWORK_UUID, 0);
-        insertV211PermanentLimits(Map.of(ownerInfo, limits));
-        insertV211TemporaryLimits(Map.of(ownerInfo, limits));
+
+        insertV211PermanentLimits(Map.of(ownerInfo, limits1));
+        insertV211TemporaryLimits(Map.of(ownerInfo, limits1));
+
+        insertV211PermanentLimits(Map.of(ownerInfo, limits2));
+        insertV211TemporaryLimits(Map.of(ownerInfo, limits2));
     }
 
     public void createNetwork() throws Exception {
