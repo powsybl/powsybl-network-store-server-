@@ -799,8 +799,8 @@ class NetworkStoreRepositoryTest {
         List<String> identifiablesIds = networkStoreRepository.getIdentifiablesIds(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM);
         assertEquals(List.of(loadId, lineId), identifiablesIds);
 
-        networkStoreRepository.deleteLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
-        networkStoreRepository.deleteLine(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, lineId);
+        networkStoreRepository.deleteLoads(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(loadId));
+        networkStoreRepository.deleteLines(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(lineId));
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getLine(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, lineId).isEmpty());
     }
@@ -890,8 +890,8 @@ class NetworkStoreRepositoryTest {
         assertEquals(ResourceType.GENERATOR, loadResult.get().getAttributes().getRegulatingEquipments().get(generatorId));
 
         // delete
-        networkStoreRepository.deleteGenerator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, generatorId);
-        networkStoreRepository.deleteLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        networkStoreRepository.deleteGenerators(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(generatorId));
+        networkStoreRepository.deleteLoads(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(loadId));
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getGenerator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, generatorId).isEmpty());
     }
@@ -981,8 +981,8 @@ class NetworkStoreRepositoryTest {
         assertEquals(ResourceType.SHUNT_COMPENSATOR, loadResult.get().getAttributes().getRegulatingEquipments().get(shuntCompensatorId));
 
         // delete
-        networkStoreRepository.deleteShuntCompensator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, shuntCompensatorId);
-        networkStoreRepository.deleteLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        networkStoreRepository.deleteShuntCompensators(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(shuntCompensatorId));
+        networkStoreRepository.deleteLoads(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(loadId));
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getShuntCompensator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, shuntCompensatorId).isEmpty());
     }
@@ -1074,8 +1074,8 @@ class NetworkStoreRepositoryTest {
         assertEquals(ResourceType.STATIC_VAR_COMPENSATOR, loadResult.get().getAttributes().getRegulatingEquipments().get(staticVarCompensatorId));
 
         // delete
-        networkStoreRepository.deleteStaticVarCompensator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, staticVarCompensatorId);
-        networkStoreRepository.deleteLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        networkStoreRepository.deleteStaticVarCompensators(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(staticVarCompensatorId));
+        networkStoreRepository.deleteLoads(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(loadId));
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getStaticVarCompensator(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, staticVarCompensatorId).isEmpty());
     }
@@ -1165,8 +1165,8 @@ class NetworkStoreRepositoryTest {
         assertEquals(ResourceType.VSC_CONVERTER_STATION, loadResult.get().getAttributes().getRegulatingEquipments().get(vscId));
 
         // delete
-        networkStoreRepository.deleteVscConverterStation(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, vscId);
-        networkStoreRepository.deleteLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId);
+        networkStoreRepository.deleteVscConverterStations(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(vscId));
+        networkStoreRepository.deleteLoads(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, List.of(loadId));
         assertTrue(networkStoreRepository.getLoad(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, loadId).isEmpty());
         assertTrue(networkStoreRepository.getVscConverterStation(NETWORK_UUID, Resource.INITIAL_VARIANT_NUM, vscId).isEmpty());
     }

@@ -727,9 +727,9 @@ class NetworkStoreRepositoryPartialVariantExternalAttributesTest {
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", CloneStrategy.PARTIAL);
 
         verifyExternalAttributes(lineId, genId, twoWTId, 0, NETWORK_UUID);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, lineId, LINE_TABLE);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, twoWTId, TWO_WINDINGS_TRANSFORMER_TABLE);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, genId, GENERATOR_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(lineId), LINE_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(twoWTId), TWO_WINDINGS_TRANSFORMER_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(genId), GENERATOR_TABLE);
         verifyEmptyExternalAttributes(lineId, genId, twoWTId, 1, NETWORK_UUID);
     }
 
@@ -876,7 +876,7 @@ class NetworkStoreRepositoryPartialVariantExternalAttributesTest {
         Map<String, Map<String, ExtensionAttributes>> expExtensionAttributesLine = Map.of(lineId1, extensionAttributesMap1, lineId2, extensionAttributesMap2);
         Assertions.assertEquals(expExtensionAttributesLine, networkStoreRepository.getAllExtensionsAttributesByResourceType(NETWORK_UUID, 1, ResourceType.LINE));
 
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, lineId1, LINE_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(lineId1), LINE_TABLE);
 
         Assertions.assertEquals(Optional.empty(), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));
         Assertions.assertEquals(Map.of(), networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId1));
@@ -936,7 +936,7 @@ class NetworkStoreRepositoryPartialVariantExternalAttributesTest {
         Assertions.assertEquals(extensionAttributesMap1, networkStoreRepository.getAllExtensionsAttributesByIdentifiableId(NETWORK_UUID, 1, lineId1));
 
         // Recreate identifiable without extensions
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, lineId1, LINE_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(lineId1), LINE_TABLE);
         createLine(networkStoreRepository, NETWORK_UUID, 1, lineId1, "vl1", "vl2");
 
         Assertions.assertEquals(Optional.empty(), networkStoreRepository.getExtensionAttributes(NETWORK_UUID, 1, lineId1, ActivePowerControl.NAME));

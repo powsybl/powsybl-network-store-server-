@@ -175,9 +175,9 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 0, loadId1, lineId1, "vl1", "vl2");
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", CloneStrategy.PARTIAL);
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 1, loadId2, lineId2, "vl1", "vl2");
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 0, lineId1, LINE_TABLE);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId1, LOAD_TABLE);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId2, LOAD_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 0, Collections.singletonList(lineId1), LINE_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(loadId1), LOAD_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(loadId2), LOAD_TABLE);
         UUID targetNetworkUuid = UUID.fromString("0dd45074-009d-49b8-877f-8ae648a8e8b4");
 
         networkStoreRepository.cloneNetwork(targetNetworkUuid, NETWORK_UUID, List.of("variant0", "variant1"));
@@ -194,7 +194,7 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         String lineId2 = "line2";
         createNetwork(networkStoreRepository, NETWORK_UUID, networkId, 1, "variant1", CloneStrategy.PARTIAL, 0);
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 1, loadId2, lineId2, "vl1", "vl2");
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId2, LOAD_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(loadId2), LOAD_TABLE);
 
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant2", CloneStrategy.PARTIAL);
 
@@ -214,7 +214,7 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         String lineId1 = "line1";
         createFullVariantNetwork(networkStoreRepository, NETWORK_UUID, networkId, 0, "variant0", CloneStrategy.PARTIAL);
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 0, loadId1, lineId1, "vl1", "vl2");
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 0, loadId1, LOAD_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 0, Collections.singletonList(loadId1), LOAD_TABLE);
 
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", CloneStrategy.PARTIAL);
 
@@ -371,9 +371,9 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 0, loadId1, lineId1, "vl1", "vl2");
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 0, 1, "variant1", CloneStrategy.PARTIAL);
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 1, loadId2, lineId2, "vl1", "vl2");
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 0, lineId1, LINE_TABLE);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId1, LOAD_TABLE);
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, lineId2, LINE_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 0, Collections.singletonList(lineId1), LINE_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(loadId1), LOAD_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(lineId2), LINE_TABLE);
 
         List<String> identifiablesIds = networkStoreRepository.getIdentifiablesIds(NETWORK_UUID, 1);
         assertEquals(List.of(loadId2), identifiablesIds);
@@ -453,7 +453,7 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         String loadId1 = "load1";
         String lineId1 = "line1";
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 0, loadId1, lineId1, "vl1", "vl2");
-        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 0, loadId1, LOAD_TABLE));
+        PowsyblException exception = assertThrows(PowsyblException.class, () -> networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 0, Collections.singletonList(loadId1), LOAD_TABLE));
         assertTrue(exception.getMessage().contains("Cannot retrieve source network attributes"));
     }
 
@@ -464,7 +464,7 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         String lineId1 = "line1";
         createFullVariantNetwork(networkStoreRepository, NETWORK_UUID, networkId, 0, "variant0", CloneStrategy.PARTIAL);
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 0, loadId1, lineId1, "vl1", "vl2");
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 0, loadId1, LOAD_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 0, Collections.singletonList(loadId1), LOAD_TABLE);
 
         assertEquals(List.of(lineId1), getIdentifiableIdsForVariant(NETWORK_UUID, 0));
         assertTrue(getTombstonedIdentifiableIds(NETWORK_UUID, 0).isEmpty());
@@ -477,13 +477,13 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         String lineId1 = "line1";
         createNetwork(networkStoreRepository, NETWORK_UUID, networkId, 1, "variant1", CloneStrategy.PARTIAL, 0);
         createLineAndLoad(networkStoreRepository, NETWORK_UUID, 1, loadId1, lineId1, "vl1", "vl2");
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId1, LOAD_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(loadId1), LOAD_TABLE);
 
         assertEquals(List.of(lineId1), getIdentifiableIdsForVariant(NETWORK_UUID, 1));
         assertEquals(Set.of(loadId1), getTombstonedIdentifiableIds(NETWORK_UUID, 1));
 
         // Delete an identifiable already deleted should throw
-        assertThrows(UncheckedSqlException.class, () -> networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, loadId1, LOAD_TABLE));
+        assertThrows(UncheckedSqlException.class, () -> networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(loadId1), LOAD_TABLE));
     }
 
     @Test
@@ -503,7 +503,7 @@ class NetworkStoreRepositoryPartialVariantIdentifiablesTest {
         createNetwork(networkStoreRepository, NETWORK_UUID, networkId, 1, "variant1", CloneStrategy.PARTIAL, 0);
         String lineId1 = "line1";
         createLine(networkStoreRepository, NETWORK_UUID, 1, lineId1, "vl1", "vl2");
-        networkStoreRepository.deleteIdentifiable(NETWORK_UUID, 1, lineId1, LINE_TABLE);
+        networkStoreRepository.deleteIdentifiables(NETWORK_UUID, 1, Collections.singletonList(lineId1), LINE_TABLE);
         networkStoreRepository.cloneNetworkVariant(NETWORK_UUID, 1, 2, "variant1", CloneStrategy.PARTIAL);
         // Variant 2
         Resource<LineAttributes> lineVariant2 = createLine(networkStoreRepository, NETWORK_UUID, 2, lineId1, "vl2", "vl3");
