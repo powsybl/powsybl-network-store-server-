@@ -45,7 +45,7 @@ public class V211LimitsMigration implements CustomTaskChange {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(V211LimitsMigration.class);
 
-    private static NetworkStoreRepository repository;
+    private NetworkStoreRepository repository;
 
     public void init(Database database) {
         DataSource dataSource = new SingleConnectionDataSource(((JdbcConnection) database.getConnection()).getUnderlyingConnection(), true);
