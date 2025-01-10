@@ -49,7 +49,7 @@
 
     <properties>
         <sirocco.version>1.0</sirocco.version>
-        <powsybl-ws-dependencies.version>2.16.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.17.0</powsybl-ws-dependencies.version>
         <powsybl-network-store.version>1.22.0-SNAPSHOT</powsybl-network-store.version>
         <!-- FIXME : to remove when sonar version is updated on github actions -->
         <!-- https://community.sonarsource.com/t/stackoverflowerror-at-defaultinputcomponent-equals/20324 -->
@@ -80,24 +80,6 @@
                 <version>${powsybl-ws-dependencies.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.powsybl</groupId>
-                <artifactId>powsybl-network-store-client</artifactId>
-                <!-- FIXME: to be removed at next powsybl-ws-dependencies upgrade  -->
-                <version>${powsybl-network-store.version}</version>
-            </dependency>
-            <!-- FIXME: to be removed at next powsybl-ws-dependencies upgrade  -->
-            <dependency>
-                <groupId>com.powsybl</groupId>
-                <artifactId>powsybl-network-store-iidm-impl</artifactId>
-                <version>${powsybl-network-store.version}</version>
-            </dependency>
-            <!-- FIXME: to be removed at next powsybl-ws-dependencies upgrade  -->
-            <dependency>
-                <groupId>com.powsybl</groupId>
-                <artifactId>powsybl-network-store-model</artifactId>
-                <version>${powsybl-network-store.version}</version>
             </dependency>
 
             <!-- project specific dependencies -->
