@@ -91,7 +91,7 @@ public final class V211LimitsQueryCatalog {
                 EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", operationallimitsgroupid, side, limittype, value_" +
-                " from " + V211_TEMPORARY_LIMITS + " where " +
+                " from " + V211_PERMANENT_LIMITS + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 columnNameForWhereClause + " = ?";
