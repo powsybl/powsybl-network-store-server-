@@ -1793,13 +1793,13 @@ public class NetworkStoreRepository {
 
     public Map<OwnerInfo, LimitsInfos> getLimitsInfos(UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         //TODO: to be removed when limits are fully migrated — should be after v2.13 deployment
-        //===============================================================================
+        ///////////////////////////////////////////////////////////////////////////////////////
         Map<OwnerInfo, List<TemporaryLimitAttributes>> v211TemporaryLimits = getV211TemporaryLimits(this, networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
         Map<OwnerInfo, List<PermanentLimitAttributes>> v211PermanentLimits = getV211PermanentLimits(this, networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
         if (!v211TemporaryLimits.isEmpty() || !v211PermanentLimits.isEmpty()) {
             return mergeLimitsIntoLimitsInfos(v211TemporaryLimits, v211PermanentLimits);
         }
-        //===============================================================================
+        ///////////////////////////////////////////////////////////////////////////////////////
 
         Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimits(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
         Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits = getPermanentLimits(networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
@@ -1808,13 +1808,13 @@ public class NetworkStoreRepository {
 
     public Map<OwnerInfo, LimitsInfos> getLimitsInfosWithInClause(UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
         //TODO: to be removed when limits are fully migrated — should be after v2.13 deployment
-        //===============================================================================
+        ///////////////////////////////////////////////////////////////////////////////////////
         Map<OwnerInfo, List<TemporaryLimitAttributes>> v211TemporaryLimits = getV211TemporaryLimitsWithInClause(this, networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
         Map<OwnerInfo, List<PermanentLimitAttributes>> v211PermanentLimits = getV211PermanentLimitsWithInClause(this, networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
         if (!v211TemporaryLimits.isEmpty() || !v211PermanentLimits.isEmpty()) {
             return mergeLimitsIntoLimitsInfos(v211TemporaryLimits, v211PermanentLimits);
         }
-        //===============================================================================
+        ///////////////////////////////////////////////////////////////////////////////////////
 
         Map<OwnerInfo, List<TemporaryLimitAttributes>> temporaryLimits = getTemporaryLimitsWithInClause(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
         Map<OwnerInfo, List<PermanentLimitAttributes>> permanentLimits = getPermanentLimitsWithInClause(networkUuid, variantNum, columnNameForWhereClause, valuesForInClause);
