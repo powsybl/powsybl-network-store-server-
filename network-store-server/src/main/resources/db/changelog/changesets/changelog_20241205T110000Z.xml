@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="2986331049275-7" author="lesoteti">
+        <addColumn tableName="regulatingpoint">
+            <column name="regulatingtapchangertype" type="VARCHAR"/>
+        </addColumn>
+        <update tableName="regulatingpoint">
+            <column name="regulatingtapchangertype" value="NONE"/>
+        </update>
+        <addNotNullConstraint tableName="regulatingpoint" columnName="regulatingtapchangertype"/>
+    </changeSet>
+    <changeSet id="2986331049275-8" author="lesoteti">
+        <dropPrimaryKey tableName="regulatingpoint"/>
+        <addPrimaryKey columnNames="networkuuid, variantnum, regulatingequipmenttype, regulatingtapchangertype, regulatingequipmentid"
+                       constraintName="regulatingpoint_pkey" tableName="regulatingpoint"/>
+        <sqlFile
+                path="twt_regulationPoint_20241205T110000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+        <!-- twowindingstransformer -->
+        <!-- ratio -->
+        <dropColumn tableName="twowindingstransformer" columnName="ratiotapchangerregulationmode"/>
+        <dropColumn tableName="twowindingstransformer" columnName="ratiotapchangerterminalrefconnectableid"/>
+        <dropColumn tableName="twowindingstransformer" columnName="ratiotapchangerterminalrefside"/>
+        <dropColumn tableName="twowindingstransformer" columnName="ratiotapchangerregulating"/>
+        <!-- phase -->
+        <dropColumn tableName="twowindingstransformer" columnName="phasetapchangerregulationmode"/>
+        <dropColumn tableName="twowindingstransformer" columnName="phasetapchangerterminalrefconnectableid"/>
+        <dropColumn tableName="twowindingstransformer" columnName="phasetapchangerterminalrefside"/>
+        <dropColumn tableName="twowindingstransformer" columnName="phasetapchangerregulating"/>
+
+        <!-- threewindingstransformer -->
+        <!-- side 1 -->
+        <!-- ratio -->
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerregulationmode1"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerterminalrefconnectableid1"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerterminalrefside1"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerregulating1"/>
+        <!-- phase -->
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerregulationmode1"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerterminalrefconnectableid1"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerterminalrefside1"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerregulating1"/>
+
+        <!-- side 2 -->
+        <!-- ratio -->
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerregulationmode2"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerterminalrefconnectableid2"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerterminalrefside2"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerregulating2"/>
+        <!-- phase -->
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerregulationmode2"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerterminalrefconnectableid2"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerterminalrefside2"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerregulating2"/>
+
+        <!-- side 3 -->
+        <!-- ratio -->
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerregulationmode3"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerterminalrefconnectableid3"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerterminalrefside3"/>
+        <dropColumn tableName="threewindingstransformer" columnName="ratiotapchangerregulating3"/>
+        <!-- phase -->
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerregulationmode3"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerterminalrefconnectableid3"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerterminalrefside3"/>
+        <dropColumn tableName="threewindingstransformer" columnName="phasetapchangerregulating3"/>
+    </changeSet>
+</databaseChangeLog>

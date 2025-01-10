@@ -663,14 +663,6 @@ public class Mappings {
                 }
                 attributes.getPhaseTapChangerAttributes().setTapPosition(value);
             }));
-        twoWindingsTransformerMappings.addColumnMapping("phaseTapChangerRegulating", new ColumnMapping<>(Boolean.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getPhaseTapChangerAttributes() != null ? attributes.getPhaseTapChangerAttributes().isRegulating() : null,
-            (TwoWindingsTransformerAttributes attributes, Boolean value) -> {
-                if (attributes.getPhaseTapChangerAttributes() == null) {
-                    attributes.setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
-                }
-                attributes.getPhaseTapChangerAttributes().setRegulating(value);
-            }));
         twoWindingsTransformerMappings.addColumnMapping("phaseTapChangerTargetDeadband", new ColumnMapping<>(Double.class,
             (TwoWindingsTransformerAttributes attributes) -> attributes.getPhaseTapChangerAttributes() != null ? attributes.getPhaseTapChangerAttributes().getTargetDeadband() : null,
             (TwoWindingsTransformerAttributes attributes, Double value) -> {
@@ -678,46 +670,6 @@ public class Mappings {
                     attributes.setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
                 }
                 attributes.getPhaseTapChangerAttributes().setTargetDeadband(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping("phaseTapChangerTerminalRefConnectableId", new ColumnMapping<>(String.class,
-            (TwoWindingsTransformerAttributes attributes) -> {
-                if (attributes.getPhaseTapChangerAttributes() == null || attributes.getPhaseTapChangerAttributes().getRegulatingTerminal() == null) {
-                    return null;
-                }
-                return attributes.getPhaseTapChangerAttributes().getRegulatingTerminal().getConnectableId();
-            },
-            (TwoWindingsTransformerAttributes attributes, String value) -> {
-                if (attributes.getPhaseTapChangerAttributes() == null) {
-                    attributes.setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
-                }
-                if (attributes.getPhaseTapChangerAttributes().getRegulatingTerminal() == null) {
-                    attributes.getPhaseTapChangerAttributes().setRegulatingTerminal(new TerminalRefAttributes());
-                }
-                attributes.getPhaseTapChangerAttributes().getRegulatingTerminal().setConnectableId(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping("phaseTapChangerTerminalRefSide", new ColumnMapping<>(String.class,
-            (TwoWindingsTransformerAttributes attributes) -> {
-                if (attributes.getPhaseTapChangerAttributes() == null || attributes.getPhaseTapChangerAttributes().getRegulatingTerminal() == null) {
-                    return null;
-                }
-                return attributes.getPhaseTapChangerAttributes().getRegulatingTerminal().getSide();
-            },
-            (TwoWindingsTransformerAttributes attributes, String value) -> {
-                if (attributes.getPhaseTapChangerAttributes() == null) {
-                    attributes.setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
-                }
-                if (attributes.getPhaseTapChangerAttributes().getRegulatingTerminal() == null) {
-                    attributes.getPhaseTapChangerAttributes().setRegulatingTerminal(new TerminalRefAttributes());
-                }
-                attributes.getPhaseTapChangerAttributes().getRegulatingTerminal().setSide(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping("phaseTapChangerRegulationMode", new ColumnMapping<>(PhaseTapChanger.RegulationMode.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getPhaseTapChangerAttributes() != null ? attributes.getPhaseTapChangerAttributes().getRegulationMode() : null,
-            (TwoWindingsTransformerAttributes attributes, PhaseTapChanger.RegulationMode value) -> {
-                if (attributes.getPhaseTapChangerAttributes() == null) {
-                    attributes.setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
-                }
-                attributes.getPhaseTapChangerAttributes().setRegulationMode(value);
             }));
         twoWindingsTransformerMappings.addColumnMapping("phaseTapChangerRegulationValue", new ColumnMapping<>(Double.class,
             (TwoWindingsTransformerAttributes attributes) -> attributes.getPhaseTapChangerAttributes() != null ? attributes.getPhaseTapChangerAttributes().getRegulationValue() : null,
@@ -744,14 +696,6 @@ public class Mappings {
                 }
                 attributes.getRatioTapChangerAttributes().setTapPosition(value);
             }));
-        twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerRegulating", new ColumnMapping<>(Boolean.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().isRegulating() : null,
-            (TwoWindingsTransformerAttributes attributes, Boolean value) -> {
-                if (attributes.getRatioTapChangerAttributes() == null) {
-                    attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
-                }
-                attributes.getRatioTapChangerAttributes().setRegulating(value);
-            }));
         twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerTargetDeadband", new ColumnMapping<>(Double.class,
             (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().getTargetDeadband() : null,
             (TwoWindingsTransformerAttributes attributes, Double value) -> {
@@ -759,38 +703,6 @@ public class Mappings {
                     attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
                 }
                 attributes.getRatioTapChangerAttributes().setTargetDeadband(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerTerminalRefConnectableId", new ColumnMapping<>(String.class,
-            (TwoWindingsTransformerAttributes attributes) -> {
-                if (attributes.getRatioTapChangerAttributes() == null || attributes.getRatioTapChangerAttributes().getRegulatingTerminal() == null) {
-                    return null;
-                }
-                return attributes.getRatioTapChangerAttributes().getRegulatingTerminal().getConnectableId();
-            },
-            (TwoWindingsTransformerAttributes attributes, String value) -> {
-                if (attributes.getRatioTapChangerAttributes() == null) {
-                    attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
-                }
-                if (attributes.getRatioTapChangerAttributes().getRegulatingTerminal() == null) {
-                    attributes.getRatioTapChangerAttributes().setRegulatingTerminal(new TerminalRefAttributes());
-                }
-                attributes.getRatioTapChangerAttributes().getRegulatingTerminal().setConnectableId(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerTerminalRefSide", new ColumnMapping<>(String.class,
-            (TwoWindingsTransformerAttributes attributes) -> {
-                if (attributes.getRatioTapChangerAttributes() == null || attributes.getRatioTapChangerAttributes().getRegulatingTerminal() == null) {
-                    return null;
-                }
-                return attributes.getRatioTapChangerAttributes().getRegulatingTerminal().getSide();
-            },
-            (TwoWindingsTransformerAttributes attributes, String value) -> {
-                if (attributes.getRatioTapChangerAttributes() == null) {
-                    attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
-                }
-                if (attributes.getRatioTapChangerAttributes().getRegulatingTerminal() == null) {
-                    attributes.getRatioTapChangerAttributes().setRegulatingTerminal(new TerminalRefAttributes());
-                }
-                attributes.getRatioTapChangerAttributes().getRegulatingTerminal().setSide(value);
             }));
         twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerLoadTapChangingCapabilities", new ColumnMapping<>(Boolean.class,
             (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().isLoadTapChangingCapabilities() : null,
@@ -807,14 +719,6 @@ public class Mappings {
                     attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
                 }
                 attributes.getRatioTapChangerAttributes().setRegulationValue(value);
-            }));
-        twoWindingsTransformerMappings.addColumnMapping("ratioTapChangerRegulationMode", new ColumnMapping<>(RatioTapChanger.RegulationMode.class,
-            (TwoWindingsTransformerAttributes attributes) -> attributes.getRatioTapChangerAttributes() != null ? attributes.getRatioTapChangerAttributes().getRegulationMode() : null,
-            (TwoWindingsTransformerAttributes attributes, RatioTapChanger.RegulationMode value) -> {
-                if (attributes.getRatioTapChangerAttributes() == null) {
-                    attributes.setRatioTapChangerAttributes(new RatioTapChangerAttributes());
-                }
-                attributes.getRatioTapChangerAttributes().setRegulationMode(value);
             }));
     }
 
@@ -892,14 +796,6 @@ public class Mappings {
                     }
                     attributes.getLeg(i).getPhaseTapChangerAttributes().setTapPosition(value);
                 }));
-            threeWindingsTransformerMappings.addColumnMapping("phaseTapChangerRegulating" + i, new ColumnMapping<>(Boolean.class,
-                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getPhaseTapChangerAttributes() != null ? attributes.getLeg(i).getPhaseTapChangerAttributes().isRegulating() : null,
-                (ThreeWindingsTransformerAttributes attributes, Boolean value) -> {
-                    if (attributes.getLeg(i).getPhaseTapChangerAttributes() == null) {
-                        attributes.getLeg(i).setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
-                    }
-                    attributes.getLeg(i).getPhaseTapChangerAttributes().setRegulating(value);
-                }));
             threeWindingsTransformerMappings.addColumnMapping("phaseTapChangerTargetDeadband" + i, new ColumnMapping<>(Double.class,
                 (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getPhaseTapChangerAttributes() != null ? attributes.getLeg(i).getPhaseTapChangerAttributes().getTargetDeadband() : null,
                 (ThreeWindingsTransformerAttributes attributes, Double value) -> {
@@ -907,46 +803,6 @@ public class Mappings {
                         attributes.getLeg(i).setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
                     }
                     attributes.getLeg(i).getPhaseTapChangerAttributes().setTargetDeadband(value);
-                }));
-            threeWindingsTransformerMappings.addColumnMapping("phaseTapChangerTerminalRefConnectableId" + i, new ColumnMapping<>(String.class,
-                (ThreeWindingsTransformerAttributes attributes) -> {
-                    if (attributes.getLeg(i).getPhaseTapChangerAttributes() == null || attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulatingTerminal() == null) {
-                        return null;
-                    }
-                    return attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulatingTerminal().getConnectableId();
-                },
-                (ThreeWindingsTransformerAttributes attributes, String value) -> {
-                    if (attributes.getLeg(i).getPhaseTapChangerAttributes() == null) {
-                        attributes.getLeg(i).setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
-                    }
-                    if (attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulatingTerminal() == null) {
-                        attributes.getLeg(i).getPhaseTapChangerAttributes().setRegulatingTerminal(new TerminalRefAttributes());
-                    }
-                    attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulatingTerminal().setConnectableId(value);
-                }));
-            threeWindingsTransformerMappings.addColumnMapping("phaseTapChangerTerminalRefSide" + i, new ColumnMapping<>(String.class,
-                (ThreeWindingsTransformerAttributes attributes) -> {
-                    if (attributes.getLeg(i).getPhaseTapChangerAttributes() == null || attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulatingTerminal() == null) {
-                        return null;
-                    }
-                    return attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulatingTerminal().getSide();
-                },
-                (ThreeWindingsTransformerAttributes attributes, String value) -> {
-                    if (attributes.getLeg(i).getPhaseTapChangerAttributes() == null) {
-                        attributes.getLeg(i).setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
-                    }
-                    if (attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulatingTerminal() == null) {
-                        attributes.getLeg(i).getPhaseTapChangerAttributes().setRegulatingTerminal(new TerminalRefAttributes());
-                    }
-                    attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulatingTerminal().setSide(value);
-                }));
-            threeWindingsTransformerMappings.addColumnMapping("phaseTapChangerRegulationMode" + i, new ColumnMapping<>(PhaseTapChanger.RegulationMode.class,
-                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getPhaseTapChangerAttributes() != null ? attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulationMode() : null,
-                (ThreeWindingsTransformerAttributes attributes, PhaseTapChanger.RegulationMode value) -> {
-                    if (attributes.getLeg(i).getPhaseTapChangerAttributes() == null) {
-                        attributes.getLeg(i).setPhaseTapChangerAttributes(new PhaseTapChangerAttributes());
-                    }
-                    attributes.getLeg(i).getPhaseTapChangerAttributes().setRegulationMode(value);
                 }));
             threeWindingsTransformerMappings.addColumnMapping("phaseTapChangerRegulationValue" + i, new ColumnMapping<>(Double.class,
                 (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getPhaseTapChangerAttributes() != null ? attributes.getLeg(i).getPhaseTapChangerAttributes().getRegulationValue() : null,
@@ -973,14 +829,6 @@ public class Mappings {
                     }
                     attributes.getLeg(i).getRatioTapChangerAttributes().setTapPosition(value);
                 }));
-            threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerRegulating" + i, new ColumnMapping<>(Boolean.class,
-                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().isRegulating() : null,
-                (ThreeWindingsTransformerAttributes attributes, Boolean value) -> {
-                    if (attributes.getLeg(i).getRatioTapChangerAttributes() == null) {
-                        attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
-                    }
-                    attributes.getLeg(i).getRatioTapChangerAttributes().setRegulating(value);
-                }));
             threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerTargetDeadband" + i, new ColumnMapping<>(Double.class,
                 (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().getTargetDeadband() : null,
                 (ThreeWindingsTransformerAttributes attributes, Double value) -> {
@@ -988,38 +836,6 @@ public class Mappings {
                         attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
                     }
                     attributes.getLeg(i).getRatioTapChangerAttributes().setTargetDeadband(value);
-                }));
-            threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerTerminalRefConnectableId" + i, new ColumnMapping<>(String.class,
-                (ThreeWindingsTransformerAttributes attributes) -> {
-                    if (attributes.getLeg(i).getRatioTapChangerAttributes() == null || attributes.getLeg(i).getRatioTapChangerAttributes().getRegulatingTerminal() == null) {
-                        return null;
-                    }
-                    return attributes.getLeg(i).getRatioTapChangerAttributes().getRegulatingTerminal().getConnectableId();
-                },
-                (ThreeWindingsTransformerAttributes attributes, String value) -> {
-                    if (attributes.getLeg(i).getRatioTapChangerAttributes() == null) {
-                        attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
-                    }
-                    if (attributes.getLeg(i).getRatioTapChangerAttributes().getRegulatingTerminal() == null) {
-                        attributes.getLeg(i).getRatioTapChangerAttributes().setRegulatingTerminal(new TerminalRefAttributes());
-                    }
-                    attributes.getLeg(i).getRatioTapChangerAttributes().getRegulatingTerminal().setConnectableId(value);
-                }));
-            threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerTerminalRefSide" + i, new ColumnMapping<>(String.class,
-                (ThreeWindingsTransformerAttributes attributes) -> {
-                    if (attributes.getLeg(i).getRatioTapChangerAttributes() == null || attributes.getLeg(i).getRatioTapChangerAttributes().getRegulatingTerminal() == null) {
-                        return null;
-                    }
-                    return attributes.getLeg(i).getRatioTapChangerAttributes().getRegulatingTerminal().getSide();
-                },
-                (ThreeWindingsTransformerAttributes attributes, String value) -> {
-                    if (attributes.getLeg(i).getRatioTapChangerAttributes() == null) {
-                        attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
-                    }
-                    if (attributes.getLeg(i).getRatioTapChangerAttributes().getRegulatingTerminal() == null) {
-                        attributes.getLeg(i).getRatioTapChangerAttributes().setRegulatingTerminal(new TerminalRefAttributes());
-                    }
-                    attributes.getLeg(i).getRatioTapChangerAttributes().getRegulatingTerminal().setSide(value);
                 }));
             threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerLoadTapChangingCapabilities" + i, new ColumnMapping<>(Boolean.class,
                 (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().isLoadTapChangingCapabilities() : null,
@@ -1036,14 +852,6 @@ public class Mappings {
                         attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
                     }
                     attributes.getLeg(i).getRatioTapChangerAttributes().setRegulationValue(value);
-                }));
-            threeWindingsTransformerMappings.addColumnMapping("ratioTapChangerRegulationMode" + i, new ColumnMapping<>(RatioTapChanger.RegulationMode.class,
-                (ThreeWindingsTransformerAttributes attributes) -> attributes.getLeg(i).getRatioTapChangerAttributes() != null ? attributes.getLeg(i).getRatioTapChangerAttributes().getRegulationMode() : null,
-                (ThreeWindingsTransformerAttributes attributes, RatioTapChanger.RegulationMode value) -> {
-                    if (attributes.getLeg(i).getRatioTapChangerAttributes() == null) {
-                        attributes.getLeg(i).setRatioTapChangerAttributes(new RatioTapChangerAttributes());
-                    }
-                    attributes.getLeg(i).getRatioTapChangerAttributes().setRegulationMode(value);
                 }));
         });
     }
