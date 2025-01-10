@@ -68,8 +68,8 @@ class V211LimitsMigrationTest {
         create2WTLine();
         create3WTLine();
         // To simulate the state of a non migrated network, we first clean the limits created with the new code.
-        truncateTable("temporarylimits");
-        truncateTable("permanentlimits");
+        truncateTable(TEMPORARY_LIMITS_TABLE);
+        truncateTable(PERMANENT_LIMITS_TABLE);
 
         // Then we add the limits with the V2.11 model
         LimitsInfos limits1 = createLimitSet();
@@ -84,15 +84,15 @@ class V211LimitsMigrationTest {
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        assertEquals(0, countRowsByEquipmentId("l1", "temporarylimit"));
-        assertEquals(0, countRowsByEquipmentId("dl1", "temporarylimit"));
-        assertEquals(0, countRowsByEquipmentId("2wt", "temporarylimit"));
-        assertEquals(0, countRowsByEquipmentId("3wt", "temporarylimit"));
+        assertEquals(0, countRowsByEquipmentId("l1", V211_TEMPORARY_LIMIT_TABLE));
+        assertEquals(0, countRowsByEquipmentId("dl1", V211_TEMPORARY_LIMIT_TABLE));
+        assertEquals(0, countRowsByEquipmentId("2wt", V211_TEMPORARY_LIMIT_TABLE));
+        assertEquals(0, countRowsByEquipmentId("3wt", V211_TEMPORARY_LIMIT_TABLE));
 
-        assertEquals(0, countRowsByEquipmentId("l1", "permanentlimit"));
-        assertEquals(0, countRowsByEquipmentId("dl1", "permanentlimit"));
-        assertEquals(0, countRowsByEquipmentId("2wt", "permanentlimit"));
-        assertEquals(0, countRowsByEquipmentId("3wt", "permanentlimit"));
+        assertEquals(0, countRowsByEquipmentId("l1", V211_PERMANENT_LIMIT_TABLE));
+        assertEquals(0, countRowsByEquipmentId("dl1", V211_PERMANENT_LIMIT_TABLE));
+        assertEquals(0, countRowsByEquipmentId("2wt", V211_PERMANENT_LIMIT_TABLE));
+        assertEquals(0, countRowsByEquipmentId("3wt", V211_PERMANENT_LIMIT_TABLE));
 
         mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/lines")
                         .contentType(APPLICATION_JSON))
@@ -108,15 +108,15 @@ class V211LimitsMigrationTest {
                 .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group2\"].currentLimits.temporaryLimits.[\"300\"].acceptableDuration").value(300))
                 .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group2\"].currentLimits.temporaryLimits.[\"500\"].acceptableDuration").value(500));
 
-        assertEquals(1, countRowsByEquipmentId("l1", "temporarylimits"));
-        assertEquals(1, countRowsByEquipmentId("dl1", "temporarylimits"));
-        assertEquals(1, countRowsByEquipmentId("2wt", "temporarylimits"));
-        assertEquals(1, countRowsByEquipmentId("3wt", "temporarylimits"));
+        assertEquals(1, countRowsByEquipmentId("l1", TEMPORARY_LIMITS_TABLE));
+        assertEquals(1, countRowsByEquipmentId("dl1", TEMPORARY_LIMITS_TABLE));
+        assertEquals(1, countRowsByEquipmentId("2wt", TEMPORARY_LIMITS_TABLE));
+        assertEquals(1, countRowsByEquipmentId("3wt", TEMPORARY_LIMITS_TABLE));
 
-        assertEquals(1, countRowsByEquipmentId("l1", "permanentlimits"));
-        assertEquals(1, countRowsByEquipmentId("dl1", "permanentlimits"));
-        assertEquals(1, countRowsByEquipmentId("2wt", "permanentlimits"));
-        assertEquals(1, countRowsByEquipmentId("3wt", "permanentlimits"));
+        assertEquals(1, countRowsByEquipmentId("l1", PERMANENT_LIMITS_TABLE));
+        assertEquals(1, countRowsByEquipmentId("dl1", PERMANENT_LIMITS_TABLE));
+        assertEquals(1, countRowsByEquipmentId("2wt", PERMANENT_LIMITS_TABLE));
+        assertEquals(1, countRowsByEquipmentId("3wt", PERMANENT_LIMITS_TABLE));
     }
 
     private void truncateTable(String tableName) {
@@ -301,7 +301,7 @@ class V211LimitsMigrationTest {
     }
 
     public static String buildInsertV211TemporaryLimitsQuery() {
-        return "insert into temporarylimit(" +
+        return "insert into " + V211_TEMPORARY_LIMIT_TABLE + "(" +
                 EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", " +
@@ -311,7 +311,7 @@ class V211LimitsMigrationTest {
     }
 
     public static String buildInsertV211PermanentLimitsQuery() {
-        return "insert into permanentlimit(" +
+        return "insert into " + V211_PERMANENT_LIMIT_TABLE + "(" +
                 EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", " +

@@ -15,9 +15,6 @@ import static com.powsybl.network.store.server.QueryCatalog.*;
 public final class V211LimitsQueryCatalog {
     public static final String MINIMAL_VALUE_REQUIREMENT_ERROR = "Function should not be called without at least one value.";
 
-    static final String V211_TEMPORARY_LIMITS = "temporarylimit";
-    static final String V211_PERMANENT_LIMITS = "permanentlimit";
-
     private V211LimitsQueryCatalog() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
@@ -31,7 +28,7 @@ public final class V211LimitsQueryCatalog {
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", " +
                 "operationallimitsgroupid, side, limittype, name, value_, acceptableduration, fictitious" +
-                " from " + V211_TEMPORARY_LIMITS + " where " +
+                " from " + V211_TEMPORARY_LIMIT_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 columnNameForInClause + " in (" +
@@ -42,7 +39,7 @@ public final class V211LimitsQueryCatalog {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
-        return "delete from " + V211_TEMPORARY_LIMITS + " where " +
+        return "delete from " + V211_TEMPORARY_LIMIT_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 EQUIPMENT_ID_COLUMN + " in (" +
@@ -54,7 +51,7 @@ public final class V211LimitsQueryCatalog {
                 EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", operationallimitsgroupid, side, limittype, name, value_, acceptableduration, fictitious" +
-                " from " + V211_TEMPORARY_LIMITS + " where " +
+                " from " + V211_TEMPORARY_LIMIT_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 columnNameForWhereClause + " = ?";
@@ -64,7 +61,7 @@ public final class V211LimitsQueryCatalog {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
         }
-        return "delete from " + V211_PERMANENT_LIMITS + " where " +
+        return "delete from " + V211_PERMANENT_LIMIT_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 EQUIPMENT_ID_COLUMN + " in (" +
@@ -79,7 +76,7 @@ public final class V211LimitsQueryCatalog {
                 EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", operationallimitsgroupid, side, limittype, value_ " +
-                " from " + V211_PERMANENT_LIMITS + " where " +
+                " from " + V211_PERMANENT_LIMIT_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 columnNameForInClause + " in (" +
@@ -91,7 +88,7 @@ public final class V211LimitsQueryCatalog {
                 EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " +
                 VARIANT_NUM_COLUMN + ", operationallimitsgroupid, side, limittype, value_" +
-                " from " + V211_PERMANENT_LIMITS + " where " +
+                " from " + V211_PERMANENT_LIMIT_TABLE + " where " +
                 NETWORK_UUID_COLUMN + " = ? and " +
                 VARIANT_NUM_COLUMN + " = ? and " +
                 columnNameForWhereClause + " = ?";
