@@ -88,9 +88,9 @@ public class V211LimitsMigration implements CustomTaskChange {
         return new ValidationErrors();
     }
 
-    // Methods to migrate V2.11 limits — do not use them in operational code
+    // Methods to migrate V2.11 limits — do not use them in application code
+    // TODO: All the methods below should be deprecated when limits are fully migrated — should be after v2.13 deployment
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static Map<OwnerInfo, List<PermanentLimitAttributes>> getV211PermanentLimitsWithInClause(NetworkStoreRepository repository, UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
@@ -109,7 +109,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static Map<OwnerInfo, List<TemporaryLimitAttributes>> getV211TemporaryLimits(NetworkStoreRepository repository, UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (Connection connection = repository.getDataSource().getConnection()) {
             var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211TemporaryLimitQuery(columnNameForWhereClause));
@@ -123,7 +122,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static Map<OwnerInfo, List<PermanentLimitAttributes>> getV211PermanentLimits(NetworkStoreRepository repository, UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         try (Connection connection = repository.getDataSource().getConnection()) {
             var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildGetV211PermanentLimitQuery(columnNameForWhereClause));
@@ -137,7 +135,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static Map<OwnerInfo, List<TemporaryLimitAttributes>> getV211TemporaryLimitsWithInClause(NetworkStoreRepository repository, UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
@@ -156,7 +153,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static void migrateV211Limits(NetworkStoreRepository repository, UUID networkId) {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -172,23 +168,21 @@ public class V211LimitsMigration implements CustomTaskChange {
         LOGGER.info("Limits of network {} migrated in {} ms", networkId, stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
-    public static void insertNewLimitsAndDeleteV211(NetworkStoreRepository repository, UUID networkUuid, int variantNum, Map<OwnerInfo, List<TemporaryLimitAttributes>> oldTemporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> oldPermanentLimits) {
+    private static void insertNewLimitsAndDeleteV211(NetworkStoreRepository repository, UUID networkUuid, int variantNum, Map<OwnerInfo, List<TemporaryLimitAttributes>> v211TemporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> v211PermanentLimits) {
         try (Connection connection = repository.getDataSource().getConnection()) {
-            if (!oldPermanentLimits.keySet().isEmpty()) {
-                repository.insertPermanentLimitsAttributes(oldPermanentLimits);
-                deleteV211PermanentLimits(connection, networkUuid, variantNum, oldPermanentLimits.keySet().stream().map(OwnerInfo::getEquipmentId).toList());
+            if (!v211PermanentLimits.keySet().isEmpty()) {
+                repository.insertPermanentLimitsAttributes(v211PermanentLimits);
+                deleteV211PermanentLimits(connection, networkUuid, variantNum, v211PermanentLimits.keySet().stream().map(OwnerInfo::getEquipmentId).toList());
             }
-            if (!oldTemporaryLimits.keySet().isEmpty()) {
-                repository.insertTemporaryLimitsAttributes(oldTemporaryLimits);
-                deleteV211TemporaryLimits(connection, networkUuid, variantNum, oldTemporaryLimits.keySet().stream().map(OwnerInfo::getEquipmentId).toList());
+            if (!v211TemporaryLimits.keySet().isEmpty()) {
+                repository.insertTemporaryLimitsAttributes(v211TemporaryLimits);
+                deleteV211TemporaryLimits(connection, networkUuid, variantNum, v211TemporaryLimits.keySet().stream().map(OwnerInfo::getEquipmentId).toList());
             }
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static void migrateV211Limits(NetworkStoreRepository repository, UUID networkUuid, int variantNum, String columnNameForWhereClause, String valueForWhereClause) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         Map<OwnerInfo, List<TemporaryLimitAttributes>> v211TemporaryLimits = getV211TemporaryLimits(repository, networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
@@ -198,7 +192,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         LOGGER.info("Limits of {}S of network {}/variantNum={} migrated in {} ms", valueForWhereClause, networkUuid, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static Map<OwnerInfo, List<TemporaryLimitAttributes>> innerGetV211TemporaryLimits(PreparedStatement preparedStmt) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, List<TemporaryLimitAttributes>> map = new HashMap<>();
@@ -225,7 +218,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static Map<OwnerInfo, List<PermanentLimitAttributes>> innerGetV211PermanentLimits(PreparedStatement preparedStmt) throws SQLException {
         try (ResultSet resultSet = preparedStmt.executeQuery()) {
             Map<OwnerInfo, List<PermanentLimitAttributes>> map = new HashMap<>();
@@ -250,7 +242,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static void deleteV211TemporaryLimits(Connection connection, UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try {
             try (var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildDeleteV211TemporaryLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
@@ -266,7 +257,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         }
     }
 
-    //To be deprecated when limits are fully migrated — should be after v2.13 deployment
     public static void deleteV211PermanentLimits(Connection connection, UUID networkUuid, int variantNum, List<String> equipmentIds) {
         try {
             try (var preparedStmt = connection.prepareStatement(V211LimitsQueryCatalog.buildDeleteV211PermanentLimitsVariantEquipmentINQuery(equipmentIds.size()))) {
