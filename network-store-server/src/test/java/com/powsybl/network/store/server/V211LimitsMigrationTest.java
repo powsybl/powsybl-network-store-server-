@@ -6,10 +6,7 @@
  */
 package com.powsybl.network.store.server;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.Lists;
 import com.powsybl.iidm.network.LimitType;
 import com.powsybl.iidm.network.VariantManagerConstants;
@@ -18,7 +15,6 @@ import com.powsybl.network.store.server.dto.LimitsInfos;
 import com.powsybl.network.store.server.dto.OwnerInfo;
 import com.powsybl.network.store.server.dto.PermanentLimitAttributes;
 import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -27,6 +23,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZonedDateTime;
@@ -39,8 +36,10 @@ import static com.powsybl.network.store.server.QueryCatalog.*;
 import static com.powsybl.network.store.server.Utils.bindValues;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 /**
  * @author Etienne Homer <etienne.homer at rte-france.com>
@@ -61,14 +60,6 @@ class V211LimitsMigrationTest {
     @Autowired
     private MockMvc mvc;
 
-    // to be kept ???
-    @BeforeEach
-    void setup() {
-        this.objectMapper.registerModule(new JavaTimeModule())
-                .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
-                .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
-    }
-
     @Test
     void migrateV211LimitsTest() throws Exception {
         createNetwork();
@@ -76,14 +67,18 @@ class V211LimitsMigrationTest {
         createDanglineLine();
         create2WTLine();
         create3WTLine();
+        // To simulate the state of a non migrated network, we first clean the limits created with the new code.
+        truncateTable("newtemporarylimits");
+        truncateTable("newpermanentlimits");
 
+        // Then we add the limits with the V2.11 model
         LimitsInfos limits = createLimitSet();
-
         insertV211Limits("l1", ResourceType.LINE, limits);
         insertV211Limits("dl1", ResourceType.DANGLING_LINE, limits);
         insertV211Limits("2wt", ResourceType.TWO_WINDINGS_TRANSFORMER, limits);
         insertV211Limits("3wt", ResourceType.THREE_WINDINGS_TRANSFORMER, limits);
 
+        // Finally we migrate the network
         mvc.perform(MockMvcRequestBuilders.put("/" + VERSION + "/migration/" + NETWORK_UUID)
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -98,6 +93,16 @@ class V211LimitsMigrationTest {
         assertEquals(0, countRowsByEquipmentId("2wt", "permanentlimit"));
         assertEquals(0, countRowsByEquipmentId("3wt", "permanentlimit"));
 
+        mvc.perform(get("/" + VERSION + "/networks/" + NETWORK_UUID + "/" + Resource.INITIAL_VARIANT_NUM + "/lines")
+                        .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("data[0].id").value("l1"))
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group1\"].currentLimits.permanentLimit").value(300.))
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group1\"].currentLimits.permanentLimit").value(300.))
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups1[\"group1\"].currentLimits.temporaryLimits.[\"100\"].acceptableDuration").value(100.))
+                .andExpect(jsonPath("data[0].attributes.operationalLimitsGroups2[\"group1\"].currentLimits.temporaryLimits.[\"200\"].acceptableDuration").value(200));
+
         assertEquals(1, countRowsByEquipmentId("l1", "newtemporarylimits"));
         assertEquals(1, countRowsByEquipmentId("dl1", "newtemporarylimits"));
         assertEquals(1, countRowsByEquipmentId("2wt", "newtemporarylimits"));
@@ -107,6 +112,16 @@ class V211LimitsMigrationTest {
         assertEquals(1, countRowsByEquipmentId("dl1", "newpermanentlimits"));
         assertEquals(1, countRowsByEquipmentId("2wt", "newpermanentlimits"));
         assertEquals(1, countRowsByEquipmentId("3wt", "newpermanentlimits"));
+    }
+
+    private void truncateTable(String tableName) {
+        try (Connection connection = networkStoreRepository.getDataSource().getConnection()) {
+            try (var preparedStmt = connection.prepareStatement("delete from " + tableName)) {
+                preparedStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new UncheckedSqlException(e);
+        }
     }
 
     private LimitsInfos createLimitSet() {
@@ -138,13 +153,19 @@ class V211LimitsMigrationTest {
         temporaryLimits.add(templimitAOkSide2b);
         limits.setTemporaryLimits(temporaryLimits);
 
-        PermanentLimitAttributes permanentLimitAttributes = PermanentLimitAttributes.builder()
+        PermanentLimitAttributes permanentLimitSide1 = PermanentLimitAttributes.builder()
                 .side(1)
                 .limitType(LimitType.CURRENT)
                 .operationalLimitsGroupId("group1")
                 .value(300)
                 .build();
-        limits.setPermanentLimits(List.of(permanentLimitAttributes));
+        PermanentLimitAttributes permanentLimitSide2 = PermanentLimitAttributes.builder()
+                .side(2)
+                .limitType(LimitType.CURRENT)
+                .operationalLimitsGroupId("group1")
+                .value(300)
+                .build();
+        limits.setPermanentLimits(List.of(permanentLimitSide1, permanentLimitSide2));
 
         return limits;
     }
