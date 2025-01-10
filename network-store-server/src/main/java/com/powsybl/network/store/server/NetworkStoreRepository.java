@@ -1948,7 +1948,6 @@ public class NetworkStoreRepository {
                                     .map(TemporaryLimitSqlData::of).toList());
                             bindValues(preparedStmt, values, mapper);
                             preparedStmt.addBatch();
-
                         }
                     }
                     preparedStmt.executeBatch();
