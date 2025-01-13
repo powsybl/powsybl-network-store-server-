@@ -80,7 +80,7 @@ class V211LimitsMigrationTest {
         insertV211Limits("3wt", ResourceType.THREE_WINDINGS_TRANSFORMER, limits1, limits2);
 
         // Finally we migrate the network
-        mvc.perform(MockMvcRequestBuilders.put("/" + VERSION + "/migration/" + NETWORK_UUID)
+        mvc.perform(MockMvcRequestBuilders.put("/" + VERSION + "/migration/v211limits/" + NETWORK_UUID + "/0")
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk());
 

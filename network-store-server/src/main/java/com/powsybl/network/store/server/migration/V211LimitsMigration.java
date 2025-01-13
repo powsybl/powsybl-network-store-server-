@@ -11,7 +11,6 @@ import com.google.common.base.Stopwatch;
 import com.powsybl.iidm.network.LimitType;
 import com.powsybl.network.store.model.ResourceType;
 import com.powsybl.network.store.model.TemporaryLimitAttributes;
-import com.powsybl.network.store.model.VariantInfos;
 import com.powsybl.network.store.server.ExtensionHandler;
 import com.powsybl.network.store.server.Mappings;
 import com.powsybl.network.store.server.NetworkStoreRepository;

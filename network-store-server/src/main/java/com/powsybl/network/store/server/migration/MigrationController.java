@@ -30,7 +30,7 @@ public class MigrationController {
     @Autowired
     private NetworkStoreRepository repository;
 
-    @PutMapping(value = "/{networkId}/{variantNum}")
+    @PutMapping(value = "/v211limits/{networkId}/{variantNum}")
     @Operation(summary = "Migrate limits of a network")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Successfully migrated limits from V2.11.0 to new model"))
     public ResponseEntity<Void> migrateV211Limits(@Parameter(description = "Network ID", required = true) @PathVariable("networkId") UUID networkId,
