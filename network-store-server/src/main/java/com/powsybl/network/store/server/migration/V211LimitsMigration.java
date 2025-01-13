@@ -57,11 +57,12 @@ public class V211LimitsMigration implements CustomTaskChange {
     public void execute(Database database) {
         init(database);
         JdbcConnection connection = (JdbcConnection) database.getConnection();
-        try (PreparedStatement stmt = connection.prepareStatement("select distinct uuid from network ")) {
-            ResultSet networkUuids = stmt.executeQuery();
-            while (networkUuids.next()) {
-                UUID networkUuid = UUID.fromString(networkUuids.getString(1));
-                migrateV211Limits(repository, networkUuid);
+        try (PreparedStatement stmt = connection.prepareStatement("select uuid, variantnum from network ")) {
+            ResultSet variants = stmt.executeQuery();
+            while (variants.next()) {
+                UUID networkUuid = UUID.fromString(variants.getString(1));
+                int variantNum = variants.getInt(2);
+                migrateV211Limits(repository, networkUuid, variantNum);
             }
         } catch (SQLException | DatabaseException e) {
             LOGGER.error(e.getMessage(), e);
@@ -153,19 +154,16 @@ public class V211LimitsMigration implements CustomTaskChange {
         }
     }
 
-    public static void migrateV211Limits(NetworkStoreRepository repository, UUID networkId) {
+    public static void migrateV211Limits(NetworkStoreRepository repository, UUID networkId, int variantNum) {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        List<Integer> variantNums = repository.getVariantsInfos(networkId).stream().map(VariantInfos::getNum).toList();
-        variantNums.forEach(variantNum -> {
-            migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.LINE.toString());
-            migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.TWO_WINDINGS_TRANSFORMER.toString());
-            migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.THREE_WINDINGS_TRANSFORMER.toString());
-            migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.DANGLING_LINE.toString());
-        });
+        migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.LINE.toString());
+        migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.TWO_WINDINGS_TRANSFORMER.toString());
+        migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.THREE_WINDINGS_TRANSFORMER.toString());
+        migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.DANGLING_LINE.toString());
 
         stopwatch.stop();
-        LOGGER.info("Limits of network {} migrated in {} ms", networkId, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOGGER.info("Limits of network {}/variantNum={} migrated in {} ms", networkId, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     private static void insertNewLimitsAndDeleteV211(NetworkStoreRepository repository, UUID networkUuid, int variantNum, Map<OwnerInfo, List<TemporaryLimitAttributes>> v211TemporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> v211PermanentLimits) {
