@@ -344,7 +344,7 @@ public final class QueryCatalog {
 
     public static String buildDeleteTemporaryLimitsQuery() {
         return "delete from " + TEMPORARY_LIMITS_TABLE + " where " +
-            NETWORK_UUID_COLUMN + " = ?";
+                NETWORK_UUID_COLUMN + " = ?";
     }
 
     // Permanent Limits
@@ -410,7 +410,7 @@ public final class QueryCatalog {
 
     public static String buildDeletePermanentLimitsQuery() {
         return "delete from " + PERMANENT_LIMITS_TABLE + " where " +
-            NETWORK_UUID_COLUMN + " = ?";
+                NETWORK_UUID_COLUMN + " = ?";
     }
 
     // Reactive Capability Curve Point
