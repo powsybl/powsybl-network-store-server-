@@ -319,10 +319,10 @@ public final class QueryCatalog {
 
     public static String buildInsertTemporaryLimitsQuery() {
         return "insert into " + TEMPORARY_LIMITS_TABLE + "(" +
-            EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
-            NETWORK_UUID_COLUMN + ", " +
-            VARIANT_NUM_COLUMN + ", " + TEMPORARY_LIMITS_COLUMN + ") " +
-            " values (?, ?, ?, ?, ?)";
+                EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
+                NETWORK_UUID_COLUMN + ", " +
+                VARIANT_NUM_COLUMN + ", " + TEMPORARY_LIMITS_COLUMN + ") " +
+                " values (?, ?, ?, ?, ?)";
     }
 
     public static String buildDeleteTemporaryLimitsVariantEquipmentINQuery(int numberOfValues) {
