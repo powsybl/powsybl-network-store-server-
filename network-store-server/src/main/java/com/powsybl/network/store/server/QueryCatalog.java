@@ -281,7 +281,7 @@ public final class QueryCatalog {
                 "where uuid = ? and " + VARIANT_NUM_COLUMN + " = ?";
     }
 
-    // Temporary limits
+    // Temporary Limits
     public static String buildCloneTemporaryLimitsQuery() {
         return "insert into " + TEMPORARY_LIMITS_TABLE + "(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + TEMPORARY_LIMITS_COLUMN + ") " + "select " + EQUIPMENT_ID_COLUMN + ", " +
@@ -347,7 +347,7 @@ public final class QueryCatalog {
             NETWORK_UUID_COLUMN + " = ?";
     }
 
-    // Permanent limits
+    // Permanent Limits
     public static String buildClonePermanentLimitsQuery() {
         return "insert into " + PERMANENT_LIMITS_TABLE + "(" + EQUIPMENT_ID_COLUMN + ", " + EQUIPMENT_TYPE_COLUMN + ", " +
                 NETWORK_UUID_COLUMN + ", " + VARIANT_NUM_COLUMN + ", " + PERMANENT_LIMITS_COLUMN + ") " + "select " + EQUIPMENT_ID_COLUMN + ", " +
