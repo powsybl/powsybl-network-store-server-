@@ -325,12 +325,6 @@ public final class QueryCatalog {
             " values (?, ?, ?, ?, ?)";
     }
 
-    public static String buildDeleteTemporaryLimitsVariantQuery() {
-        return "delete from " + TEMPORARY_LIMITS_TABLE + " where " +
-                NETWORK_UUID_COLUMN + " = ? and " +
-                VARIANT_NUM_COLUMN + " = ?";
-    }
-
     public static String buildDeleteTemporaryLimitsVariantEquipmentINQuery(int numberOfValues) {
         if (numberOfValues < 1) {
             throw new IllegalArgumentException(MINIMAL_VALUE_REQUIREMENT_ERROR);
@@ -340,6 +334,12 @@ public final class QueryCatalog {
                 VARIANT_NUM_COLUMN + " = ? and " +
                 EQUIPMENT_ID_COLUMN + " in (" +
                 "?, ".repeat(numberOfValues - 1) + "?)";
+    }
+
+    public static String buildDeleteTemporaryLimitsVariantQuery() {
+        return "delete from " + TEMPORARY_LIMITS_TABLE + " where " +
+                NETWORK_UUID_COLUMN + " = ? and " +
+                VARIANT_NUM_COLUMN + " = ?";
     }
 
     public static String buildDeleteTemporaryLimitsQuery() {
