@@ -24,8 +24,8 @@ import com.powsybl.network.store.server.exceptions.JsonApiErrorResponseException
 import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 import com.powsybl.network.store.server.json.PermanentLimitSqlData;
 import com.powsybl.network.store.server.json.TemporaryLimitSqlData;
-import com.powsybl.network.store.server.migration.v211Limits.V211LimitsMigration;
-import com.powsybl.network.store.server.migration.v211Limits.V211LimitsQueryCatalog;
+import com.powsybl.network.store.server.migration.v211limits.V211LimitsMigration;
+import com.powsybl.network.store.server.migration.v211limits.V211LimitsQueryCatalog;
 import com.powsybl.ws.commons.LogUtils;
 import lombok.Getter;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -45,7 +45,7 @@ import static com.powsybl.network.store.server.Mappings.*;
 import static com.powsybl.network.store.server.QueryCatalog.*;
 import static com.powsybl.network.store.server.Utils.bindAttributes;
 import static com.powsybl.network.store.server.Utils.bindValues;
-import static com.powsybl.network.store.server.migration.v211Limits.V211LimitsMigration.*;
+import static com.powsybl.network.store.server.migration.v211limits.V211LimitsMigration.*;
 
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>
