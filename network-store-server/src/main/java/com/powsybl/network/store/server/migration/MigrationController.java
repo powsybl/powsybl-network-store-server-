@@ -8,6 +8,7 @@ package com.powsybl.network.store.server.migration;
 
 import com.powsybl.network.store.model.*;
 import com.powsybl.network.store.server.NetworkStoreRepository;
+import com.powsybl.network.store.server.migration.v211Limits.V211LimitsMigration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

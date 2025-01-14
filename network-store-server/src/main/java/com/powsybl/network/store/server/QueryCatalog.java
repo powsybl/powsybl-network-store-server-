@@ -30,7 +30,7 @@ public final class QueryCatalog {
     static final String VOLTAGE_LEVEL_ID_1_COLUMN = "voltageLevelId1";
     static final String VOLTAGE_LEVEL_ID_2_COLUMN = "voltageLevelId2";
     static final String VOLTAGE_LEVEL_ID_3_COLUMN = "voltageLevelId3";
-    static final String NAME_COLUMN = "name";
+    public static final String NAME_COLUMN = "name";
     public static final String EQUIPMENT_TYPE_COLUMN = "equipmentType";
     static final String REGULATING_EQUIPMENT_TYPE_COLUMN = "regulatingEquipmentType";
     static final String REGULATED_EQUIPMENT_TYPE_COLUMN = "regulatedEquipmentType";
@@ -48,7 +48,7 @@ public final class QueryCatalog {
     static final String TAP_CHANGER_STEP_TABLE = "tapChangerStep";
     static final String REGULATING_POINT_TABLE = "regulatingPoint";
     static final String REGULATION_MODE = "regulationMode";
-    static final String SIDE_COLUMN = "side";
+    public static final String SIDE_COLUMN = "side";
 
     private QueryCatalog() {
     }
