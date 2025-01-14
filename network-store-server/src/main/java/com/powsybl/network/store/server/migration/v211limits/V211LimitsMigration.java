@@ -159,7 +159,7 @@ public class V211LimitsMigration implements CustomTaskChange {
         migrateV211Limits(repository, networkId, variantNum, EQUIPMENT_TYPE_COLUMN, ResourceType.DANGLING_LINE.toString());
 
         stopwatch.stop();
-        LOGGER.info("Limits of network {}/variantNum={} migrated in {} ms", networkId, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOGGER.info("The limits of network {}/variantNum={} were migrated in {} ms.", networkId, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     private static void insertNewLimitsAndDeleteV211(NetworkStoreRepository repository, UUID networkUuid, int variantNum, Map<OwnerInfo, List<TemporaryLimitAttributes>> v211TemporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> v211PermanentLimits) {
@@ -183,7 +183,9 @@ public class V211LimitsMigration implements CustomTaskChange {
         Map<OwnerInfo, List<PermanentLimitAttributes>> v211PermanentLimits = getV211PermanentLimits(repository, networkUuid, variantNum, columnNameForWhereClause, valueForWhereClause);
         insertNewLimitsAndDeleteV211(repository, networkUuid, variantNum, v211TemporaryLimits, v211PermanentLimits);
         stopwatch.stop();
-        LOGGER.info("Limits of {}S of network {}/variantNum={} migrated in {} ms", valueForWhereClause, networkUuid, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOGGER.info("Limits of {}S of network {}/variantNum={} migrated in {} ms.", valueForWhereClause, networkUuid, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOGGER.info("       The permanent limits of {} {}S were migrated.", v211PermanentLimits.keySet().size(), valueForWhereClause);
+        LOGGER.info("       The temporary limits of {} {}S were migrated.\n", v211TemporaryLimits.keySet().size(), valueForWhereClause);
     }
 
     public static Map<OwnerInfo, List<TemporaryLimitAttributes>> innerGetV211TemporaryLimits(PreparedStatement preparedStmt) throws SQLException {
