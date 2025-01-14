@@ -88,9 +88,6 @@ public class V211LimitsMigration implements CustomTaskChange {
         return new ValidationErrors();
     }
 
-    // Methods to migrate V2.11 limits — do not use them in application code
-    // TODO: All the methods below should be deprecated when limits are fully migrated — should be after v2.13 deployment
-
     public static Map<OwnerInfo, List<PermanentLimitAttributes>> getV211PermanentLimitsWithInClause(NetworkStoreRepository repository, UUID networkUuid, int variantNum, String columnNameForWhereClause, List<String> valuesForInClause) {
         if (valuesForInClause.isEmpty()) {
             return Collections.emptyMap();
