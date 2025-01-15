@@ -91,3 +91,17 @@ databaseChangeLog:
   - include:
       file: changesets/changelog_20241204T110000Z.xml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/changelog_20241121T110000Z.xml
+      relativeToChangelogFile: true
+
+# Migration of V2.11 limits. To be added before tag v2.13.0 is deployed
+#  - include:
+#      file: changesets/changelog_20241223T130000Z.xml
+#      relativeToChangelogFile: true
+
+# Deletion of V2.11 limits tables. To be added before tag v2.14.0 is deployed
+#  - include:
+#      file: changesets/changelog_20250114T140000Z.xml
+#      relativeToChangelogFile: true

@@ -30,7 +30,7 @@ import lombok.Setter;
 @Schema(description = "limits attributes")
 public class LimitsInfos {
 
-    @Schema(description = "List of permeant limits")
+    @Schema(description = "List of permanent limits")
     private List<PermanentLimitAttributes> permanentLimits = new ArrayList<>();
 
     @Schema(description = "List of temporary limits")
