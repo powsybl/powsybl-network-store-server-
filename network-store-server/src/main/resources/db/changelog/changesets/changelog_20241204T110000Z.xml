@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="2986331049275-6" author="lesoteti">
+        <addColumn tableName="regulatingpoint">
+            <column name="regulating" type="boolean"/>
+        </addColumn>
+        <sqlFile
+                path="move_regulating_to_regulationPoint_20241204T110000Z.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                stripComments="true"/>
+        <dropColumn tableName="generator" columnName="voltageregulatoron"/>
+        <dropColumn tableName="vscconverterstation" columnName="voltageregulatoron"/>
+        <dropColumn tableName="shuntcompensator" columnName="voltageregulatoron"/>
+    </changeSet>
+</databaseChangeLog>
