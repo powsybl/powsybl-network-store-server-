@@ -20,7 +20,7 @@ import com.powsybl.network.store.server.exceptions.UncheckedSqlException;
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
-import liquibase.exception.DatabaseException;
+import liquibase.exception.CustomChangeException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
 import org.slf4j.Logger;
@@ -53,18 +53,28 @@ public class V211LimitsMigration implements CustomTaskChange {
     }
 
     @Override
-    public void execute(Database database) {
+    public void execute(Database database) throws CustomChangeException {
         init(database);
         JdbcConnection connection = (JdbcConnection) database.getConnection();
+        List<Exception> exceptions = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement("select uuid, variantnum from network ")) {
             ResultSet variants = stmt.executeQuery();
             while (variants.next()) {
                 UUID networkUuid = UUID.fromString(variants.getString(1));
                 int variantNum = variants.getInt(2);
-                migrateV211Limits(repository, networkUuid, variantNum);
+                try {
+                    migrateV211Limits(repository, networkUuid, variantNum);
+                } catch (Exception e) {
+                    LOGGER.error(e.getMessage(), e);
+                    exceptions.add(e);
+                }
             }
-        } catch (SQLException | DatabaseException e) {
+        } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
+            throw new CustomChangeException("V2.11 limits migration : error when getting the variants list", e);
+        }
+        if (exceptions.size() > 0) {
+            throw new CustomChangeException("V2.11 limits migration failed. " + exceptions.size() + " exceptions were thrown. First exception as cause : ", exceptions.get(0));
         }
     }
 
@@ -160,6 +170,7 @@ public class V211LimitsMigration implements CustomTaskChange {
 
         stopwatch.stop();
         LOGGER.info("The limits of network {}/variantNum={} were migrated in {} ms.", networkId, variantNum, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        LOGGER.info("=============================================================================================================\n\n\n\n");
     }
 
     private static void insertNewLimitsAndDeleteV211(NetworkStoreRepository repository, UUID networkUuid, int variantNum, Map<OwnerInfo, List<TemporaryLimitAttributes>> v211TemporaryLimits, Map<OwnerInfo, List<PermanentLimitAttributes>> v211PermanentLimits) {
