@@ -60,20 +60,15 @@ public class V211LimitsMigration implements CustomTaskChange {
         try (PreparedStatement stmt = connection.prepareStatement("select uuid, variantnum from network ")) {
             ResultSet variants = stmt.executeQuery();
             while (variants.next()) {
-                UUID networkUuid = UUID.fromString(variants.getString(1));
+                UUID networkId = UUID.fromString(variants.getString(1));
                 int variantNum = variants.getInt(2);
-                try {
-                    migrateV211Limits(repository, networkUuid, variantNum);
-                } catch (Exception e) {
-                    LOGGER.error(e.getMessage(), e);
-                    exceptions.add(e);
-                }
+                migrateV211Limits(repository, networkId, variantNum, exceptions);
             }
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
             throw new CustomChangeException("V2.11 limits migration : error when getting the variants list", e);
         }
-        if (exceptions.size() > 0) {
+        if (!exceptions.isEmpty()) {
             throw new CustomChangeException("V2.11 limits migration failed. " + exceptions.size() + " exceptions were thrown. First exception as cause : ", exceptions.get(0));
         }
     }
@@ -157,6 +152,15 @@ public class V211LimitsMigration implements CustomTaskChange {
             return innerGetV211TemporaryLimits(preparedStmt);
         } catch (SQLException e) {
             throw new UncheckedSqlException(e);
+        }
+    }
+
+    public static void migrateV211Limits(NetworkStoreRepository repository, UUID networkId, int variantNum, List<Exception> exceptions) {
+        try {
+            migrateV211Limits(repository, networkId, variantNum);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            exceptions.add(e);
         }
     }
 
